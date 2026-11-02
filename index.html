@@ -556,7 +556,7 @@
             onFloorChange();
             if (wardSelect && targetWard) wardSelect.value = targetWard;
 
-            onWardChange();
+            loadFloorPlan(targetWard);
 
             let checkInterval = setInterval(() => {
                 if (!isFloorPlanLoaded) return;
@@ -566,10 +566,20 @@
 
             function executeHighlightAndScroll() {
                 currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === targetWard.toLowerCase());
+                
+                // 🌟 檢查目前搜尋輸入框是否有關鍵字，若有則維持搜尋過濾狀態
+                const searchInput = document.getElementById('assetSearchInput');
+                const keyword = searchInput ? searchInput.value.trim() : "";
+                if (keyword) {
+                    onSearchInput(keyword);
+                } else {
+                    renderAssetSidebarList(currentFilteredAssets);
+                }
+
                 renderAssetMarkers(currentFilteredAssets, asset.eam);
 
                 const mapContainer = document.getElementById('mapContainer');
-                if (mapContainer) mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (mapContainer) mapContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
                 const assetCards = document.querySelectorAll('[data-eam]');
                 assetCards.forEach(card => {
