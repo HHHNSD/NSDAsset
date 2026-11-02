@@ -452,6 +452,7 @@
                 if (posY > 90) translateY = '-100%'; else if (posY < 10) translateY = '0px';
                 
                 // 🌟 結合原本的位移與動態比例縮放
+                marker.style.transformOrigin = 'center center';
                 marker.style.transform = `translate(${translateX}, ${translateY}) scale(var(--map-scale, 1))`;
 
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
@@ -610,6 +611,7 @@
                 return;
             }
 
+            // 1. 如果是移動資產模式
             if (isRelocatingMode && isMovingAsset) {
                 isMovingAsset.x = parseFloat(x.toFixed(2));
                 isMovingAsset.y = parseFloat(y.toFixed(2));
@@ -621,6 +623,28 @@
                 return;
             }
 
+            // 2. 🌟 如果是剛透過掃描器掃到新 EAM，準備新增的模式
+            if (pendingNewAssetEam) {
+                const newAssetData = {
+                    eam: pendingNewAssetEam, // 自動帶入剛剛掃到的 EAM
+                    serial: "SN",
+                    dept: currentWard,
+                    description: ASSET_TYPES[0].label,
+                    block: currentBlock,
+                    floor: currentFloor,
+                    ward: currentWard,
+                    x: parseFloat(x.toFixed(2)),
+                    y: parseFloat(y.toFixed(2))
+                };
+
+                pendingNewAssetEam = null; // 清除暫存
+                cancelRelocate(); // 隱藏上方橘色橫幅
+
+                openAssetFormModal(newAssetData, false); // 彈出表單讓使用者確認其他資訊並儲存
+                return;
+            }
+
+            // 3. 預設一般點擊地圖新增模式
             const newAssetData = {
                 eam: "", serial: "SN", dept: currentWard,
                 description: ASSET_TYPES[0].label,
@@ -629,7 +653,7 @@
             };
             openAssetFormModal(newAssetData, false);
         }
-
+        
         function updateMarkersLayerSize() {
             const floorPlanImg = document.getElementById('floorPlanImg');
             const mapWrapper = document.getElementById('mapWrapper');
@@ -649,13 +673,18 @@
             floorPlanImg.style.height = '100%';
             floorPlanImg.style.objectFit = 'contain';
 
-            // 🌟 動態計算地圖縮放比例 (以 1000px 寬度為基準)
+            // 🌟 動態計算地圖縮放比例
             const currentWidth = floorPlanImg.clientWidth;
             const baseWidth = 1000; 
             let scale = currentWidth / baseWidth;
             
-            // 限制縮放範圍：避免手機縮太小看不清楚、電腦放大太大 (範圍維持在 0.6 倍到 1.3 倍之間)
-            scale = Math.max(0.6, Math.min(1.3, scale));
+            // 🌟 針對手機螢幕（小於 768px）強制縮小圖標比例（例如乘以 0.7，讓它變得更輕巧）
+            if (window.innerWidth < 768) {
+                scale = scale * 0.7; 
+            }
+
+            // 限制縮放範圍（將最大與最小值調低，確保手機上不會過大）
+            scale = Math.max(0.4, Math.min(1.0, scale));
 
             // 將比例寫入 markersLayer 的 CSS 變數中
             if (markersLayer) {
@@ -872,17 +901,39 @@
                 }
             };
         };
-
+        let pendingNewAssetEam = null; // 🌟 暫存剛掃到、準備點地圖的新 EAM
+        
         function handleBarcodeScan(rawInput) {
             if (!rawInput) return;
             const cleanedEam = String(rawInput).trim().replace(/^0+/, '');
             const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
 
             if (targetAsset) {
+                // 如果資產已存在：直接定位並打開操作選單
                 locateAndHighlightAsset(targetAsset);
                 openActionModal(targetAsset);
             } else {
-                alert('找不到資產 [' + cleanedEam + ']！請在平面圖點擊目標位置以新增此資產。');
+                // 🌟 如果是新資產：進入「等待點擊地圖新增」的模式！
+                const currentWard = document.getElementById('wardSelect').value;
+                if (!currentWard) {
+                    alert(`掃描到新 EAM [${cleanedEam}]，但請先在上方選單選擇目標「單位 (Ward)」才能在地圖上新增！`);
+                    return;
+                }
+
+                pendingNewAssetEam = cleanedEam;
+                isRelocatingMode = false; // 確保不是移動模式
+                isMovingAsset = null;
+
+                // 顯示和更改位置一樣的上方橘色提示橫幅
+                const banner = document.getElementById('selectionBanner');
+                const bannerText = document.getElementById('bannerText');
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `請在地圖點擊新資產 [${cleanedEam}] 的擺放位置...`;
+                }
+
+                // 提示使用者
+                alert(`已成功掃描新 EAM：${cleanedEam}\n請直接在地圖的目標位置點擊一下以繼續！`);
             }
         }
 
