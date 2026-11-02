@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>醫院資產與平面圖管理系統</title>
+    <title>NSD Asset Manage System</title>
     <!-- 引入 Tailwind CSS 與 FontAwesome -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -14,32 +14,36 @@
 
     <!-- 頂部導覽與連動選單列 -->
     <header class="bg-white border-b border-slate-200 px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm z-20">
-        <div class="flex items-center space-x-3 w-full sm:w-auto justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-blue-50 p-2 rounded-xl border border-blue-100">
-                    <i class="fa-solid fa-hospital text-blue-600 text-base"></i>
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-50 p-2.5 rounded-xl border border-blue-100 shadow-xs">
+                        <i class="fa-solid fa-hospital text-blue-600 text-xl sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-xl font-black tracking-wide text-slate-800">NSD Asset Management System</h1>
+                        <p class="text-[10px] text-slate-400 font-medium"> NSD Asset Manage System</p>
+                    </div>
                 </div>
-                <h1 class="text-xs sm:text-sm font-bold tracking-wider text-slate-800">醫院資產與平面圖管理系統</h1>
             </div>
         </div>
     
         <!-- 階層連動選單區塊：在手機上自動撐滿寬度 (w-full) -->
-        <div class="grid grid-cols-3 gap-1.5 w-full sm:w-auto bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-inner">
+        <div class="grid grid-cols-3 gap-2 w-full sm:w-auto bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shadow-inner">
             <div class="flex flex-col">
-                <label class="text-[10px] font-semibold text-slate-600 mb-0.5">棟別:</label>
-                <select id="blockSelect" onchange="onBlockChange()" class="w-full bg-white text-slate-800 text-[11px] rounded-lg px-2 py-1 border border-slate-300 focus:outline-none focus:border-blue-500">
+                <label class="text-[11px] font-bold text-slate-600 mb-1">棟別 (Block):</label>
+                <select id="blockSelect" onchange="onBlockChange()" class="w-full bg-white text-slate-800 text-xs font-semibold rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-blue-500 shadow-xs cursor-pointer">
                     <option value="">載入中...</option>
                 </select>
             </div>
             <div class="flex flex-col">
-                <label class="text-[10px] font-semibold text-slate-600 mb-0.5">樓層:</label>
-                <select id="floorSelect" onchange="onFloorChange()" class="w-full bg-white text-slate-800 text-[11px] rounded-lg px-2 py-1 border border-slate-300 focus:outline-none focus:border-blue-500">
+                <label class="text-[11px] font-bold text-slate-600 mb-1">樓層 (Floor):</label>
+                <select id="floorSelect" onchange="onFloorChange()" class="w-full bg-white text-slate-800 text-xs font-semibold rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-blue-500 shadow-xs cursor-pointer">
                     <option value="">請選擇</option>
                 </select>
             </div>
             <div class="flex flex-col">
-                <label class="text-[10px] font-semibold text-slate-600 mb-0.5">單位:</label>
-                <select id="wardSelect" onchange="onWardChange()" class="w-full bg-white text-slate-800 text-[11px] rounded-lg px-2 py-1 border border-slate-300 focus:outline-none focus:border-blue-500">
+                <label class="text-[11px] font-bold text-slate-600 mb-1">單位 (Ward):</label>
+                <select id="wardSelect" onchange="onWardChange()" class="w-full bg-white text-slate-800 text-xs font-semibold rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-blue-500 shadow-xs cursor-pointer">
                     <option value="">請選擇</option>
                 </select>
             </div>
@@ -60,10 +64,47 @@
             </div>
 
             <div id="mapContainer" class="w-full bg-white border border-slate-200 rounded-2xl relative shadow-sm overflow-hidden cursor-crosshair">
-                <div id="placeholderText" class="text-center text-slate-400 pointer-events-none absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-50/80">
-                    <i class="fa-solid fa-map-location-dot text-4xl mb-2 text-slate-300"></i>
-                    <p class="text-xs text-slate-500">請從上方選單選擇單位以載入平面圖（點擊地圖任意處可新增資產）</p>
+                
+            <div id="placeholderText" class="text-center pointer-events-none absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-50/90 backdrop-blur-xs p-6">
+                <div class="w-16 h-16 bg-blue-100/80 rounded-3xl flex items-center justify-center mb-4 text-blue-600 shadow-sm border border-blue-200">
+                    <i class="fa-solid fa-map-location-dot text-3xl"></i>
                 </div>
+                <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD 資產地圖管理系統</h3>
+                <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或參考以下快速操作說明：</p>
+            
+                <!-- 3 大快速引導卡片 -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl text-left">
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-blue-100">1</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-magnifying-glass text-blue-500"></i> 搜尋定位資產
+                            </h4>
+                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">可直接在右側搜尋列輸入 EAM、Serial 或備註，快速篩選並地圖定位。</p>
+                        </div>
+                    </div>
+            
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-emerald-100">2</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-barcode text-emerald-500"></i> 相機即時條碼掃描
+                            </h4>
+                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">手機點擊右側條碼按鈕可啟動相機，掃描後自動定位或點選新增。</p>
+                        </div>
+                    </div>
+            
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-amber-100">3</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-layer-group text-amber-500"></i> 選擇查看區域
+                            </h4>
+                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">透過右上角連動選單選擇 [棟別/樓層/單位]，載入對應平面圖。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
                 
                 <div id="mapWrapper" class="relative w-full aspect-[12/9] bg-slate-50" onclick="handleMapClick(event)">
                     <img id="floorPlanImg" alt="Floor Plan" class="hidden absolute inset-0 w-full h-full object-fill pointer-events-auto" onclick="handleMapClick(event)">
@@ -88,8 +129,9 @@
                         <input id="assetSearchInput" type="text" oninput="onSearchInput(this.value)" placeholder="搜尋 EAM, Serial, Remark, Ward..." 
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
                     </div>
-                    <button onclick="openScannerModal()" title="開啟條碼掃描器" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-xl text-xs flex items-center justify-center shrink-0 shadow-sm transition-all cursor-pointer">
-                        <i class="fa-solid fa-barcode text-sm"></i>
+                    <button onclick="openScannerModal()" title="開啟條碼掃描器" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm transition-all cursor-pointer hover:shadow">
+                        <i class="fa-solid fa-barcode text-base"></i>
+                        <span class="hidden sm:inline">掃瞄</span>
                     </button>
                 </div>
             </div>
