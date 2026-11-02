@@ -720,6 +720,27 @@
             }
 
             window.addEventListener('resize', updateMarkersLayerSize);
+
+            // 🚀 新增：延遲 1 秒後在背景默默預載所有單位的地圖到快取中
+            setTimeout(() => {
+                if (floorHierarchyData && floorHierarchyData.length > 0) {
+                    console.log("🚀 開始在背景預載所有平面圖...");
+                    floorHierarchyData.forEach(item => {
+                        const wardKey = item.wardKey;
+                        if (wardKey && !floorPlanCache[wardKey]) {
+                            fetch(`${GAS_API_URL}?action=getFloorPlan&wardKey=${encodeURIComponent(wardKey)}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data && data.base64) {
+                                        floorPlanCache[wardKey] = data.base64;
+                                        console.log(`✅ 預載成功: ${wardKey}`);
+                                    }
+                                })
+                                .catch(err => console.warn(`預載失敗: ${wardKey}`, err));
+                        }
+                    });
+                }
+            }, 300);
         });
     </script>
 </body>
