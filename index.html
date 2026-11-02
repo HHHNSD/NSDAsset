@@ -133,13 +133,17 @@
                 .then(data => {
                     allAssets = data || [];
                     window.allAssets = allAssets;
+                    
+                    // 🚀 讓一開網頁時，右側直接顯示全部資產（或你可以改成過濾特定單位）
+                    renderAssetSidebarList(allAssets);
+
                     const wardSelect = document.getElementById('wardSelect');
                     if (wardSelect && wardSelect.value) {
                         onWardChange();
                     }
                 })
                 .catch(err => console.error("抓取資產失敗:", err));
-        }
+         }
 
         function fetchHierarchy() {
             fetch(`${GAS_API_URL}?action=getHierarchy`)
