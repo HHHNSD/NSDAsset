@@ -148,6 +148,22 @@
                     floorHierarchyData = data || [];
                     rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
+
+                    // 🚀 當選單階層載入完成後，立刻在背景自動預載所有單位的地圖
+                    floorHierarchyData.forEach(item => {
+                        const wardKey = item.wardKey;
+                        if (wardKey && !floorPlanCache[wardKey]) {
+                            fetch(`${GAS_API_URL}?action=getFloorPlan&wardKey=${encodeURIComponent(wardKey)}`)
+                                .then(res => res.json())
+                                .then(planData => {
+                                    if (planData && planData.base64) {
+                                        floorPlanCache[wardKey] = planData.base64;
+                                        console.log(`✅ 背景預載成功: ${wardKey}`);
+                                    }
+                                })
+                                .catch(err => console.warn(`預載失敗: ${wardKey}`, err));
+                        }
+                    });
                 })
                 .catch(err => console.error("抓取選單階層失敗:", err));
         }
@@ -705,6 +721,7 @@
 
         // 🌟 9. 頁面初始化與圖片載入監聽
         document.addEventListener("DOMContentLoaded", () => {
+            console.log("🚀 網頁載入中，開始抓取階層選單與所有資產...");
             fetchHierarchy();
             fetchAllAssets();
 
@@ -740,7 +757,7 @@
                         }
                     });
                 }
-            }, 300);
+            }, 500);
         });
     </script>
 </body>
