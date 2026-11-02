@@ -451,8 +451,6 @@
                 marker.style.top = `${posY}%`;
 
                 let translateX = '-50%', translateY = '-50%';
-                if (posX > 90) translateX = '-100%'; else if (posX < 10) translateX = '0px';
-                if (posY > 90) translateY = '-100%'; else if (posY < 10) translateY = '0px';
                 
                 // 🌟 結合原本的位移與動態比例縮放
                 marker.style.transformOrigin = 'center center';
