@@ -260,15 +260,15 @@
             const fileInput = document.getElementById('condemnFile');
             const remarkText = document.getElementById('condemnRemark').value.trim();
 
-            // 🌟 備註只保留類型與文字說明，不加網址
+            // 更新前端物件的屬性
             asset.remark = `[${type}] ${remarkText}`;
             asset.block = "System";
             asset.floor = "System";
-            asset.ward  = type; // 確保更新 Ward Key 移至特殊狀態
+            asset.ward = type; // 將 Ward_Key 更新為 Condemn 或 Surplus
             
             modal.remove();
 
-            // 如果有選擇檔案，我們依然可以把檔案上傳到雲端硬碟保存（但不在備註裡串接網址）
+            // 如果有選擇檔案，透過 Base64 傳送到後端處理上傳與存檔
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 const reader = new FileReader();
@@ -276,25 +276,34 @@
                 reader.onload = function(e) {
                     const base64Data = e.target.result;
                     
-                    google.script.run
-                        .withSuccessHandler((res) => {
-                            if (res && res.status === "error") {
-                                alert("❌ 檔案上傳失敗：" + res.message);
-                            } else {
-                                alert(`資產 [${asset.eam}] 之 ${type} 狀態與檔案已成功存檔！`);
-                                fetchAllAssets();
-                            }
+                    // 🌟 改用 fetch POST 發送給 GAS Web App
+                    fetch(GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            action: 'saveCondemnAndAsset',
+                            asset: asset,
+                            base64Data: base64Data,
+                            fileName: file.name
                         })
-                        .withFailureHandler((err) => {
-                            alert("❌ 系統通訊失敗：" + err.message);
-                            console.error(err);
-                        })
-                        // 這裡可以呼叫後端純上傳檔案的函數，或者保留原本的 saveCondemnFormAndAsset 但不讓它去改動 asset.remark
-                        .saveCondemnFormAndAsset(asset, base64Data, file.name);
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res && res.status === "error") {
+                            alert("❌ 檔案上傳失敗：" + res.message);
+                        } else {
+                            alert(`資產 [${asset.eam}] 之 ${type} 狀態與檔案已成功存檔！`);
+                            fetchAllAssets();
+                        }
+                    })
+                    .catch(err => {
+                        alert("❌ 系統通訊失敗：" + err);
+                        console.error(err);
+                    });
                 };
                 reader.readAsDataURL(file);
             } else {
-                // 如果沒有選檔案，就直接更新試算表中的狀態與純文字備註
+                // 如果沒有選檔案，直接呼叫更新試算表的 API
                 updateAssetInSheet(asset);
                 alert(`資產 [${asset.eam}] 狀態已更新為 ${type}！`);
             }
