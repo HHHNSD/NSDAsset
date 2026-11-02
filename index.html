@@ -633,9 +633,12 @@
                     <h3 class="text-xs font-bold mb-1 text-blue-600">${asset.eam}</h3>
                     <p class="text-[11px] text-slate-500 mb-4">${asset.description} (${asset.dept})</p>
                     <div class="space-y-2">
-                        <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-pen-to-square"></i> 更改資產資訊</button>
-                        <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置</button>
-                        <button id="btnDelete" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-trash"></i> 刪除此資產</button>
+                        <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-pen-to-square"></i> 更改資產資訊</button>
+                        <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置</button>
+                        <!-- 🌟 補回 Condemn 報廢與 Surplus 功能 -->
+                        <button id="btnCondemn" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> 資產報廢 (Condemn)</button>
+                        <button id="btnSurplus" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-boxes-packing"></i> 標記為 Surplus</button>
+                        <button id="btnDelete" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2"><i class="fa-solid fa-trash"></i> 刪除此資產</button>
                     </div>
                     <button id="btnCloseModal" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-2 rounded-xl transition-all">取消</button>
                 </div>
@@ -649,6 +652,21 @@
                 const bannerText = document.getElementById('bannerText');
                 if (banner && bannerText) { banner.classList.remove('hidden'); bannerText.innerText = `請在地圖點擊 [${asset.eam}] 的新位置...`; }
             };
+            
+            // 🌟 綁定 Condemn 按鈕事件（移至 Condemn / 報廢專用標籤或清單）
+            document.getElementById('btnCondemn').onclick = () => {
+                modal.remove();
+                asset.ward = "Condemn";
+                updateAssetInSheet(asset);
+            };
+
+            // 🌟 綁定 Surplus 按鈕事件
+            document.getElementById('btnSurplus').onclick = () => {
+                modal.remove();
+                asset.ward = "Surplus";
+                updateAssetInSheet(asset);
+            };
+
             document.getElementById('btnDelete').onclick = () => {
                 modal.remove();
                 if (confirm(`確定要刪除資產 [${asset.eam}] 嗎？`)) deleteAssetFromSheet(asset.eam);
