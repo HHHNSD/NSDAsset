@@ -680,11 +680,11 @@
             
             // 🌟 針對手機螢幕（小於 768px）強制縮小圖標比例（例如乘以 0.7，讓它變得更輕巧）
             if (window.innerWidth < 768) {
-                scale = scale * 0.7; 
+                scale = scale * 0.2; 
             }
 
             // 限制縮放範圍（將最大與最小值調低，確保手機上不會過大）
-            scale = Math.max(0.4, Math.min(1.0, scale));
+            scale = Math.max(0.2, Math.min(1.0, scale));
 
             // 將比例寫入 markersLayer 的 CSS 變數中
             if (markersLayer) {
