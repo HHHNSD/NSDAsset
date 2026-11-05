@@ -584,54 +584,82 @@
         }
 
         function locateAndHighlightAsset(asset) {
+            if (!asset) return;
+        
             const blockSelect = document.getElementById('blockSelect');
             const floorSelect = document.getElementById('floorSelect');
             const wardSelect = document.getElementById('wardSelect');
-
+        
             let targetBlock = asset.block;
             let targetFloor = asset.floor;
             let targetWard = asset.ward;
-
+        
+            // 1. 自動連動下拉選單
             if (blockSelect) blockSelect.value = targetBlock;
             onBlockChange();
             if (floorSelect) floorSelect.value = targetFloor;
             onFloorChange();
             if (wardSelect && targetWard) wardSelect.value = targetWard;
-
+        
+            // 載入該單位的平面圖
             loadFloorPlan(targetWard);
-
+        
+            // 等待平面圖載入完成後執行高亮與定位
             let checkInterval = setInterval(() => {
                 if (!isFloorPlanLoaded) return;
                 clearInterval(checkInterval);
                 executeHighlightAndScroll();
             }, 50);
-
+        
             function executeHighlightAndScroll() {
-                currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === targetWard.toLowerCase());
-                
-                // 🌟 檢查目前搜尋輸入框是否有關鍵字，若有則維持搜尋過濾狀態
-                const searchInput = document.getElementById('assetSearchInput');
-                const keyword = searchInput ? searchInput.value.trim() : "";
-                if (keyword) {
-                    onSearchInput(keyword);
+                // 2. 抓出該單位的全部資產
+                currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === String(targetWard).trim().toLowerCase());
+        
+                // 🌟 關鍵優化 1：把掃描/點選到的資產強制拉到過濾清單的最上方（置頂）
+                const index = currentFilteredAssets.findIndex(a => String(a.eam).trim().toLowerCase() === String(asset.eam).trim().toLowerCase());
+                if (index > -1) {
+                    const [matched] = currentFilteredAssets.splice(index, 1);
+                    currentFilteredAssets.unshift(matched);
                 } else {
-                    renderAssetSidebarList(currentFilteredAssets);
+                    // 如果該資產不在 currentFilteredAssets（例如因為 department 差異），強行塞到最前面
+                    currentFilteredAssets.unshift(asset);
                 }
-
+        
+                // 渲染側邊欄清單與地圖 Markers
+                renderAssetSidebarList(currentFilteredAssets);
                 renderAssetMarkers(currentFilteredAssets, asset.eam);
-
+        
+                // 3. 畫面平滑捲動到地圖區域
                 const mapContainer = document.getElementById('mapContainer');
-                if (mapContainer) mapContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
+                if (mapContainer) {
+                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+        
+                // 4. 右側清單第一筆高亮
                 const assetCards = document.querySelectorAll('[data-eam]');
                 assetCards.forEach(card => {
-                    card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50');
                     if (card.getAttribute('data-eam').toLowerCase() === String(asset.eam).trim().toLowerCase()) {
                         card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
                         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 2000);
+                        setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 3000);
                     }
                 });
+        
+                // 🌟 關鍵優化 2：檢查該 Asset 是否有有效的地圖座標 (x, y)
+                const hasCoordinates = (asset.x !== undefined && asset.x !== null && asset.x !== '') &&
+                                       (asset.y !== undefined && asset.y !== null && asset.y !== '');
+        
+                if (!hasCoordinates) {
+                    // 如果沒有座標，自動進入「指定位置」模式，提示使用者點擊地圖！
+                    isMovingAsset = asset;
+                    isRelocatingMode = true;
+                    const banner = document.getElementById('selectionBanner');
+                    const bannerText = document.getElementById('bannerText');
+                    if (banner && bannerText) {
+                        banner.classList.remove('hidden');
+                        bannerText.innerText = `⚠️ 資產 [${asset.eam}] 尚未設定座標，請直接在地圖上點擊其擺放位置...`;
+                    }
+                }
             }
         }
 
