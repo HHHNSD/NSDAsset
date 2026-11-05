@@ -994,46 +994,54 @@
         let pendingNewAssetEam = null; // 🌟 暫存剛掃到、準備點地圖的新 EAM
         
         function handleBarcodeScan(rawInput) {
-                    if (!rawInput) return;
-                    const cleanedEam = String(rawInput).trim().replace(/^0+/, '');
-        
-                    // 🌟 關鍵防呆：檢查條碼是否剛好是 10 個字
-                    if (cleanedEam.length !== 10) {
-                        alert(`⚠️ 掃描格式錯誤：此條碼長度為 ${cleanedEam.length} 個字（應為 10 個字）。請重新掃描！`);
-                        openScannerModal(); // 自動重新開啟相機讓同仁再次掃描
-                        return;
-                    }
-        
-                    const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
-        
-                    if (targetAsset) {
-                        // 如果資產已存在：直接定位並打開操作選單
-                        locateAndHighlightAsset(targetAsset);
-                        openActionModal(targetAsset);
-                    } else {
-                        // 🌟 如果是新資產：進入「等待點擊地圖新增」的模式！
-                        const currentWard = document.getElementById('wardSelect').value;
-                        if (!currentWard) {
-                            alert(`掃描到新 EAM [${cleanedEam}]，但請先在上方選單選擇目標「單位 (Ward)」才能在地圖上新增！`);
-                            return;
-                        }
-        
-                        pendingNewAssetEam = cleanedEam;
-                        isRelocatingMode = false; // 確保不是移動模式
-                        isMovingAsset = null;
-        
-                        // 顯示和更改位置一樣的上方橘色提示橫幅
-                        const banner = document.getElementById('selectionBanner');
-                        const bannerText = document.getElementById('bannerText');
-                        if (banner && bannerText) {
-                            banner.classList.remove('hidden');
-                            bannerText.innerText = `請在地圖點擊新資產 [${cleanedEam}] 的擺放位置...`;
-                        }
-        
-                        // 提示使用者
-                        alert(`已成功掃描新 EAM：${cleanedEam}\n請直接在地圖的目標位置點擊一下以繼續！`);
-                    }
+            if (!rawInput) return;
+            
+            // 1. 清理字串，去除前導 0 與空格
+            let cleanedEam = String(rawInput).trim().replace(/^0+/, '');
+
+            // 🌟 2. 智慧糾錯：因為 EAM 完全沒有英文，將相機常誤判的英文字母自動轉為對應數字
+            // 例如把大寫/小寫的 G 誤判成 0 的情況修正回來
+            cleanedEam = cleanedEam
+                .replace(/g/gi, '0') // 將所有 g 或 G 轉成 0
+                .replace(/o/gi, '0') // 有時候 o 也會被誤判成 0
+                .replace(/i/gi, '1') // 避免 1 被誤判成 i
+                .replace(/l/gi, '1'); // 避免 1 被誤判成 l
+
+            // 3. 10 碼長度防呆驗證
+            if (cleanedEam.length !== 10) {
+                alert(`⚠️ 掃描格式錯誤：此條碼長度為 ${cleanedEam.length} 個字（應為 10 個字）。請重新掃描！`);
+                openScannerModal(); // 自動重新開啟相機
+                return;
+            }
+
+            const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
+
+            if (targetAsset) {
+                // 如果資產已存在：直接定位並打開操作選單
+                locateAndHighlightAsset(targetAsset);
+                openActionModal(targetAsset);
+            } else {
+                // 🌟 如果是新資產：進入「等待點擊地圖新增」的模式！
+                const currentWard = document.getElementById('wardSelect').value;
+                if (!currentWard) {
+                    alert(`掃描到新 EAM [${cleanedEam}]，但請先在上方選單選擇目標「單位 (Ward)」才能在地圖上新增！`);
+                    return;
                 }
+
+                pendingNewAssetEam = cleanedEam;
+                isRelocatingMode = false; 
+                isMovingAsset = null;
+
+                const banner = document.getElementById('selectionBanner');
+                const bannerText = document.getElementById('bannerText');
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `請在地圖點擊新資產 [${cleanedEam}] 的擺放位置...`;
+                }
+
+                alert(`已成功掃描新 EAM（10碼自動校正）：${cleanedEam}\n請直接在地圖的目標位置點擊一下以繼續！`);
+            }
+        }
 
         // 🌟 9. 頁面初始化與圖片載入監聽
         document.addEventListener("DOMContentLoaded", () => {
