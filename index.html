@@ -869,9 +869,11 @@
                         <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
                             <i class="fa-solid fa-pen-to-square"></i> 更改資產資訊
                         </button>
+                        
                         <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
                             <i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置
                         </button>
+                        
                         <!-- 🌟 完整補回 Condemn / Surplus 報廢與盈餘按鈕 -->
                         <button id="btnCondemn" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
                             <i class="fa-solid fa-file-arrow-up"></i> Condemn / Surplus (報廢/盈餘)
@@ -903,6 +905,12 @@
                 if (banner && bannerText) {
                     banner.classList.remove('hidden');
                     bannerText.innerText = `請在地圖點擊 [${asset.eam}] 的新位置...`;
+                }
+            
+                // 🌟 新增：點擊後自動滾動視角到地圖位置
+                const mapContainer = document.getElementById('mapContainer');
+                if (mapContainer) {
+                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             };
 
