@@ -1007,13 +1007,6 @@
                 .replace(/i/gi, '1') // 避免 1 被誤判成 i
                 .replace(/l/gi, '1'); // 避免 1 被誤判成 l
 
-            // 3. 10 碼長度防呆驗證
-            if (cleanedEam.length !== 10) {
-                alert(`⚠️ 掃描格式錯誤：此條碼長度為 ${cleanedEam.length} 個字（應為 10 個字）。請重新掃描！`);
-                openScannerModal(); // 自動重新開啟相機
-                return;
-            }
-
             const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
 
             if (targetAsset) {
