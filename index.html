@@ -121,7 +121,7 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        // 🌟 嚴謹區分 Scanner 與 Printer 的 20 種分類與圖示
+        // 🌟 總計 21 種資產分類（含獨立的手槍掃描槍、碎紙機與 Others）
         const ASSET_TYPES = [
             { label: "COMPUTER, DESKTOP", icon: "fa-computer" },
             { label: "COMPUTER, NOTEBOOK / LAPTOP", icon: "fa-laptop" },
@@ -130,20 +130,20 @@
             { label: "MONITOR, COMPUTER / LCD", icon: "fa-desktop" },
             { label: "TELEVISION SET : LED", icon: "fa-tv" },
             { label: "SCANNER, BARCODE", icon: "fa-gun" },
-            { label: "PRINTER, BARCODE" / THERMAL", icon: "fa-print" },
-            { label: "COPYING MACHINE", icon: "fa-file-invoice" },
+            { label: "PRINTER, BARCODE / THERMAL", icon: "fa-print" },
+            { label: "PHOTOCOPIER", icon: "fa-file-invoice" },
             { label: "CAMERA (BODY / VIDEO / ENDOSCOPE)", icon: "fa-camera" },
             { label: "CABINET / STORAGE / SHELVING", icon: "fa-box-archive" },
             { label: "TROLLEY / CART", icon: "fa-cart-flatbed" },
             { label: "REFRIGERATOR / REFRIGERATION", icon: "fa-snowflake" },
-            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-lines" }, // 🌟 修正碎紙機圖標確保正常顯示
+            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-lines" },
             { label: "DEFIBRILLATOR / PACEMAKER", icon: "fa-heart-pulse" },
             { label: "INFUSION PUMP / MEDICAL PUMP", icon: "fa-pills" },
             { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
             { label: "BEDS, ELECTRIC / WARMER / LIFT", icon: "fa-bed" },
             { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
             { label: "Office Asset / Furniture", icon: "fa-chair" },
-            { label: "Others / Miscellaneous", icon: "fa-box" } // 🌟 新增 Others 選項
+            { label: "Others / Miscellaneous", icon: "fa-box" }
         ];
 
         function fetchAllAssets() {
@@ -385,7 +385,7 @@
             renderAssetSidebarList(currentFilteredAssets);
         }
 
-        // 🌟 嚴格區分 Scanner 與 Printer 的分類判定邏輯
+        // 🌟 21 種精準的智能辨識與圖標對應邏輯（手槍掃描槍改為琥珀金，不與 Monitor 撞色）
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
             
@@ -417,11 +417,11 @@
             if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('barcode') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
             }
-            // 8. 條碼掃描器 (Barcode Scanner)
-            if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht')) {
+            // 8. 條碼掃描器 / 手槍掃描槍 (Scanner / Gun) - 琥珀金系，避免與 Monitor 撞色
+            if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht') || desc.includes('gun')) {
                 return { icon: 'fa-gun', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
             }
-            // 9. 雷射印表機 / 影印機 / 傳真機 (Copying Machine)
+            // 9. 雷射印表機 / 影印機 / 傳真機
             if  desc.includes('photo-copying') || desc.includes('facsimile') || desc.includes('copier')) {
                 return { icon: 'fa-file-invoice', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-500' };
             }
@@ -441,7 +441,7 @@
             if (desc.includes('refrigerator') || desc.includes('fridge') || desc.includes('freezer')) {
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
-            // 14. 碎紙機 (Shredding Machine) - 🌟 修正圖標判斷
+            // 14. 碎紙機 (Shredding Machine)
             if (desc.includes('shredding') || desc.includes('shredder')) {
                 return { icon: 'fa-file-lines', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
@@ -469,7 +469,7 @@
             if (desc.includes('office') || desc.includes('chair') || desc.includes('desk') || desc.includes('table')) {
                 return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
             }
-            // 21. 預設 / 其他雜項 (Others / Miscellaneous) - 🌟 新增 Others 預設回傳
+            // 21. 其他雜項 (Others / Miscellaneous)
             return { icon: 'fa-box', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
         }
 
