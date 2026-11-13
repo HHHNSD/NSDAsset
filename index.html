@@ -136,13 +136,14 @@
             { label: "CABINET / STORAGE / SHELVING", icon: "fa-box-archive" },
             { label: "TROLLEY / CART", icon: "fa-cart-flatbed" },
             { label: "REFRIGERATOR / REFRIGERATION", icon: "fa-snowflake" },
-            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-shredder" },
+            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-lines" }, // 🌟 修正碎紙機圖標確保正常顯示
             { label: "DEFIBRILLATOR / PACEMAKER", icon: "fa-heart-pulse" },
             { label: "INFUSION PUMP / MEDICAL PUMP", icon: "fa-pills" },
             { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
             { label: "BEDS, ELECTRIC / WARMER / LIFT", icon: "fa-bed" },
             { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
-            { label: "Office Asset / Furniture", icon: "fa-chair" }
+            { label: "Office Asset / Furniture", icon: "fa-chair" },
+            { label: "Others / Miscellaneous", icon: "fa-box" } // 🌟 新增 Others 選項
         ];
 
         function fetchAllAssets() {
@@ -412,7 +413,7 @@
             if (desc.includes('television') || desc.includes('tv')) {
                 return { icon: 'fa-tv', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
             }
-            // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer) - 必須在 Scanner 之前判定
+            // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer)
             if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('barcode') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
             }
@@ -440,9 +441,9 @@
             if (desc.includes('refrigerator') || desc.includes('fridge') || desc.includes('freezer')) {
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
-            // 14. 碎紙機 (Shredding Machine)
+            // 14. 碎紙機 (Shredding Machine) - 🌟 修正圖標判斷
             if (desc.includes('shredding') || desc.includes('shredder')) {
-                return { icon: 'fa-file-shredder', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
+                return { icon: 'fa-file-lines', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
             // 15. 除顫儀 / 心律調整器 (Defibrillator)
             if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed')) {
@@ -464,8 +465,12 @@
             if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic') || desc.includes('ecg')) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
             }
-            // 20. 預設辦公設備 / 家具 (Office Asset)
-            return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
+            // 20. 一般辦公傢俱 / 資產 (Office Asset)
+            if (desc.includes('office') || desc.includes('chair') || desc.includes('desk') || desc.includes('table')) {
+                return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
+            }
+            // 21. 預設 / 其他雜項 (Others / Miscellaneous) - 🌟 新增 Others 預設回傳
+            return { icon: 'fa-box', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
         }
 
         function calculateMarkerPositions(assets) {
