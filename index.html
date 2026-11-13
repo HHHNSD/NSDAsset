@@ -25,9 +25,8 @@
                     </div>
                 </div>
             </div>
-        </div>
     
-        <!-- 階層連動選單區塊：在手機上自動撐滿寬度 (w-full) -->
+        <!-- 階層連動選單區塊 -->
         <div class="grid grid-cols-3 gap-2 w-full sm:w-auto bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shadow-inner">
             <div class="flex flex-col">
                 <label class="text-[11px] font-bold text-slate-600 mb-1">棟別 (Block):</label>
@@ -65,46 +64,13 @@
 
             <div id="mapContainer" class="w-full bg-white border border-slate-200 rounded-2xl relative shadow-sm overflow-hidden cursor-crosshair">
                 
-            <div id="placeholderText" class="text-center pointer-events-none absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-50/90 backdrop-blur-xs p-6">
-                <div class="w-16 h-16 bg-blue-100/80 rounded-3xl flex items-center justify-center mb-4 text-blue-600 shadow-sm border border-blue-200">
-                    <i class="fa-solid fa-map-location-dot text-3xl"></i>
+                <div id="placeholderText" class="text-center pointer-events-none absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-50/90 backdrop-blur-xs p-6">
+                    <div class="w-16 h-16 bg-blue-100/80 rounded-3xl flex items-center justify-center mb-4 text-blue-600 shadow-sm border border-blue-200">
+                        <i class="fa-solid fa-map-location-dot text-3xl"></i>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD 資產地圖管理系統</h3>
+                    <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或參考以下快速操作說明：</p>
                 </div>
-                <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD 資產地圖管理系統</h3>
-                <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或參考以下快速操作說明：</p>
-            
-                <!-- 3 大快速引導卡片 -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl text-left">
-                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-blue-100">1</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                <i class="fa-solid fa-magnifying-glass text-blue-500"></i> 搜尋定位資產
-                            </h4>
-                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">可直接在右側搜尋列輸入 EAM、Serial 或備註，快速篩選並地圖定位。</p>
-                        </div>
-                    </div>
-            
-                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-emerald-100">2</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                <i class="fa-solid fa-barcode text-emerald-500"></i> 相機即時條碼掃描
-                            </h4>
-                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">手機點擊右側條碼按鈕可啟動相機，掃描後自動定位或點選新增。</p>
-                        </div>
-                    </div>
-            
-                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-amber-100">3</div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                <i class="fa-solid fa-layer-group text-amber-500"></i> 選擇查看區域
-                            </h4>
-                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">透過右上角連動選單選擇 [棟別/樓層/單位]，載入對應平面圖。</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
                 
                 <div id="mapWrapper" class="relative w-full aspect-[12/9] bg-slate-50" onclick="handleMapClick(event)">
                     <img id="floorPlanImg" alt="Floor Plan" class="hidden absolute inset-0 w-full h-full object-fill pointer-events-auto" onclick="handleMapClick(event)">
@@ -126,7 +92,7 @@
                 <div class="flex gap-2 items-center">
                     <div class="relative flex-1">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
-                        <input id="assetSearchInput" type="text" oninput="onSearchInput(this.value)" placeholder="搜尋 EAM, Serial, Remark, Ward..." 
+                        <input id="assetSearchInput" type="text" oninput="onSearchInput(this.value)" placeholder="搜尋 EAM, Serial, Remark..." 
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
                     </div>
                     <button onclick="openScannerModal()" title="開啟條碼掃描器" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm transition-all cursor-pointer hover:shadow">
@@ -144,74 +110,57 @@
 
     <!-- 核心運作腳本 -->
     <script>
-        // 🌟 1. 設定你的 GAS Web App API 網址
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz_z5U4DjeWY1k8dELIxaSxfMUW110kMnzutPXsqvCGQB3k5qJIwHRTJJmKha1eiNrBlQ/exec";
 
-        // 全域變數初始化
         let allAssets = [];
         let floorHierarchyData = [];
-        let rawHierarchyData = [];
         let currentFilteredAssets = [];
         let isMovingAsset = null;
         let isRelocatingMode = false;
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        const DEPARTMENT_OPTIONS = ["NSD", "Ward 1A", "Ward 1B", "Ward 2A", "Ward 2B", "Ward 3A", "Ward 3B", "IT", "Admin"];
+        // 🌟 豐富且符合醫院 NSD 實務的資產類型清單 (Asset Types)
         const ASSET_TYPES = [
-            { label: "Laptop", icon: "fa-laptop", category: "IT" },
-            { label: "iPad", icon: "fa-tablet-screen-button", category: "IT" },
-            { label: "Computer Hard Disk", icon: "fa-hard-drive", category: "IT" },
-            { label: "Scanner", icon: "fa-barcode", category: "IT" },
-            { label: "Printer", icon: "fa-print", category: "IT" },
-            { label: "Medical Equipment", icon: "fa-suitcase-medical", category: "Medical" },
-            { label: "Display Monitor", icon: "fa-desktop", category: "IT" },
-            { label: "Office Asset", icon: "fa-chair", category: "Office" },
-            { label: "Camera", icon: "fa-camera", category: "IT" }
+            { label: "Medical Equipment", icon: "fa-suitcase-medical" },
+            { label: "TABLET, PORTABLE : IPAD / IOS TABLET", icon: "fa-tablet-screen-button" },
+            { label: "TABLET, PORTABLE : WINDOWS TABLET", icon: "fa-tablet-screen-button" },
+            { label: "COMPUTER, DESKTOP", icon: "fa-computer" },
+            { label: "COMPUTER, NOTEBOOK / LAPTOP", icon: "fa-laptop" },
+            { label: "MONITOR, COMPUTER / LCD", icon: "fa-desktop" },
+            { label: "SCANNER, BARCODE : 2D", icon: "fa-barcode" },
+            { label: "PRINTER, BARCODE / THERMAL", icon: "fa-print" },
+            { label: "PRINTER, COMPUTER : LASER", icon: "fa-print" },
+            { label: "DEFIBRILLATOR / PACEMAKER", icon: "fa-heart-pulse" },
+            { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
+            { label: "LARYNGOSCOPE, RIGID, VIDEO", icon: "fa-eye" },
+            { label: "THERMOMETER, ELECTRONIC", icon: "fa-temperature-high" },
+            { label: "CABINET / STORAGE / TROLLEY", icon: "fa-chair" },
+            { label: "TELEVISION SET : LED", icon: "fa-tv" },
+            { label: "Office Asset", icon: "fa-chair" }
         ];
 
-        // 🌟 2. 替代 google.script.run 的跨網域 API 呼叫函數
         function fetchAllAssets() {
             fetch(`${GAS_API_URL}?action=getAllAssets`)
                 .then(res => res.json())
                 .then(data => {
                     allAssets = data || [];
                     window.allAssets = allAssets;
-                    
-                    // 🚀 讓一開網頁時，右側直接顯示全部資產（或你可以改成過濾特定單位）
                     renderAssetSidebarList(allAssets);
-
                     const wardSelect = document.getElementById('wardSelect');
                     if (wardSelect && wardSelect.value) {
                         onWardChange();
                     }
                 })
                 .catch(err => console.error("抓取資產失敗:", err));
-         }
+        }
 
         function fetchHierarchy() {
             fetch(`${GAS_API_URL}?action=getHierarchy`)
                 .then(res => res.json())
                 .then(data => {
                     floorHierarchyData = data || [];
-                    rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
-
-                    // 🚀 當選單階層載入完成後，立刻在背景自動預載所有單位的地圖
-                    floorHierarchyData.forEach(item => {
-                        const wardKey = item.wardKey;
-                        if (wardKey && !floorPlanCache[wardKey]) {
-                            fetch(`${GAS_API_URL}?action=getFloorPlan&wardKey=${encodeURIComponent(wardKey)}`)
-                                .then(res => res.json())
-                                .then(planData => {
-                                    if (planData && planData.base64) {
-                                        floorPlanCache[wardKey] = planData.base64;
-                                        console.log(`✅ 背景預載成功: ${wardKey}`);
-                                    }
-                                })
-                                .catch(err => console.warn(`預載失敗: ${wardKey}`, err));
-                        }
-                    });
                 })
                 .catch(err => console.error("抓取選單階層失敗:", err));
         }
@@ -252,112 +201,81 @@
         }
 
         function openCondemnUploadModal(asset) {
-        const existingModal = document.getElementById('condemnModal');
-        if (existingModal) existingModal.remove();
+            const existingModal = document.getElementById('condemnModal');
+            if (existingModal) existingModal.remove();
 
-        const modal = document.createElement('div');
-        modal.id = 'condemnModal';
-        modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
-        modal.innerHTML = `
-            <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-slate-800">
-                <h3 class="text-xs font-bold mb-3 text-amber-600 text-center flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation"></i> 處理報廢/盈餘 (Condemn/Surplus)
-                </h3>
-                <p class="text-[11px] text-slate-500 text-center mb-4">資產編號：<span class="font-bold text-slate-700">${asset.eam}</span></p>
-                
-                <div class="space-y-3 text-xs">
-                    <div>
-                        <label class="block text-slate-600 mb-1 font-semibold">選擇處理類型:</label>
-                        <select id="condemnType" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-amber-500">
-                            <option value="Condemn">Condemn (報廢)</option>
-                            <option value="Surplus">Surplus (轉出/盈餘)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-slate-600 mb-1 font-semibold">上傳 Condemn Form 檔案 / 拍照:</label>
-                        <!-- 🌟 支援檔案上傳與手機直接拍照 accept="image/*" capture="environment" -->
-                        <input id="condemnFile" type="file" accept="image/*,.pdf" capture="environment"
-                            class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer border border-slate-200 rounded-xl p-1">
-                        <p class="text-[10px] text-slate-400 mt-1">手機點擊可直接開啟相機拍照或選擇檔案。</p>
-                    </div>
-                    <div>
-                        <label class="block text-slate-600 mb-1 font-semibold">補充說明 (會自動寫入備註):</label>
-                        <textarea id="condemnRemark" placeholder="請輸入報廢原因或備註..." rows="2"
-                            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-amber-500">${asset.remark || ''}</textarea>
-                    </div>
-                </div>
-
-                <div class="flex gap-2 mt-5">
-                    <button id="btnSubmitCondemn" class="flex-1 bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-md">
-                        確認上傳並存檔
-                    </button>
-                    <button id="btnCloseCondemn" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl transition-all">
-                        取消
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById('btnSubmitCondemn').onclick = () => {
-            const type = document.getElementById('condemnType').value;
-            const fileInput = document.getElementById('condemnFile');
-            const remarkText = document.getElementById('condemnRemark').value.trim();
-
-            // 更新前端物件的屬性
-            asset.remark = `[${type}] ${remarkText}`;
-            asset.block = "System";
-            asset.floor = "System";
-            asset.ward = type; // 將 Ward_Key 更新為 Condemn 或 Surplus
-            
-            modal.remove();
-
-            // 如果有選擇檔案，透過 Base64 傳送到後端處理上傳與存檔
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const base64Data = e.target.result;
+            const modal = document.createElement('div');
+            modal.id = 'condemnModal';
+            modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-slate-800">
+                    <h3 class="text-xs font-bold mb-3 text-amber-600 text-center flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 處理報廢/盈餘 (Condemn/Surplus)
+                    </h3>
+                    <p class="text-[11px] text-slate-500 text-center mb-4">資產編號：<span class="font-bold text-slate-700">${asset.eam}</span></p>
                     
-                    // 🌟 改用 fetch POST 發送給 GAS Web App
-                    fetch(GAS_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({
-                            action: 'saveCondemnAndAsset',
-                            asset: asset,
-                            base64Data: base64Data,
-                            fileName: file.name
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res && res.status === "error") {
-                            alert("❌ 檔案上傳失敗：" + res.message);
-                        } else {
-                            alert(`資產 [${asset.eam}] 之 ${type} 狀態與檔案已成功存檔！`);
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">選擇處理類型:</label>
+                            <select id="condemnType" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-amber-500">
+                                <option value="Condemn">Condemn (報廢)</option>
+                                <option value="Surplus">Surplus (轉出/盈餘)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">上傳檔案 / 拍照:</label>
+                            <input id="condemnFile" type="file" accept="image/*,.pdf" capture="environment"
+                                class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer border border-slate-200 rounded-xl p-1">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">補充說明:</label>
+                            <textarea id="condemnRemark" placeholder="請輸入備註..." rows="2"
+                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-amber-500">${asset.remark || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mt-5">
+                        <button id="btnSubmitCondemn" class="flex-1 bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-md">確認上傳</button>
+                        <button id="btnCloseCondemn" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl transition-all">取消</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnSubmitCondemn').onclick = () => {
+                const type = document.getElementById('condemnType').value;
+                const fileInput = document.getElementById('condemnFile');
+                const remarkText = document.getElementById('condemnRemark').value.trim();
+
+                asset.remark = `[${type}] ${remarkText}`;
+                asset.block = "System";
+                asset.floor = "System";
+                asset.ward = type;
+                modal.remove();
+
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        fetch(GAS_API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'saveCondemnAndAsset', asset: asset, base64Data: e.target.result, fileName: file.name })
+                        }).then(res => res.json()).then(() => {
+                            alert(`資產 [${asset.eam}] 之 ${type} 狀態已成功存檔！`);
                             fetchAllAssets();
-                        }
-                    })
-                    .catch(err => {
-                        alert("❌ 系統通訊失敗：" + err);
-                        console.error(err);
-                    });
-                };
-                reader.readAsDataURL(file);
-            } else {
-                // 如果沒有選檔案，直接呼叫更新試算表的 API
-                updateAssetInSheet(asset);
-                alert(`資產 [${asset.eam}] 狀態已更新為 ${type}！`);
-            }
-        };
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    updateAssetInSheet(asset);
+                }
+            };
+            document.getElementById('btnCloseCondemn').onclick = () => modal.remove();
+        }
 
-        document.getElementById('btnCloseCondemn').onclick = () => modal.remove();
-      }
-
-        
         function updateAssetInSheet(asset) {
+            asset.dept = "NSD"; // 確保 Dept 固定為 NSD
             fetch(GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -386,6 +304,7 @@
         }
 
         function addNewAssetApi(newAsset) {
+            newAsset.dept = "NSD"; // 確保 Dept 固定為 NSD
             fetch(GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -399,7 +318,6 @@
             .catch(err => alert("新增失敗: " + err));
         }
 
-        // 🌟 3. 選單連動邏輯
         function initDropdowns(hierarchy) {
             const blockSelect = document.getElementById('blockSelect');
             if (!blockSelect) return;
@@ -434,68 +352,40 @@
             if (!wardKey) return;
             loadFloorPlan(wardKey);
             currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardKey.trim().toLowerCase());
-            window.currentLoadedAssets = currentFilteredAssets;
             renderAssetMarkers(currentFilteredAssets);
             renderAssetSidebarList(currentFilteredAssets);
         }
 
-        // 🌟 4. 資產配置與圖示轉換
-        // 🌟 升級版：智慧辨識資產類型、提供專屬 Icon 與顏色
+        // 🌟 智慧辨識資產圖示與顏色
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
-            
-            // 1. 醫療設備 (Medical Equipment)
             if (desc.includes('medical equipment') || desc.includes('defibrillator') || desc.includes('oximeter') || 
-                desc.includes('oxygen') || desc.includes('laryngoscope') || desc.includes('thermometer') || 
-                desc.includes('pump') || desc.includes('ecg') || desc.includes('regulator') || desc.includes('flowmeter')) {
+                desc.includes('oxygen') || desc.includes('laryngoscope') || desc.includes('thermometer') || desc.includes('pump')) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
-            } 
-            // 2. 筆記型電腦 (Laptop / Notebook)
-            else if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('probook')) {
+            } else if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad')) {
                 return { icon: 'fa-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
-            }
-            // 3. 平板電腦 (iPad / Tablet)
-            else if (desc.includes('ipad') || desc.includes('tablet')) {
+            } else if (desc.includes('ipad') || desc.includes('tablet')) {
                 return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
-            }
-            // 4. 桌上型電腦 (Desktop PC)
-            else if (desc.includes('desktop') || desc.includes('computer') || desc.includes('pc sff') || desc.includes('m920') || desc.includes('elitedesk')) {
+            } else if (desc.includes('desktop') || desc.includes('computer')) {
                 return { icon: 'fa-computer', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
-            }
-            // 5. 螢幕顯示器 (Monitor)
-            else if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd') || desc.includes('screen')) {
+            } else if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
                 return { icon: 'fa-desktop', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
-            }
-            // 6. 條碼掃描器 (Scanner)
-            else if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht1306')) {
+            } else if (desc.includes('scanner') || desc.includes('barcode')) {
                 return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
-            }
-            // 7. 印表機 / 標籤機 (Printer)
-            else if (desc.includes('printer') || desc.includes('thermal') || desc.includes('label')) {
+            } else if (desc.includes('printer') || desc.includes('thermal')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
-            }
-            // 8. 辦公家具 / 櫃子 / 手推車 (Office / Cabinet / Trolley)
-            else if (desc.includes('chair') || desc.includes('cabinet') || desc.includes('trolley') || desc.includes('shredding') || desc.includes('office asset')) {
+            } else {
                 return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
-            }
-            // 9. 其他周邊 (Camera / Hard Disk / Software 等)
-            else {
-                let icon = 'fa-microchip';
-                if (desc.includes('hard disk') || desc.includes('hdd') || desc.includes('ssd')) icon = 'fa-hard-drive';
-                else if (desc.includes('camera')) icon = 'fa-camera';
-                else if (desc.includes('software')) icon = 'fa-file-code';
-                return { icon: icon, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
             }
         }
 
-        // 🌟 5. 圖釘渲染與側邊欄
         function calculateMarkerPositions(assets) {
             if (!assets || !Array.isArray(assets)) return [];
             const GRID_X = 60, GRID_Y = 45;
             return assets.map(asset => {
                 const snappedX = Math.round(asset.x * (GRID_X / 100)) / (GRID_X / 100);
                 const snappedY = Math.round(asset.y * (GRID_Y / 100)) / (GRID_Y / 100);
-                return { ...asset, baseX: snappedX, baseY: snappedY, offsetX: 0, offsetY: 0 };
+                return { ...asset, baseX: snappedX, baseY: snappedY };
             });
         }
 
@@ -518,12 +408,8 @@
                 const posY = asset.baseY !== undefined ? asset.baseY : asset.y;
                 marker.style.left = `${posX}%`;
                 marker.style.top = `${posY}%`;
-
-                let translateX = '-50%', translateY = '-50%';
-                
-                // 🌟 結合原本的位移與動態比例縮放
                 marker.style.transformOrigin = 'center center';
-                marker.style.transform = `translate(${translateX}, ${translateY}) scale(var(--map-scale, 1))`;
+                marker.style.transform = 'translate(-50%, -50%) scale(var(--map-scale, 1))';
 
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
                 marker.innerHTML = `
@@ -533,11 +419,7 @@
                         <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
                     </div>
                 `;
-                
-                marker.onclick = (e) => {
-                    e.stopPropagation();
-                    openActionModal(asset);
-                };
+                marker.onclick = (e) => { e.stopPropagation(); openActionModal(asset); };
                 markersLayer.appendChild(marker);
             });
         }
@@ -570,7 +452,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-sm font-bold text-blue-700 tracking-wide truncate">${asset.eam}</span>
-                            <span class="text-xs font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">${asset.ward || asset.dept}</span>
+                            <span class="text-xs font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">${asset.ward || 'NSD'}</span>
                         </div>
                         <p class="text-sm font-semibold text-slate-800 truncate">${asset.description}</p>
                         ${remarkHtml}
@@ -581,132 +463,52 @@
                     </div>
                 `;
                 infoDiv.onclick = () => locateAndHighlightAsset(asset);
-
-                const actionBtn = document.createElement('button');
-                actionBtn.className = 'p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shrink-0 border border-transparent hover:border-blue-100';
-                actionBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical text-sm"></i>`;
-                actionBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    openActionModal(asset);
-                };
-
                 card.appendChild(infoDiv);
-                card.appendChild(actionBtn);
                 listContainer.appendChild(card);
             });
         }
 
         function onSearchInput(query) {
             const keyword = query ? query.toLowerCase().trim() : "";
-            if (!keyword) {
-                onWardChange();
-                return;
-            }
+            if (!keyword) { onWardChange(); return; }
             const matchedAssets = allAssets.filter(asset => {
                 const eam = asset.eam ? asset.eam.toLowerCase().trim() : "";
                 const serial = asset.serial ? asset.serial.toLowerCase().trim() : "";
                 const remark = asset.remark ? asset.remark.toLowerCase().trim() : "";
-                const ward = asset.ward ? asset.ward.toLowerCase().trim() : "";
                 const description = asset.description ? asset.description.toLowerCase().trim() : "";
-                return eam.includes(keyword) || serial.includes(keyword) || remark.includes(keyword) || ward.includes(keyword) || description.includes(keyword);
+                return eam.includes(keyword) || serial.includes(keyword) || remark.includes(keyword) || description.includes(keyword);
             });
             renderAssetSidebarList(matchedAssets);
         }
 
         function locateAndHighlightAsset(asset) {
             if (!asset) return;
-        
             const blockSelect = document.getElementById('blockSelect');
             const floorSelect = document.getElementById('floorSelect');
             const wardSelect = document.getElementById('wardSelect');
-        
-            let targetBlock = asset.block;
-            let targetFloor = asset.floor;
-            let targetWard = asset.ward;
-        
-            // 1. 自動連動下拉選單
-            if (blockSelect) blockSelect.value = targetBlock;
+
+            if (blockSelect) blockSelect.value = asset.block;
             onBlockChange();
-            if (floorSelect) floorSelect.value = targetFloor;
+            if (floorSelect) floorSelect.value = asset.floor;
             onFloorChange();
-            if (wardSelect && targetWard) wardSelect.value = targetWard;
-        
-            // 載入該單位的平面圖
-            loadFloorPlan(targetWard);
-        
-            // 等待平面圖載入完成後執行高亮與定位
+            if (wardSelect && asset.ward) wardSelect.value = asset.ward;
+
+            loadFloorPlan(asset.ward);
+
             let checkInterval = setInterval(() => {
                 if (!isFloorPlanLoaded) return;
                 clearInterval(checkInterval);
-                executeHighlightAndScroll();
-            }, 50);
-        
-            function executeHighlightAndScroll() {
-                // 2. 抓出該單位的全部資產
-                currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === String(targetWard).trim().toLowerCase());
-        
-                // 🌟 關鍵優化 1：把掃描/點選到的資產強制拉到過濾清單的最上方（置頂）
-                const index = currentFilteredAssets.findIndex(a => String(a.eam).trim().toLowerCase() === String(asset.eam).trim().toLowerCase());
-                if (index > -1) {
-                    const [matched] = currentFilteredAssets.splice(index, 1);
-                    currentFilteredAssets.unshift(matched);
-                } else {
-                    // 如果該資產不在 currentFilteredAssets（例如因為 department 差異），強行塞到最前面
-                    currentFilteredAssets.unshift(asset);
-                }
-        
-                // 渲染側邊欄清單與地圖 Markers
+                currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === String(asset.ward).trim().toLowerCase());
                 renderAssetSidebarList(currentFilteredAssets);
                 renderAssetMarkers(currentFilteredAssets, asset.eam);
-        
-                // 3. 畫面平滑捲動到地圖區域
-                const mapContainer = document.getElementById('mapContainer');
-                if (mapContainer) {
-                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-        
-                // 4. 右側清單第一筆高亮
-                const assetCards = document.querySelectorAll('[data-eam]');
-                assetCards.forEach(card => {
-                    if (card.getAttribute('data-eam').toLowerCase() === String(asset.eam).trim().toLowerCase()) {
-                        card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
-                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 3000);
-                    }
-                });
-        
-                // 🌟 關鍵優化 2：檢查該 Asset 是否有有效的地圖座標 (x, y)
-                const hasCoordinates = (asset.x !== undefined && asset.x !== null && asset.x !== '') &&
-                                       (asset.y !== undefined && asset.y !== null && asset.y !== '');
-        
-                if (!hasCoordinates) {
-                    // 如果沒有座標，自動進入「指定位置」模式，提示使用者點擊地圖！
-                    isMovingAsset = asset;
-                    isRelocatingMode = true;
-                    const banner = document.getElementById('selectionBanner');
-                    const bannerText = document.getElementById('bannerText');
-                    if (banner && bannerText) {
-                        banner.classList.remove('hidden');
-                        bannerText.innerText = `⚠️ 資產 [${asset.eam}] 尚未設定座標，請直接在地圖上點擊其擺放位置...`;
-                    }
-                }
-            }
+            }, 50);
         }
 
-        // 🌟 6. 地圖點擊與圖層縮放調整
-        let isMapClickProcessing = false;
         function handleMapClick(event) {
-            if (isMapClickProcessing) return;
-            isMapClickProcessing = true;
-            setTimeout(() => { isMapClickProcessing = false; }, 300);
-
             if (event) event.stopPropagation();
             const mapWrapper = document.getElementById('mapWrapper');
             if (!mapWrapper) return;
             const rect = mapWrapper.getBoundingClientRect();
-
-            if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
-
             const x = ((event.clientX - rect.left) / rect.width) * 100;
             const y = ((event.clientY - rect.top) / rect.height) * 100;
 
@@ -719,7 +521,6 @@
                 return;
             }
 
-            // 1. 如果是移動資產模式
             if (isRelocatingMode && isMovingAsset) {
                 isMovingAsset.x = parseFloat(x.toFixed(2));
                 isMovingAsset.y = parseFloat(y.toFixed(2));
@@ -731,82 +532,55 @@
                 return;
             }
 
-            // 2. 🌟 如果是剛透過掃描器掃到新 EAM，準備新增的模式
-            if (pendingNewAssetEam) {
+            if (window.pendingNewAssetEam) {
                 const newAssetData = {
-                    eam: pendingNewAssetEam, // 自動帶入剛剛掃到的 EAM
+                    eam: window.pendingNewAssetEam,
                     serial: "SN",
-                    dept: currentWard,
+                    dept: "NSD", // 預設為 NSD
                     description: ASSET_TYPES[0].label,
-                    block: currentBlock,
-                    floor: currentFloor,
-                    ward: currentWard,
-                    x: parseFloat(x.toFixed(2)),
-                    y: parseFloat(y.toFixed(2))
+                    block: currentBlock, floor: currentFloor, ward: currentWard,
+                    x: parseFloat(x.toFixed(2)), y: parseFloat(y.toFixed(2))
                 };
-
-                pendingNewAssetEam = null; // 清除暫存
-                cancelRelocate(); // 隱藏上方橘色橫幅
-
-                openAssetFormModal(newAssetData, false); // 彈出表單讓使用者確認其他資訊並儲存
+                window.pendingNewAssetEam = null;
+                cancelRelocate();
+                openAssetFormModal(newAssetData, false);
                 return;
             }
 
-            // 3. 預設一般點擊地圖新增模式
             const newAssetData = {
-                eam: "", serial: "SN", dept: currentWard,
+                eam: "", serial: "SN", dept: "NSD",
                 description: ASSET_TYPES[0].label,
                 block: currentBlock, floor: currentFloor, ward: currentWard,
                 x: parseFloat(x.toFixed(2)), y: parseFloat(y.toFixed(2))
             };
             openAssetFormModal(newAssetData, false);
         }
-        
+
         function updateMarkersLayerSize() {
             const floorPlanImg = document.getElementById('floorPlanImg');
             const mapWrapper = document.getElementById('mapWrapper');
             const markersLayer = document.getElementById('markersLayer');
-            if (!floorPlanImg || !mapWrapper || floorPlanImg.classList.contains('hidden') || !floorPlanImg.complete || floorPlanImg.naturalWidth === 0) return;
+            if (!floorPlanImg || !mapWrapper || floorPlanImg.classList.contains('hidden') || !floorPlanImg.complete) return;
 
             mapWrapper.style.position = 'relative';
             mapWrapper.style.width = '100%';
             mapWrapper.style.aspectRatio = `${floorPlanImg.naturalWidth} / ${floorPlanImg.naturalHeight}`;
-            mapWrapper.style.height = 'auto';
-            mapWrapper.style.margin = '0 auto';
 
-            floorPlanImg.style.position = 'absolute';
-            floorPlanImg.style.top = '0';
-            floorPlanImg.style.left = '0';
-            floorPlanImg.style.width = '100%';
-            floorPlanImg.style.height = '100%';
-            floorPlanImg.style.objectFit = 'contain';
-
-            // 🌟 動態計算地圖縮放比例
             const currentWidth = floorPlanImg.clientWidth;
-            const baseWidth = 1000; 
-            let scale = currentWidth / baseWidth;
-            
-            // 🌟 針對手機螢幕（小於 768px）強制縮小圖標比例（例如乘以 0.7，讓它變得更輕巧）
-            if (window.innerWidth < 768) {
-                scale = scale * 0.25; 
-            }
-
-            // 限制縮放範圍（將最大與最小值調低，確保手機上不會過大）
+            let scale = currentWidth / 1000;
+            if (window.innerWidth < 768) scale = scale * 0.25;
             scale = Math.max(0.2, Math.min(1.0, scale));
-
-            // 將比例寫入 markersLayer 的 CSS 變數中
-            if (markersLayer) {
-                markersLayer.style.setProperty('--map-scale', scale);
-            }
+            if (markersLayer) markersLayer.style.setProperty('--map-scale', scale);
         }
 
-        // 🌟 7. Modal 彈窗介面與相機條碼掃描
+        // 🌟 彈出表單（已移除 Dept 欄位，Type 採用擴充後的豐富清單）
         function openAssetFormModal(assetData, isEdit = false) {
             const existingModal = document.getElementById('customFormModal');
             if (existingModal) existingModal.remove();
 
-            const deptOptionsHtml = DEPARTMENT_OPTIONS.map(dept => `<option value="${dept}" ${assetData.dept === dept ? 'selected' : ''}>${dept}</option>`).join('');
-            const typeOptionsHtml = ASSET_TYPES.map(type => `<option value="${type.label}" ${assetData.description === type.label ? 'selected' : ''}>${type.label}</option>`).join('');
+            const typeOptionsHtml = ASSET_TYPES.map(type => 
+                `<option value="${type.label}" ${assetData.description === type.label ? 'selected' : ''}>${type.label}</option>`
+            ).join('');
 
             const modal = document.createElement('div');
             modal.id = 'customFormModal';
@@ -819,7 +593,7 @@
                     <div class="space-y-3 text-xs">
                         <div>
                             <label class="block text-slate-600 mb-1 font-semibold">EAM 編號:</label>
-                            <input id="inputEam" type="text" value="${assetData.eam || ''}" ${isEdit ? 'disabled' : ''} placeholder="例如 EAM-1001" 
+                            <input id="inputEam" type="text" value="${assetData.eam || ''}" ${isEdit ? 'disabled' : ''} placeholder="例如 1234567" 
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500 ${isEdit ? 'opacity-60 cursor-not-allowed' : ''}">
                         </div>
                         <div>
@@ -828,11 +602,7 @@
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">部門 (Dept):</label>
-                            <select id="inputDept" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">${deptOptionsHtml}</select>
-                        </div>
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">資產類型 (Type):</label>
+                            <label class="block text-slate-600 mb-1 font-semibold">資產類型 / 說明 (Type):</label>
                             <select id="inputDesc" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">${typeOptionsHtml}</select>
                         </div>
                         <div>
@@ -852,7 +622,6 @@
             document.getElementById('btnSaveForm').onclick = () => {
                 const eam = document.getElementById('inputEam').value.trim();
                 const serial = document.getElementById('inputSerial').value.trim();
-                const dept = document.getElementById('inputDept').value;
                 const description = document.getElementById('inputDesc').value;
                 const remark = document.getElementById('inputRemark').value.trim();
                 const targetWard = assetData.ward || document.getElementById('wardSelect').value;
@@ -861,17 +630,21 @@
                 modal.remove();
 
                 if (isEdit) {
-                    assetData.serial = serial; assetData.dept = dept; assetData.description = description; assetData.remark = remark; assetData.ward = targetWard;
+                    assetData.serial = serial; 
+                    assetData.dept = "NSD"; 
+                    assetData.description = description; 
+                    assetData.remark = remark; 
+                    assetData.ward = targetWard;
                     updateAssetInSheet(assetData);
                 } else {
                     const existingAsset = allAssets.find(a => a.eam.toLowerCase() === eam.toLowerCase());
                     if (existingAsset) {
                         existingAsset.block = assetData.block; existingAsset.floor = assetData.floor; existingAsset.ward = targetWard;
                         existingAsset.x = assetData.x; existingAsset.y = assetData.y; existingAsset.serial = serial;
-                        existingAsset.dept = dept; existingAsset.description = description; existingAsset.remark = remark;
+                        existingAsset.dept = "NSD"; existingAsset.description = description; existingAsset.remark = remark;
                         updateAssetInSheet(existingAsset);
                     } else {
-                        const newAsset = { eam, serial, dept, description, remark, block: assetData.block, floor: assetData.floor, ward: targetWard, x: assetData.x, y: assetData.y };
+                        const newAsset = { eam, serial, dept: "NSD", description, remark, block: assetData.block, floor: assetData.floor, ward: targetWard, x: assetData.x, y: assetData.y };
                         addNewAssetApi(newAsset);
                     }
                 }
@@ -893,18 +666,15 @@
                         <i class="fa-solid ${typeConfig.icon} text-base"></i>
                     </div>
                     <h3 class="text-xs font-bold mb-1 text-blue-600">${asset.eam}</h3>
-                    <p class="text-[11px] text-slate-500 mb-4">${asset.description} (${asset.dept})</p>
+                    <p class="text-[11px] text-slate-500 mb-4">${asset.description}</p>
                     
                     <div class="space-y-2">
                         <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
                             <i class="fa-solid fa-pen-to-square"></i> 更改資產資訊
                         </button>
-                        
                         <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
                             <i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置
                         </button>
-                        
-                        <!-- 🌟 完整補回 Condemn / Surplus 報廢與盈餘按鈕 -->
                         <button id="btnCondemn" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
                             <i class="fa-solid fa-file-arrow-up"></i> Condemn / Surplus (報廢/盈餘)
                         </button>
@@ -912,65 +682,33 @@
                             <i class="fa-solid fa-trash"></i> 刪除此資產
                         </button>
                     </div>
-
-                    <button id="btnCloseModal" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-2 rounded-xl transition-all">
-                        取消
-                    </button>
+                    <button id="btnCloseModal" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-2 rounded-xl transition-all">取消</button>
                 </div>
             `;
             document.body.appendChild(modal);
 
-            // 按鈕事件綁定
-            document.getElementById('btnEdit').onclick = () => {
-                modal.remove();
-                openAssetFormModal(asset, true);
-            };
-
+            document.getElementById('btnEdit').onclick = () => { modal.remove(); openAssetFormModal(asset, true); };
             document.getElementById('btnMove').onclick = () => {
                 modal.remove();
                 isMovingAsset = asset;
-                isRelocatingMode = true; 
+                isRelocatingMode = true;
                 const banner = document.getElementById('selectionBanner');
-                const bannerText = document.getElementById('bannerText');
-                if (banner && bannerText) {
-                    banner.classList.remove('hidden');
-                    bannerText.innerText = `請在地圖點擊 [${asset.eam}] 的新位置...`;
-                }
-            
-                // 🌟 新增：點擊後自動滾動視角到地圖位置
-                const mapContainer = document.getElementById('mapContainer');
-                if (mapContainer) {
-                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if (banner) banner.classList.remove('hidden');
             };
-
-            // 🌟 點擊 Condemn / Surplus 開啟上傳與處理視窗
-            document.getElementById('btnCondemn').onclick = () => {
-                modal.remove();
-                if (typeof openCondemnUploadModal === 'function') {
-                    openCondemnUploadModal(asset);
-                } else {
-                    alert("找不到 openCondemnUploadModal 函數，請確認是否有引入對應腳本！");
-                }
-            };
-
+            document.getElementById('btnCondemn').onclick = () => { modal.remove(); openCondemnUploadModal(asset); };
             document.getElementById('btnDelete').onclick = () => {
                 modal.remove();
-                if (confirm(`確定要刪除資產 [${asset.eam}] 嗎？`)) {
-                    deleteAssetFromSheet(asset.eam);
-                }
+                if (confirm(`確定要刪除資產 [${asset.eam}] 嗎？`)) deleteAssetFromSheet(asset.eam);
             };
-
             document.getElementById('btnCloseModal').onclick = () => modal.remove();
         }
-        
+
         function cancelRelocate() {
             isMovingAsset = null; isRelocatingMode = false;
             const banner = document.getElementById('selectionBanner');
             if (banner) banner.classList.add('hidden');
         }
 
-        // 🌟 8. 即時相機條碼掃描 Modal (全畫面 100% 獨立運行，解決 iframe 鎖定)
         window.openScannerModal = function() {
             const existingModal = document.getElementById('scannerModal');
             if (existingModal) existingModal.remove();
@@ -986,9 +724,7 @@
                         </h3>
                         <button id="btnCloseScanner" class="text-slate-400 hover:text-slate-600 text-sm p-1 font-bold">✕</button>
                     </div>
-
                     <div id="qr-reader" class="w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 mb-3" style="min-height: 220px;"></div>
-                    <p class="text-[11px] text-slate-500">提示：請將條碼或 QR Code 放入視窗中央即可自動讀取。</p>
                 </div>
             `;
             document.body.appendChild(modal);
@@ -996,11 +732,7 @@
             const html5QrCode = new Html5Qrcode("qr-reader");
             html5QrCode.start(
                 { facingMode: "environment" },
-                { 
-                    fps: 5,                  // 降低每秒偵測率，讓相機有時間穩定對焦、避免模糊誤判[cite: 1]
-                    qrbox: { width: 250, height: 130 }, // 調大對焦框，確保 10 碼條碼完整清晰[cite: 1]
-                    aspectRatio: 1.0
-                },
+                { fps: 5, qrbox: { width: 250, height: 130 }, aspectRatio: 1.0 },
                 (decodedText) => {
                     html5QrCode.stop().then(() => {
                         modal.remove();
@@ -1008,103 +740,48 @@
                     });
                 },
                 () => {}
-            ).catch(err => {
-                alert("無法啟動相機，請確認已授予相機權限：" + err);
-                modal.remove();
-            });
+            ).catch(err => { alert("無法啟動相機：" + err); modal.remove(); });
 
             document.getElementById('btnCloseScanner').onclick = () => {
-                if (html5QrCode.isScanning) {
-                    html5QrCode.stop().then(() => modal.remove());
-                } else {
-                    modal.remove();
-                }
+                if (html5QrCode.isScanning) html5QrCode.stop().then(() => modal.remove());
+                else modal.remove();
             };
         };
-        let pendingNewAssetEam = null; // 🌟 暫存剛掃到、準備點地圖的新 EAM
-        
+
+        window.pendingNewAssetEam = null;
         function handleBarcodeScan(rawInput) {
             if (!rawInput) return;
-            
-            // 1. 清理字串，去除前導 0 與空格
-            let cleanedEam = String(rawInput).trim().replace(/^0+/, '');
-
-            // 🌟 2. 智慧糾錯：因為 EAM 完全沒有英文，將相機常誤判的英文字母自動轉為對應數字
-            // 例如把大寫/小寫的 G 誤判成 0 的情況修正回來
-            cleanedEam = cleanedEam
-                .replace(/g/gi, '0') // 將所有 g 或 G 轉成 0
-                .replace(/o/gi, '0') // 有時候 o 也會被誤判成 0
-                .replace(/i/gi, '1') // 避免 1 被誤判成 i
-                .replace(/l/gi, '1'); // 避免 1 被誤判成 l
+            let cleanedEam = String(rawInput).trim().replace(/^0+/, '')
+                .replace(/g/gi, '0').replace(/o/gi, '0').replace(/i/gi, '1').replace(/l/gi, '1');
 
             const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
 
             if (targetAsset) {
-                // 如果資產已存在：直接定位並打開操作選單
                 locateAndHighlightAsset(targetAsset);
                 openActionModal(targetAsset);
             } else {
-                // 🌟 如果是新資產：進入「等待點擊地圖新增」的模式！
                 const currentWard = document.getElementById('wardSelect').value;
                 if (!currentWard) {
-                    alert(`掃描到新 EAM [${cleanedEam}]，但請先在上方選單選擇目標「單位 (Ward)」才能在地圖上新增！`);
+                    alert(`掃描到新 EAM [${cleanedEam}]，請先在上方選單選擇目標「單位 (Ward)」！`);
                     return;
                 }
-
-                pendingNewAssetEam = cleanedEam;
-                isRelocatingMode = false; 
-                isMovingAsset = null;
-
-                const banner = document.getElementById('selectionBanner');
-                const bannerText = document.getElementById('bannerText');
-                if (banner && bannerText) {
-                    banner.classList.remove('hidden');
-                    bannerText.innerText = `請在地圖點擊新資產 [${cleanedEam}] 的擺放位置...`;
-                }
-
-                alert(`已成功掃描新 EAM（10碼自動校正）：${cleanedEam}\n請直接在地圖的目標位置點擊一下以繼續！`);
+                window.pendingNewAssetEam = cleanedEam;
+                alert(`已成功掃描新 EAM：${cleanedEam}\n請直接在地圖目標位置點擊一下以繼續新增！`);
             }
         }
 
-        // 🌟 9. 頁面初始化與圖片載入監聽
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("🚀 網頁載入中，開始抓取階層選單與所有資產...");
             fetchHierarchy();
             fetchAllAssets();
-
             const img = document.getElementById('floorPlanImg');
             if (img) {
                 img.onload = () => {
                     img.classList.remove('hidden');
-                    const placeholderText = document.getElementById('placeholderText');
-                    if (placeholderText) placeholderText.classList.add('hidden');
+                    document.getElementById('placeholderText').classList.add('hidden');
                     updateMarkersLayerSize();
-                    if (currentFilteredAssets) renderAssetMarkers(currentFilteredAssets);
                 };
             }
-
             window.addEventListener('resize', updateMarkersLayerSize);
-
-            // 🚀 新增：延遲 1 秒後在背景默默預載所有單位的地圖到快取中
-            setTimeout(() => {
-                if (floorHierarchyData && floorHierarchyData.length > 0) {
-                    console.log("🚀 開始在背景預載所有平面圖...");
-                    floorHierarchyData.forEach(item => {
-                        const wardKey = item.wardKey;
-                        if (wardKey && !floorPlanCache[wardKey]) {
-                            fetch(`${GAS_API_URL}?action=getFloorPlan&wardKey=${encodeURIComponent(wardKey)}`)
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data && data.base64) {
-                                        floorPlanCache[wardKey] = data.base64;
-                                        console.log(`✅ 預載成功: ${wardKey}`);
-                                    }
-                                })
-                                .catch(err => console.warn(`預載失敗: ${wardKey}`, err));
-                        }
-                    });
-                }
-            }, 500);
         });
     </script>
 </body>
