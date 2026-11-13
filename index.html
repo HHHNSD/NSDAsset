@@ -129,7 +129,7 @@
             { label: "TABLET, PORTABLE : WINDOWS", icon: "fa-tablet" },
             { label: "MONITOR, COMPUTER / LCD", icon: "fa-desktop" },
             { label: "TELEVISION SET : LED", icon: "fa-tv" },
-            { label: "SCANNER, BARCODE", icon: "fa-barcode" },
+            { label: "SCANNER, BARCODE", icon: "fa-gun" },
             { label: "PRINTER, BARCODE" / THERMAL", icon: "fa-print" },
             { label: "COPYING MACHINE", icon: "fa-file-invoice" },
             { label: "CAMERA (BODY / VIDEO / ENDOSCOPE)", icon: "fa-camera" },
@@ -419,7 +419,7 @@
             }
             // 8. 條碼掃描器 (Barcode Scanner)
             if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht')) {
-                return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
+                return { icon: 'fa-gun', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
             }
             // 9. 雷射印表機 / 影印機 / 傳真機 (Copying Machine)
             if  desc.includes('photo-copying') || desc.includes('facsimile') || desc.includes('copier')) {
