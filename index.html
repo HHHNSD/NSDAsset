@@ -440,21 +440,51 @@
         }
 
         // 🌟 4. 資產配置與圖示轉換
+        // 🌟 升級版：智慧辨識資產類型、提供專屬 Icon 與顏色
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
-            if (desc.includes('medical equipment')) {
-                return { icon: 'fa-suitcase-medical', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
-            } else if (desc.includes('office asset') || desc.includes('camera')) {
+            
+            // 1. 醫療設備 (Medical Equipment)
+            if (desc.includes('medical equipment') || desc.includes('defibrillator') || desc.includes('oximeter') || 
+                desc.includes('oxygen') || desc.includes('laryngoscope') || desc.includes('thermometer') || 
+                desc.includes('pump') || desc.includes('ecg') || desc.includes('regulator') || desc.includes('flowmeter')) {
+                return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
+            } 
+            // 2. 筆記型電腦 (Laptop / Notebook)
+            else if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('probook')) {
+                return { icon: 'fa-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
+            }
+            // 3. 平板電腦 (iPad / Tablet)
+            else if (desc.includes('ipad') || desc.includes('tablet')) {
+                return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
+            }
+            // 4. 桌上型電腦 (Desktop PC)
+            else if (desc.includes('desktop') || desc.includes('computer') || desc.includes('pc sff') || desc.includes('m920') || desc.includes('elitedesk')) {
+                return { icon: 'fa-computer', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
+            }
+            // 5. 螢幕顯示器 (Monitor)
+            else if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd') || desc.includes('screen')) {
+                return { icon: 'fa-desktop', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
+            }
+            // 6. 條碼掃描器 (Scanner)
+            else if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht1306')) {
+                return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
+            }
+            // 7. 印表機 / 標籤機 (Printer)
+            else if (desc.includes('printer') || desc.includes('thermal') || desc.includes('label')) {
+                return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
+            }
+            // 8. 辦公家具 / 櫃子 / 手推車 (Office / Cabinet / Trolley)
+            else if (desc.includes('chair') || desc.includes('cabinet') || desc.includes('trolley') || desc.includes('shredding') || desc.includes('office asset')) {
                 return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
-            } else {
-                let icon = 'fa-laptop';
-                if (desc.includes('ipad') || desc.includes('tablet')) icon = 'fa-tablet-screen-button';
-                else if (desc.includes('hard disk') || desc.includes('disk') || desc.includes('hdd')) icon = 'fa-hard-drive';
-                else if (desc.includes('scanner')) icon = 'fa-barcode';
-                else if (desc.includes('printer')) icon = 'fa-print';
-                else if (desc.includes('monitor') || desc.includes('display')) icon = 'fa-desktop';
+            }
+            // 9. 其他周邊 (Camera / Hard Disk / Software 等)
+            else {
+                let icon = 'fa-microchip';
+                if (desc.includes('hard disk') || desc.includes('hdd') || desc.includes('ssd')) icon = 'fa-hard-drive';
                 else if (desc.includes('camera')) icon = 'fa-camera';
-                return { icon: icon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
+                else if (desc.includes('software')) icon = 'fa-file-code';
+                return { icon: icon, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
             }
         }
 
