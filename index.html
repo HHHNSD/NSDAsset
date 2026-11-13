@@ -121,7 +121,7 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        // 🌟 針對 NSD 實際資產高度客製化的 20 種豐富分類與獨立 Icon
+        // 🌟 嚴謹區分 Scanner 與 Printer 的 20 種分類與圖示
         const ASSET_TYPES = [
             { label: "COMPUTER, DESKTOP", icon: "fa-computer" },
             { label: "COMPUTER, NOTEBOOK / LAPTOP", icon: "fa-laptop" },
@@ -129,7 +129,7 @@
             { label: "TABLET, PORTABLE : WINDOWS", icon: "fa-tablet" },
             { label: "MONITOR, COMPUTER / LCD", icon: "fa-desktop" },
             { label: "TELEVISION SET : LED", icon: "fa-tv" },
-            { label: "SCANNER, BARCODE : 2D", icon: "fa-barcode" },
+            { label: "SCANNER, BARCODE", icon: "fa-barcode" },
             { label: "PRINTER, BARCODE / THERMAL", icon: "fa-print" },
             { label: "PRINTER, COMPUTER : LASER", icon: "fa-file-invoice" },
             { label: "CAMERA (BODY / VIDEO / ENDOSCOPE)", icon: "fa-camera" },
@@ -140,7 +140,7 @@
             { label: "DEFIBRILLATOR / PACEMAKER", icon: "fa-heart-pulse" },
             { label: "INFUSION PUMP / MEDICAL PUMP", icon: "fa-pills" },
             { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
-            { label: "BEDS, ELECTRIC / PATIENT LIFT", icon: "fa-bed" },
+            { label: "BEDS, ELECTRIC / WARMER / LIFT", icon: "fa-bed" },
             { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
             { label: "Office Asset / Furniture", icon: "fa-chair" }
         ];
@@ -302,7 +302,7 @@
         }
 
         function updateAssetInSheet(asset) {
-            asset.dept = "NSD"; // 🌟 自動預設 Dept 為 NSD
+            asset.dept = "NSD";
             fetch(GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -331,7 +331,7 @@
         }
 
         function addNewAssetApi(newAsset) {
-            newAsset.dept = "NSD"; // 🌟 自動預設 Dept 為 NSD
+            newAsset.dept = "NSD";
             fetch(GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -384,12 +384,12 @@
             renderAssetSidebarList(currentFilteredAssets);
         }
 
-        // 🌟 嚴謹區分各種設備與專屬圖示 (避免 Monitor, Desktop, iPad 長得太像，並補齊 Camera, Cabinet, 冰箱, 碎紙機等)
+        // 🌟 嚴格區分 Scanner 與 Printer 的分類判定邏輯
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
             
             // 1. 電腦桌面 (Desktop)
-            if (desc.includes('desktop') || desc.includes('thinkcentre') || desc.includes('elitedesk') || desc.includes('imac')) {
+            if (desc.includes('desktop') || desc.includes('thinkcentre') || desc.includes('elitedesk') || desc.includes('imac') || desc.includes('workstation')) {
                 return { icon: 'fa-computer', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
             }
             // 2. 筆記型電腦 (Laptop)
@@ -401,7 +401,7 @@
                 return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
             }
             // 4. Windows 平板 / 手持
-            if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro')) {
+            if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro') || desc.includes('pda')) {
                 return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
             }
             // 5. 螢幕 / 顯示器 (Monitor / LCD)
@@ -412,16 +412,16 @@
             if (desc.includes('television') || desc.includes('tv')) {
                 return { icon: 'fa-tv', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
             }
-            // 7. 條碼掃描器 (Barcode Scanner)
-            if (desc.includes('scanner') || desc.includes('barcode')) {
-                return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
-            }
-            // 8. 條碼/熱感應印表機 (Thermal/Barcode Printer)
-            if (desc.includes('printer') && (desc.includes('thermal') || desc.includes('barcode') || desc.includes('spp-r'))) {
+            // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer) - 必須在 Scanner 之前判定
+            if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('barcode') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
             }
-            // 9. 雷射印表機 (Laser Printer / Copying Machine)
-            if (desc.includes('printer') || desc.includes('photo-copying') || desc.includes('facsimile')) {
+            // 8. 條碼掃描器 (Barcode Scanner)
+            if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht')) {
+                return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
+            }
+            // 9. 雷射印表機 / 影印機 / 傳真機 (Laser Printer / Copying Machine)
+            if (desc.includes('printer') || desc.includes('photo-copying') || desc.includes('facsimile') || desc.includes('copier')) {
                 return { icon: 'fa-file-invoice', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-500' };
             }
             // 10. 相機 / 錄影設備 (Camera / Endoscope Camera)
@@ -429,7 +429,7 @@
                 return { icon: 'fa-camera', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-500' };
             }
             // 11. 櫃子 / 儲存櫃 / 層架 (Cabinet / Storage / Shelving)
-            if (desc.includes('cabinet') || desc.includes('shelv') || desc.includes('storage')) {
+            if (desc.includes('cabinet') || desc.includes('shelv') || desc.includes('storage') || desc.includes('locker')) {
                 return { icon: 'fa-box-archive', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-600' };
             }
             // 12. 推車 / 車架 (Trolley / Cart)
@@ -437,7 +437,7 @@
                 return { icon: 'fa-cart-flatbed', color: 'text-stone-600', bg: 'bg-stone-50', border: 'border-stone-500' };
             }
             // 13. 冰箱 / 冰櫃 (Refrigerator)
-            if (desc.includes('refrigerator') || desc.includes('fridge')) {
+            if (desc.includes('refrigerator') || desc.includes('fridge') || desc.includes('freezer')) {
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
             // 14. 碎紙機 (Shredding Machine)
@@ -445,23 +445,23 @@
                 return { icon: 'fa-file-shredder', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
             // 15. 除顫儀 / 心律調整器 (Defibrillator)
-            if (desc.includes('defibrillator') || desc.includes('pacemaker')) {
+            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed')) {
                 return { icon: 'fa-heart-pulse', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-500' };
             }
             // 16. 輸液泵 / 醫療泵 (Infusion Pump)
-            if (desc.includes('infusion pump') || desc.includes('pump')) {
+            if (desc.includes('infusion pump') || desc.includes('pump') || desc.includes('syringe')) {
                 return { icon: 'fa-pills', color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-500' };
             }
-            // 17. 氧氣設備 / 流量計 (Oxygen / Flowmeter)
-            if (desc.includes('oxygen') || desc.includes('flowmeter') || desc.includes('regulator') || desc.includes('suction')) {
+            // 17. 氧氣設備 / 流量計 / 加濕器 / 吸引器 (Oxygen / Flowmeter / Humidifier / Suction)
+            if (desc.includes('oxygen') || desc.includes('flowmeter') || desc.includes('regulator') || desc.includes('suction') || desc.includes('humidifier')) {
                 return { icon: 'fa-lungs', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-400' };
             }
-            // 18. 病床 / 升降梯 (Beds / Patient Lift)
-            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher')) {
+            // 18. 病床 / 升降梯 / 暖身箱 (Beds / Patient Lift / Warmer)
+            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher') || desc.includes('warming')) {
                 return { icon: 'fa-bed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-600' };
             }
-            // 19. 其他醫療儀器 (Medical Equipment)
-            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('monitor') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope')) {
+            // 19. 其他精密醫療儀器 (Medical Equipment)
+            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic') || desc.includes('ecg')) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
             }
             // 20. 預設辦公設備 / 家具 (Office Asset)
@@ -756,7 +756,6 @@
             }
         }
 
-        // 🌟 7. Modal 彈窗介面（已移除 Dept 欄位，Type 採用 20 種豐富且精準的分類）
         function openAssetFormModal(assetData, isEdit = false) {
             const existingModal = document.getElementById('customFormModal');
             if (existingModal) existingModal.remove();
