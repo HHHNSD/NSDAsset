@@ -26,7 +26,7 @@
             </div>
         </div>
     
-        <!-- 階層連動選單區塊：在手機上自動撐滿寬度 (w-full) -->
+        <!-- 階層連動選單區塊 -->
         <div class="grid grid-cols-3 gap-2 w-full sm:w-auto bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shadow-inner">
             <div class="flex flex-col">
                 <label class="text-[11px] font-bold text-slate-600 mb-1">棟別 (Block):</label>
@@ -70,39 +70,6 @@
                     </div>
                     <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD 資產地圖管理系統</h3>
                     <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或參考以下快速操作說明：</p>
-                
-                    <!-- 3 大快速引導卡片 -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl text-left">
-                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-blue-100">1</div>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-magnifying-glass text-blue-500"></i> 搜尋定位資產
-                                </h4>
-                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">可直接在右側搜尋列輸入 EAM、Serial 或備註，快速篩選並地圖定位。</p>
-                            </div>
-                        </div>
-                
-                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-emerald-100">2</div>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-barcode text-emerald-500"></i> 相機即時條碼掃描
-                                </h4>
-                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">手機點擊右側條碼按鈕可啟動相機，掃描後自動定位或點選新增。</p>
-                            </div>
-                        </div>
-                
-                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-extrabold text-sm border border-amber-100">3</div>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-layer-group text-amber-500"></i> 選擇查看區域
-                                </h4>
-                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">透過右上角連動選單選擇 [棟別/樓層/單位]，載入對應平面圖。</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
                 <div id="mapWrapper" class="relative w-full aspect-[12/9] bg-slate-50" onclick="handleMapClick(event)">
@@ -154,24 +121,28 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        // 🌟 豐富的資產類型清單 (Type) 與精準對應的 Icon
+        // 🌟 針對 NSD 實際資產高度客製化的 20 種豐富分類與獨立 Icon
         const ASSET_TYPES = [
-            { label: "Medical Equipment", icon: "fa-suitcase-medical" },
-            { label: "TABLET, PORTABLE : IPAD / IOS TABLET", icon: "fa-tablet-screen-button" },
-            { label: "TABLET, PORTABLE : WINDOWS TABLET", icon: "fa-tablet-screen-button" },
             { label: "COMPUTER, DESKTOP", icon: "fa-computer" },
             { label: "COMPUTER, NOTEBOOK / LAPTOP", icon: "fa-laptop" },
+            { label: "TABLET, PORTABLE : IPAD / IOS", icon: "fa-tablet-screen-button" },
+            { label: "TABLET, PORTABLE : WINDOWS", icon: "fa-tablet" },
             { label: "MONITOR, COMPUTER / LCD", icon: "fa-desktop" },
+            { label: "TELEVISION SET : LED", icon: "fa-tv" },
             { label: "SCANNER, BARCODE : 2D", icon: "fa-barcode" },
             { label: "PRINTER, BARCODE / THERMAL", icon: "fa-print" },
-            { label: "PRINTER, COMPUTER : LASER", icon: "fa-print" },
+            { label: "PRINTER, COMPUTER : LASER", icon: "fa-file-invoice" },
+            { label: "CAMERA (BODY / VIDEO / ENDOSCOPE)", icon: "fa-camera" },
+            { label: "CABINET / STORAGE / SHELVING", icon: "fa-box-archive" },
+            { label: "TROLLEY / CART", icon: "fa-cart-flatbed" },
+            { label: "REFRIGERATOR / REFRIGERATION", icon: "fa-snowflake" },
+            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-shredder" },
             { label: "DEFIBRILLATOR / PACEMAKER", icon: "fa-heart-pulse" },
+            { label: "INFUSION PUMP / MEDICAL PUMP", icon: "fa-pills" },
             { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
-            { label: "LARYNGOSCOPE, RIGID, VIDEO", icon: "fa-eye" },
-            { label: "THERMOMETER, ELECTRONIC", icon: "fa-temperature-high" },
-            { label: "CABINET / STORAGE / TROLLEY", icon: "fa-chair" },
-            { label: "TELEVISION SET : LED", icon: "fa-tv" },
-            { label: "Office Asset", icon: "fa-chair" }
+            { label: "BEDS, ELECTRIC / PATIENT LIFT", icon: "fa-bed" },
+            { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
+            { label: "Office Asset / Furniture", icon: "fa-chair" }
         ];
 
         function fetchAllAssets() {
@@ -322,7 +293,7 @@
                     };
                     reader.readAsDataURL(file);
                 } else {
-                    asset.dept = "NSD"; // 確保 Dept 固定為 NSD
+                    asset.dept = "NSD";
                     updateAssetInSheet(asset);
                     alert(`資產 [${asset.eam}] 狀態已更新為 ${type}！`);
                 }
@@ -413,26 +384,88 @@
             renderAssetSidebarList(currentFilteredAssets);
         }
 
-        // 🌟 智慧辨識資產類型與圖示
+        // 🌟 嚴謹區分各種設備與專屬圖示 (避免 Monitor, Desktop, iPad 長得太像，並補齊 Camera, Cabinet, 冰箱, 碎紙機等)
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
-            if (desc.includes('medical equipment') || desc.includes('defibrillator') || desc.includes('oximeter') || desc.includes('oxygen') || desc.includes('laryngoscope') || desc.includes('thermometer') || desc.includes('pump')) {
-                return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
-            } else if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad')) {
-                return { icon: 'fa-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
-            } else if (desc.includes('ipad') || desc.includes('tablet')) {
-                return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
-            } else if (desc.includes('desktop') || desc.includes('computer')) {
+            
+            // 1. 電腦桌面 (Desktop)
+            if (desc.includes('desktop') || desc.includes('thinkcentre') || desc.includes('elitedesk') || desc.includes('imac')) {
                 return { icon: 'fa-computer', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
-            } else if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
-                return { icon: 'fa-desktop', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
-            } else if (desc.includes('scanner') || desc.includes('barcode')) {
-                return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
-            } else if (desc.includes('printer') || desc.includes('thermal')) {
-                return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
-            } else {
-                return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
             }
+            // 2. 筆記型電腦 (Laptop)
+            if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('probook') || desc.includes('elitebook')) {
+                return { icon: 'fa-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
+            }
+            // 3. iPad / 平板 (iOS)
+            if (desc.includes('ipad') || desc.includes('ios tablet')) {
+                return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
+            }
+            // 4. Windows 平板 / 手持
+            if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro')) {
+                return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
+            }
+            // 5. 螢幕 / 顯示器 (Monitor / LCD)
+            if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
+                return { icon: 'fa-desktop', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-500' };
+            }
+            // 6. 電視 (Television)
+            if (desc.includes('television') || desc.includes('tv')) {
+                return { icon: 'fa-tv', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
+            }
+            // 7. 條碼掃描器 (Barcode Scanner)
+            if (desc.includes('scanner') || desc.includes('barcode')) {
+                return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
+            }
+            // 8. 條碼/熱感應印表機 (Thermal/Barcode Printer)
+            if (desc.includes('printer') && (desc.includes('thermal') || desc.includes('barcode') || desc.includes('spp-r'))) {
+                return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
+            }
+            // 9. 雷射印表機 (Laser Printer / Copying Machine)
+            if (desc.includes('printer') || desc.includes('photo-copying') || desc.includes('facsimile')) {
+                return { icon: 'fa-file-invoice', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-500' };
+            }
+            // 10. 相機 / 錄影設備 (Camera / Endoscope Camera)
+            if (desc.includes('camera') || desc.includes('video system') || desc.includes('endoscope')) {
+                return { icon: 'fa-camera', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-500' };
+            }
+            // 11. 櫃子 / 儲存櫃 / 層架 (Cabinet / Storage / Shelving)
+            if (desc.includes('cabinet') || desc.includes('shelv') || desc.includes('storage')) {
+                return { icon: 'fa-box-archive', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-600' };
+            }
+            // 12. 推車 / 車架 (Trolley / Cart)
+            if (desc.includes('trolley') || desc.includes('cart')) {
+                return { icon: 'fa-cart-flatbed', color: 'text-stone-600', bg: 'bg-stone-50', border: 'border-stone-500' };
+            }
+            // 13. 冰箱 / 冰櫃 (Refrigerator)
+            if (desc.includes('refrigerator') || desc.includes('fridge')) {
+                return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
+            }
+            // 14. 碎紙機 (Shredding Machine)
+            if (desc.includes('shredding') || desc.includes('shredder')) {
+                return { icon: 'fa-file-shredder', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
+            }
+            // 15. 除顫儀 / 心律調整器 (Defibrillator)
+            if (desc.includes('defibrillator') || desc.includes('pacemaker')) {
+                return { icon: 'fa-heart-pulse', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-500' };
+            }
+            // 16. 輸液泵 / 醫療泵 (Infusion Pump)
+            if (desc.includes('infusion pump') || desc.includes('pump')) {
+                return { icon: 'fa-pills', color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-500' };
+            }
+            // 17. 氧氣設備 / 流量計 (Oxygen / Flowmeter)
+            if (desc.includes('oxygen') || desc.includes('flowmeter') || desc.includes('regulator') || desc.includes('suction')) {
+                return { icon: 'fa-lungs', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-400' };
+            }
+            // 18. 病床 / 升降梯 (Beds / Patient Lift)
+            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher')) {
+                return { icon: 'fa-bed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-600' };
+            }
+            // 19. 其他醫療儀器 (Medical Equipment)
+            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('monitor') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope')) {
+                return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
+            }
+            // 20. 預設辦公設備 / 家具 (Office Asset)
+            return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
         }
 
         function calculateMarkerPositions(assets) {
@@ -665,7 +698,7 @@
                 const newAssetData = {
                     eam: pendingNewAssetEam,
                     serial: "SN",
-                    dept: "NSD", // 🌟 自動預設為 NSD
+                    dept: "NSD",
                     description: ASSET_TYPES[0].label,
                     block: currentBlock,
                     floor: currentFloor,
@@ -681,7 +714,7 @@
             }
 
             const newAssetData = {
-                eam: "", serial: "SN", dept: "NSD", // 🌟 自動預設為 NSD
+                eam: "", serial: "SN", dept: "NSD",
                 description: ASSET_TYPES[0].label,
                 block: currentBlock, floor: currentFloor, ward: currentWard,
                 x: parseFloat(x.toFixed(2)), y: parseFloat(y.toFixed(2))
@@ -723,7 +756,7 @@
             }
         }
 
-        // 🌟 7. Modal 彈窗介面（已移除 Dept 欄位，Type 採用擴充後的豐富清單）
+        // 🌟 7. Modal 彈窗介面（已移除 Dept 欄位，Type 採用 20 種豐富且精準的分類）
         function openAssetFormModal(assetData, isEdit = false) {
             const existingModal = document.getElementById('customFormModal');
             if (existingModal) existingModal.remove();
@@ -779,7 +812,7 @@
 
                 if (isEdit) {
                     assetData.serial = serial; 
-                    assetData.dept = "NSD"; // 🌟 自動預設 Dept 為 NSD
+                    assetData.dept = "NSD"; 
                     assetData.description = description; 
                     assetData.remark = remark; 
                     assetData.ward = targetWard;
@@ -793,7 +826,7 @@
                         existingAsset.x = assetData.x; 
                         existingAsset.y = assetData.y; 
                         existingAsset.serial = serial;
-                        existingAsset.dept = "NSD"; // 🌟 自動預設 Dept 為 NSD
+                        existingAsset.dept = "NSD"; 
                         existingAsset.description = description; 
                         existingAsset.remark = remark;
                         updateAssetInSheet(existingAsset);
