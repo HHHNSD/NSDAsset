@@ -390,93 +390,91 @@
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
             
-            // 1. 電腦桌面 (Desktop)
+            // 1. 電腦桌面 (Desktop) -> 天空藍 (Sky)
             if (desc.includes('desktop') || desc.includes('thinkcentre') || desc.includes('elitedesk') || desc.includes('imac') || desc.includes('workstation')) {
                 return { icon: 'fa-hard-drive', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
             }
-            // 2. 筆記型電腦 (Laptop)
+            // 2. 筆記型電腦 (Laptop) -> 經典藍 (Blue)
             if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('probook') || desc.includes('elitebook')) {
                 return { icon: 'fa-house-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
             }
-            // 3. iPad / 平板 (iOS)
+            // 3. iPad / 平板 (iOS) -> 靛藍色 (Indigo)
             if (desc.includes('ipad') || desc.includes('ios tablet')) {
                 return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
             }
-            // 4. Windows 平板 / 手持
+            // 4. Windows 平板 / 手持 (Tablet) -> 紫羅蘭色 (Violet)
             if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro') || desc.includes('pda')) {
                 return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
             }
-            // 5. 螢幕 / 顯示器 (Monitor / LCD)
+            // 5. 螢幕 / 顯示器 (Monitor / LCD) -> 湖水綠 (Teal)
             if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
                 return { icon: 'fa-desktop', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-500' };
             }
-            // 6. 電視 (Television)
+            // 6. 電視 (Television) -> 青色 (Cyan)
             if (desc.includes('television') || desc.includes('tv')) {
                 return { icon: 'fa-tv', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
             }
-            // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer)
+            // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer) -> 紫色 (Purple)
             if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
             }
-            // 8. 條碼掃描器 (Barcode Scanner)
+            // 8. 條碼掃描器 (Barcode Scanner) -> 翠綠色 (Emerald - 象徵掃描成功)
             if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht')) {
                 return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
             }
-            // 9. 雷射印表機 / 影印機 / 傳真機 (Laser Printer / Copying Machine)
+            // 9. 雷射印表機 / 影印機 / 傳真機 (Laser Printer / Copying) -> 紫紅/洋紅色 (Fuchsia)
             if (desc.includes('printer') || desc.includes('photo-copying') || desc.includes('facsimile') || desc.includes('copier')) {
                 return { icon: 'fa-file-invoice', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-500' };
             }
-            // 10. 相機 / 錄影設備 (Camera / Endoscope Camera)
+            // 10. 相機 / 錄影設備 (Camera) -> 活力橙色 (Orange)
             if (desc.includes('camera') || desc.includes('video system') || desc.includes('endoscope')) {
                 return { icon: 'fa-camera', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-500' };
             }
-            // 11. 櫃子 / 儲存櫃 / 層架 (Cabinet / Storage / Shelving)
+            // 11. 櫃子 / 儲存櫃 / 層架 (Cabinet / Storage) -> 琥珀棕色 (Amber)
             if (desc.includes('cabinet') || desc.includes('shelv') || desc.includes('storage') || desc.includes('locker')) {
                 return { icon: 'fa-box-archive', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-600' };
             }
-            // 12. 推車 / 車架 (Trolley / Cart)
+            // 12. 推車 / 車架 (Trolley / Cart) -> 石灰色 (Stone)
             if (desc.includes('trolley') || desc.includes('cart')) {
                 return { icon: 'fa-cart-flatbed', color: 'text-stone-600', bg: 'bg-stone-50', border: 'border-stone-500' };
             }
-            // 13. 冰箱 / 冰櫃 (Refrigerator)
+            // 13. 冰箱 / 冰櫃 (Refrigerator) -> 深冰藍色 (Cyan Deep)
             if (desc.includes('refrigerator') || desc.includes('fridge') || desc.includes('freezer')) {
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
-            
-            // 13. 微波爐/熱水爐
+            // 14. 暖氣機 / 發熱器 (Radiator / Heater) -> 烈火紅/暖橘色 (Red & Amber)
             if (desc.includes('radiator') || desc.includes('heater') || desc.includes('heating')) {
-                return { icon: ' fa-fire-burner', color: 'text-red-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
+                return { icon: 'fa-fire-burner', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-500' };
             }
-            
-            // 14. 碎紙機 (Shredding Machine) - 🌟 修正圖標判斷
+            // 15. 碎紙機 (Shredding Machine) -> 玫瑰紅 (Rose)
             if (desc.includes('shredding') || desc.includes('shredder')) {
                 return { icon: 'fa-file-lines', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
-            // 15. 除顫儀 / 心律調整器 (Defibrillator)
-            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed')|| desc.includes('ELECTROCARDIOGRAPHS')) {
+            // 16. 除顫儀 / 心律調整器 / 心電圖 (Defibrillator / ECG) -> 急救紅 (Red)
+            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed') || desc.includes('electrocardiographs')) {
                 return { icon: 'fa-heart-pulse', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-500' };
             }
-            // 16. 輸液泵 / 醫療泵 (Infusion Pump)
+            // 17. 輸液泵 / 醫療泵 (Infusion Pump) -> 粉紅色 (Pink)
             if (desc.includes('infusion pump') || desc.includes('pump') || desc.includes('syringe')) {
                 return { icon: 'fa-pills', color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-500' };
             }
-            // 17. 氧氣設備 / 流量計 / 加濕器 / 吸引器 (Oxygen / Flowmeter / Humidifier / Suction)
+            // 18. 氧氣設備 / 流量計 / 加濕器 (Oxygen / Suction) -> 醫療藍 (Blue)
             if (desc.includes('oxygen') || desc.includes('flowmeter') || desc.includes('regulator') || desc.includes('suction') || desc.includes('humidifier')) {
                 return { icon: 'fa-lungs', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-400' };
             }
-            // 18. 病床 / 升降梯 / 暖身箱 (Beds / Patient Lift / Warmer)
+            // 19. 病床 / 升降梯 / 暖身箱 (Beds / Lift / Warmer) -> 森林綠 (Emerald)
             if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher') || desc.includes('warming')) {
                 return { icon: 'fa-bed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-600' };
             }
-            // 19. 其他精密醫療儀器 (Medical Equipment)
+            // 20. 其他精密醫療儀器 (Medical Equipment) -> 柔和玫瑰紅 (Rose)
             if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic')) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
             }
-            // 20. 一般辦公傢俱 / 資產 (Office Asset)
+            // 21. 一般辦公傢俱 / 資產 (Office Asset / Chair / Desk) -> 暖木琥珀色 (Amber)
             if (desc.includes('office') || desc.includes('chair') || desc.includes('desk') || desc.includes('table')) {
                 return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
             }
-            // 21. 預設 / 其他雜項 (Others / Miscellaneous) - 🌟 新增 Others 預設回傳
+            // 22. 預設 / 其他雜項 (Others / Miscellaneous) -> 中性石板灰 (Slate)
             return { icon: 'fa-box', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
         }
 
