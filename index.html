@@ -123,27 +123,28 @@
 
         // 🌟 嚴謹區分 Scanner 與 Printer 的 20 種分類與圖示
         const ASSET_TYPES = [
-            { label: "COMPUTER, DESKTOP", icon: "fa-computer" },
-            { label: "COMPUTER, NOTEBOOK / LAPTOP", icon: "fa-laptop" },
-            { label: "TABLET, PORTABLE : IPAD / IOS", icon: "fa-tablet-screen-button" },
-            { label: "TABLET, PORTABLE : WINDOWS", icon: "fa-tablet" },
-            { label: "MONITOR, COMPUTER / LCD", icon: "fa-desktop" },
-            { label: "TELEVISION SET : LED", icon: "fa-tv" },
-            { label: "SCANNER, BARCODE", icon: "fa-barcode" },
-            { label: "PRINTER, BARCODE / THERMAL", icon: "fa-print" },
-            { label: "PRINTER, COMPUTER : LASER", icon: "fa-file-invoice" },
-            { label: "CAMERA (BODY / VIDEO / ENDOSCOPE)", icon: "fa-camera" },
+            { label: "COMPUTER DESKTOP", icon: "fa-hard-drive" },
+            { label: "NOTEBOOK / LAPTOP", icon: "fa-house-laptop" },
+            { label: "IPAD / IOS TABLET", icon: "fa-tablet-screen-button" },
+            { label: "WINDOWS TABLET", icon: "fa-tablet-screen-button" },
+            { label: "LCD MONITOR", icon: "fa-desktop" },
+            { label: "TELEVISION SET", icon: "fa-chromecast" },
+            { label: "BARCODE SCANNER", icon: "fa-barcode" },
+            { label: "BARCODE PRINTER", icon: "fa-print" },
+            { label: "PHOTOCOPIER", icon: "fa-file-invoice" },
+            { label: "CAMERA", icon: "fa-camera" },
             { label: "CABINET / STORAGE / SHELVING", icon: "fa-box-archive" },
+            { label: "MICRO-WAVE / RADIATOR / HEATER", icon: "fa-fire-burner" },                                                
             { label: "TROLLEY / CART", icon: "fa-cart-flatbed" },
             { label: "REFRIGERATOR / REFRIGERATION", icon: "fa-snowflake" },
-            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-lines" }, // 🌟 修正碎紙機圖標確保正常顯示
-            { label: "DEFIBRILLATOR / PACEMAKER", icon: "fa-heart-pulse" },
+            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-lines" }, 
+            { label: "DEFIBRILLATOR / PACEMAKER / ECG", icon: "fa-heart-pulse" },
             { label: "INFUSION PUMP / MEDICAL PUMP", icon: "fa-pills" },
             { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
             { label: "BEDS, ELECTRIC / WARMER / LIFT", icon: "fa-bed" },
             { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
             { label: "Office Asset / Furniture", icon: "fa-chair" },
-            { label: "Others / Miscellaneous", icon: "fa-box" } // 🌟 新增 Others 選項
+            { label: "Others", icon: "fa-box" } // 🌟 新增 Others 選項
         ];
 
         function fetchAllAssets() {
@@ -391,11 +392,11 @@
             
             // 1. 電腦桌面 (Desktop)
             if (desc.includes('desktop') || desc.includes('thinkcentre') || desc.includes('elitedesk') || desc.includes('imac') || desc.includes('workstation')) {
-                return { icon: 'fa-computer', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
+                return { icon: 'fa-hard-drive', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
             }
             // 2. 筆記型電腦 (Laptop)
             if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('probook') || desc.includes('elitebook')) {
-                return { icon: 'fa-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
+                return { icon: 'fa-house-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
             }
             // 3. iPad / 平板 (iOS)
             if (desc.includes('ipad') || desc.includes('ios tablet')) {
@@ -403,7 +404,7 @@
             }
             // 4. Windows 平板 / 手持
             if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro') || desc.includes('pda')) {
-                return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
+                return { icon: 'fa-tablet-screen-button', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
             }
             // 5. 螢幕 / 顯示器 (Monitor / LCD)
             if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
@@ -414,7 +415,7 @@
                 return { icon: 'fa-tv', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
             }
             // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer)
-            if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('barcode') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
+            if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
             }
             // 8. 條碼掃描器 (Barcode Scanner)
@@ -441,12 +442,18 @@
             if (desc.includes('refrigerator') || desc.includes('fridge') || desc.includes('freezer')) {
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
+            
+            // 13. 微波爐/熱水爐
+            if (desc.includes('radiator') || desc.includes('heater') || desc.includes('heating')) {
+                return { icon: ' fa-fire-burner', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
+            }
+            
             // 14. 碎紙機 (Shredding Machine) - 🌟 修正圖標判斷
             if (desc.includes('shredding') || desc.includes('shredder')) {
                 return { icon: 'fa-file-lines', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
             // 15. 除顫儀 / 心律調整器 (Defibrillator)
-            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed')) {
+            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed')|| desc.includes('ELECTROCARDIOGRAPHS')) {
                 return { icon: 'fa-heart-pulse', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-500' };
             }
             // 16. 輸液泵 / 醫療泵 (Infusion Pump)
@@ -462,7 +469,7 @@
                 return { icon: 'fa-bed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-600' };
             }
             // 19. 其他精密醫療儀器 (Medical Equipment)
-            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic') || desc.includes('ecg')) {
+            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic')) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
             }
             // 20. 一般辦公傢俱 / 資產 (Office Asset)
