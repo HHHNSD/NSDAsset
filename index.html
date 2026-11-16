@@ -126,7 +126,7 @@
             { label: "COMPUTER DESKTOP", icon: "fa-hard-drive" },
             { label: "NOTEBOOK / LAPTOP", icon: "fa-house-laptop" },
             { label: "IPAD / IOS TABLET", icon: "fa-tablet-screen-button" },
-            { label: "WINDOWS TABLET", icon: "fa-tablet-screen-button" },
+            { label: "WINDOWS TABLET", icon: "fa-tablet" },
             { label: "LCD MONITOR", icon: "fa-desktop" },
             { label: "TELEVISION SET", icon: "fa-chromecast" },
             { label: "BARCODE SCANNER", icon: "fa-barcode" },
@@ -404,7 +404,7 @@
             }
             // 4. Windows 平板 / 手持
             if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro') || desc.includes('pda')) {
-                return { icon: 'fa-tablet-screen-button', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
+                return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
             }
             // 5. 螢幕 / 顯示器 (Monitor / LCD)
             if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
