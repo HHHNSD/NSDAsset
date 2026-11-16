@@ -406,9 +406,9 @@
             if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro') || desc.includes('pda')) {
                 return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
             }
-            // 5. 螢幕 / 顯示器 (Monitor / LCD) -> 湖水綠 (Teal)
+            // 5. 螢幕 / 顯示器 (Monitor / LCD) -> 
             if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
-                return { icon: 'fa-desktop', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-500' };
+                return { icon: 'fa-desktop', color: 'text-cyan-600', bg: 'bg-teal-50', border: 'border-teal-500' };
             }
             // 6. 電視 (Television) -> 青色 (Cyan)
             if (desc.includes('television') || desc.includes('tv')) {
@@ -443,7 +443,7 @@
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
             // 14. 暖氣機 / 發熱器 (Radiator / Heater) -> 烈火紅/暖橘色 (Red & Amber)
-            if (desc.includes('radiator') || desc.includes('heater') || desc.includes('heating')) {
+            if (desc.includes('radiator') || desc.includes('heater') || desc.includes('heating') || desc.includes('steam')) {
                 return { icon: 'fa-fire-burner', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-500' };
             }
             // 15. 碎紙機 (Shredding Machine) -> 玫瑰紅 (Rose)
@@ -451,7 +451,7 @@
                 return { icon: 'fa-file-lines', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
             // 16. 除顫儀 / 心律調整器 / 心電圖 (Defibrillator / ECG) -> 急救紅 (Red)
-            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed') || desc.includes('electrocardiographs')) {
+            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed') || desc.includes('electrocardiographs') || desc.includes('CARDIOPULMONARY')    ) {
                 return { icon: 'fa-heart-pulse', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-500' };
             }
             // 17. 輸液泵 / 醫療泵 (Infusion Pump) -> 粉紅色 (Pink)
@@ -463,11 +463,11 @@
                 return { icon: 'fa-lungs', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-400' };
             }
             // 19. 病床 / 升降梯 / 暖身箱 (Beds / Lift / Warmer) -> 森林綠 (Emerald)
-            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher') || desc.includes('warming')) {
+            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher') || desc.includes('warming') || desc.includes('TRANSFER')  ) {
                 return { icon: 'fa-bed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-600' };
             }
             // 20. 其他精密醫療儀器 (Medical Equipment) -> 柔和玫瑰紅 (Rose)
-            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic')) {
+            if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic') || desc.includes('Training') || desc.includes('METERS') ) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
             }
             // 21. 一般辦公傢俱 / 資產 (Office Asset / Chair / Desk) -> 暖木琥珀色 (Amber)
