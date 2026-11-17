@@ -810,62 +810,61 @@
             document.body.appendChild(modal);
 
             document.getElementById('btnSaveForm').onclick = () => {
-                const eam = document.getElementById('inputEam').value.trim();
+                const eamEl = document.getElementById('inputEam');
+                if (!eamEl || !eamEl.value.trim()) { 
+                    alert("EAM 編號不能為空！"); 
+                    return; 
+                }
+                const eam = eamEl.value.trim();
                 const targetWard = assetData.ward || document.getElementById('wardSelect').value;
-
-                if (!eam) { alert("EAM 編號不能為空！"); return; }
+            
                 modal.remove();
-
+            
                 if (isEdit) {
-                    // 1. 這是「更改資產」模式：允許修改所有詳細資料
-                    const serial = document.getElementById('inputSerial').value.trim();
-                    const description = document.getElementById('inputDesc').value;
-                    const remark = document.getElementById('inputRemark').value.trim();
-
-                    assetData.serial = serial; 
+                    // 安全讀取編輯模式的欄位
+                    const serialEl = document.getElementById('inputSerial');
+                    const descEl = document.getElementById('inputDesc');
+                    const remarkEl = document.getElementById('inputRemark');
+            
+                    assetData.serial = serialEl ? serialEl.value.trim() : (assetData.serial || ''); 
                     assetData.dept = "NSD"; 
-                    assetData.description = description; 
-                    assetData.remark = remark; 
+                    assetData.description = descEl ? descEl.value : (assetData.description || ''); 
+                    assetData.remark = remarkEl ? remarkEl.value.trim() : (assetData.remark || ''); 
                     assetData.ward = targetWard;
                     updateAssetInSheet(assetData);
                 } else {
-                    // 2. 「新增/移動」模式：檢查 EAM 是否已存在
                     const existingAsset = allAssets.find(a => a.eam.toLowerCase() === eam.toLowerCase());
-                    
                     if (existingAsset) {
-                        // 情況 A：EAM 已存在 -> 只更新位置與所屬單位，絕不覆寫 Serial、類型與備註！
                         existingAsset.block = assetData.block; 
                         existingAsset.floor = assetData.floor; 
                         existingAsset.ward = targetWard;
                         existingAsset.x = assetData.x; 
                         existingAsset.y = assetData.y;
                         
-                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置，原本的 Serial、類型與備註保持不變！`);
+                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置！`);
                         updateAssetInSheet(existingAsset);
                     } else {
-                        // 情況 B：完全是新 EAM -> 讀取輸入框的詳細資料並呼叫新增 API
-                        const serial = document.getElementById('inputSerial').value.trim();
-                        const description = document.getElementById('inputDesc').value;
-                        const remark = document.getElementById('inputRemark').value.trim();
-
+                        const serialEl = document.getElementById('inputSerial');
+                        const descEl = document.getElementById('inputDesc');
+                        const remarkEl = document.getElementById('inputRemark');
+            
                         const newAsset = { 
                             eam, 
-                            serial, 
+                            serial: serialEl ? serialEl.value.trim() : 'SN', 
                             dept: "NSD", 
-                            description, 
-                            remark, 
+                            description: descEl ? descEl.value : ASSET_TYPES[0].label, 
+                            remark: remarkEl ? remarkEl.value.trim() : '', 
                             block: assetData.block, 
                             floor: assetData.floor, 
                             ward: targetWard, 
                             x: assetData.x, 
                             y: assetData.y 
                         };
-                        
-                        // 🌟 這裡就是關鍵修復：呼叫專門新增資產的 API
                         addNewAssetApi(newAsset);
                     }
                 }
             };
+            
             document.getElementById('btnCloseForm').onclick = () => modal.remove();
         }
 
