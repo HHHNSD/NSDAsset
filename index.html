@@ -817,43 +817,48 @@
                 }
                 const eam = eamEl.value.trim();
                 const targetWard = assetData.ward || document.getElementById('wardSelect').value;
-            
+
+                // 🌟 關鍵修正：必須在 modal.remove() 之前，先把所有欄位的值讀取並存進變數！
+                const serialEl = document.getElementById('inputSerial');
+                const descEl = document.getElementById('inputDesc');
+                const remarkEl = document.getElementById('inputRemark');
+
+                const serialVal = serialEl ? serialEl.value.trim() : (assetData.serial || 'SN');
+                const descVal = descEl ? descEl.value : (assetData.description || ASSET_TYPES[0].label);
+                const remarkVal = remarkEl ? remarkEl.value.trim() : (assetData.remark || '');
+
+                // 讀取完畢後，才安全地關閉/移除 modal
                 modal.remove();
-            
+
                 if (isEdit) {
-                    // 安全讀取編輯模式的欄位
-                    const serialEl = document.getElementById('inputSerial');
-                    const descEl = document.getElementById('inputDesc');
-                    const remarkEl = document.getElementById('inputRemark');
-            
-                    assetData.serial = serialEl ? serialEl.value.trim() : (assetData.serial || ''); 
+                    // 1. 編輯模式：更新詳細資料
+                    assetData.serial = serialVal; 
                     assetData.dept = "NSD"; 
-                    assetData.description = descEl ? descEl.value : (assetData.description || ''); 
-                    assetData.remark = remarkEl ? remarkEl.value.trim() : (assetData.remark || ''); 
+                    assetData.description = descVal; 
+                    assetData.remark = remarkVal; 
                     assetData.ward = targetWard;
                     updateAssetInSheet(assetData);
                 } else {
+                    // 2. 新增 / 移動模式：檢查 EAM 是否已存在
                     const existingAsset = allAssets.find(a => a.eam.toLowerCase() === eam.toLowerCase());
                     if (existingAsset) {
+                        // 已存在：只改位置，保留原本的 serial, description, remark
                         existingAsset.block = assetData.block; 
                         existingAsset.floor = assetData.floor; 
                         existingAsset.ward = targetWard;
                         existingAsset.x = assetData.x; 
                         existingAsset.y = assetData.y;
                         
-                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置！`);
+                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置，原本的詳細資料保持不變！`);
                         updateAssetInSheet(existingAsset);
                     } else {
-                        const serialEl = document.getElementById('inputSerial');
-                        const descEl = document.getElementById('inputDesc');
-                        const remarkEl = document.getElementById('inputRemark');
-            
+                        // 完全新 EAM：使用剛剛讀取到的變數新增
                         const newAsset = { 
                             eam, 
-                            serial: serialEl ? serialEl.value.trim() : 'SN', 
+                            serial: serialVal, 
                             dept: "NSD", 
-                            description: descEl ? descEl.value : ASSET_TYPES[0].label, 
-                            remark: remarkEl ? remarkEl.value.trim() : '', 
+                            description: descVal, 
+                            remark: remarkVal, 
                             block: assetData.block, 
                             floor: assetData.floor, 
                             ward: targetWard, 
