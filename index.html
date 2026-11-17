@@ -769,9 +769,22 @@
         function openAssetFormModal(assetData, isEdit = false) {
             const existingModal = document.getElementById('customFormModal');
             if (existingModal) existingModal.remove();
-
-            const typeOptionsHtml = ASSET_TYPES.map(type => `<option value="${type.label}" ${assetData.description === type.label ? 'selected' : ''}>${type.label}</option>`).join('');
-
+        
+            // 🌟 處理 Supplies 給出不在預設清單中的長 Type 字串，強行加到選項最上方並預設選中
+            const currentDesc = (assetData.description || '').trim();
+            const isInPredefinedList = ASSET_TYPES.some(type => type.label === currentDesc);
+        
+            let customOptionHtml = '';
+            if (currentDesc && !isInPredefinedList) {
+                customOptionHtml = `<option value="${currentDesc}" selected>${currentDesc}</option>`;
+            }
+        
+            const standardOptionsHtml = ASSET_TYPES.map(type => 
+                `<option value="${type.label}" ${currentDesc === type.label ? 'selected' : ''}>${type.label}</option>`
+            ).join('');
+        
+            const typeOptionsHtml = customOptionHtml + standardOptionsHtml;
+        
             const modal = document.createElement('div');
             modal.id = 'customFormModal';
             modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
@@ -808,7 +821,7 @@
                 </div>
             `;
             document.body.appendChild(modal);
-
+        
             document.getElementById('btnSaveForm').onclick = () => {
                 const eamEl = document.getElementById('inputEam');
                 if (!eamEl || !eamEl.value.trim()) { 
@@ -817,19 +830,19 @@
                 }
                 const eam = eamEl.value.trim();
                 const targetWard = assetData.ward || document.getElementById('wardSelect').value;
-
-                // 🌟 關鍵修正：必須在 modal.remove() 之前，先把所有欄位的值讀取並存進變數！
+        
+                // 🌟 必須在 modal.remove() 之前，先把所有欄位的值讀取並存進變數！
                 const serialEl = document.getElementById('inputSerial');
                 const descEl = document.getElementById('inputDesc');
                 const remarkEl = document.getElementById('inputRemark');
-
+        
                 const serialVal = serialEl ? serialEl.value.trim() : (assetData.serial || 'SN');
                 const descVal = descEl ? descEl.value : (assetData.description || ASSET_TYPES[0].label);
                 const remarkVal = remarkEl ? remarkEl.value.trim() : (assetData.remark || '');
-
+        
                 // 讀取完畢後，才安全地關閉/移除 modal
                 modal.remove();
-
+        
                 if (isEdit) {
                     // 1. 編輯模式：更新詳細資料
                     assetData.serial = serialVal; 
@@ -849,7 +862,7 @@
                         existingAsset.x = assetData.x; 
                         existingAsset.y = assetData.y;
                         
-                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置，原本的詳細資料保持不變！`);
+                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置，原本的詳細資料保持不見不變！`);
                         updateAssetInSheet(existingAsset);
                     } else {
                         // 完全新 EAM：使用剛剛讀取到的變數新增
