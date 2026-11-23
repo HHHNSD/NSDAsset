@@ -69,7 +69,7 @@
                         <i class="fa-solid fa-map-location-dot text-3xl"></i>
                     </div>
                     <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD 資產地圖管理系統</h3>
-                    <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或參考以下快速操作說明：</p>
+                    <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或使用右側獨立欄位搜尋資產：</p>
                 </div>
                 
                 <div id="mapWrapper" class="relative w-full aspect-[12/9] bg-slate-50" onclick="handleMapClick(event)">
@@ -94,7 +94,7 @@
                     </div>
                 </div>
 
-                <!-- 5 個獨立欄位（皆支援輸入與自動帶出候選） -->
+                <!-- 5 個獨立欄位（連動候選清單、Location 僅用 ward_key、Type 僅取現有資產類型） -->
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 mb-0.5">EAM</label>
@@ -109,8 +109,8 @@
                         <datalist id="serialDatalist"></datalist>
                     </div>
                     <div class="col-span-2">
-                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (資產類型)</label>
-                        <input id="searchTypeInput" list="typeDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選 Type..."
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (現有資產類型)</label>
+                        <input id="searchTypeInput" list="typeDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選現有 Type..."
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
                         <datalist id="typeDatalist"></datalist>
                     </div>
@@ -121,8 +121,8 @@
                         <datalist id="remarkDatalist"></datalist>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Location (如打 NS → NSD)</label>
-                        <input id="searchLocationInput" list="locationDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入如 NS..."
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Location (Ward Key，如 NS)</label>
+                        <input id="searchLocationInput" list="locationDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入 Ward Key..."
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
                         <datalist id="locationDatalist"></datalist>
                     </div>
@@ -155,64 +155,58 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        // 🌟 嚴謹區分 Scanner 與 Printer 的分類與圖示
-        const ASSET_TYPES = [
-            { label: "COMPUTER DESKTOP", icon: "fa-hard-drive" },
-            { label: "NOTEBOOK / LAPTOP", icon: "fa-house-laptop" },
-            { label: "IPAD / IOS TABLET", icon: "fa-tablet-screen-button" },
-            { label: "WINDOWS TABLET", icon: "fa-tablet" },
-            { label: "LCD MONITOR", icon: "fa-desktop" },
-            { label: "TELEVISION SET", icon: "fa-chromecast" },
-            { label: "BARCODE SCANNER", icon: "fa-barcode" },
-            { label: "BARCODE PRINTER", icon: "fa-print" },
-            { label: "PHOTOCOPIER", icon: "fa-file-invoice" },
-            { label: "CAMERA", icon: "fa-camera" },
-            { label: "CABINET / STORAGE / SHELVING", icon: "fa-box-archive" },
-            { label: "MICRO-WAVE / RADIATOR / HEATER", icon: "fa-fire-burner" },                                                
-            { label: "TROLLEY / CART", icon: "fa-cart-flatbed" },
-            { label: "REFRIGERATOR / REFRIGERATION", icon: "fa-snowflake" },
-            { label: "SHREDDING MACHINE, PAPER", icon: "fa-file-lines" }, 
-            { label: "DEFIBRILLATOR / PACEMAKER / ECG", icon: "fa-heart-pulse" },
-            { label: "INFUSION PUMP / MEDICAL PUMP", icon: "fa-pills" },
-            { label: "OXYGEN CONCENTRATOR / FLOWMETER", icon: "fa-lungs" },
-            { label: "BEDS, ELECTRIC / WARMER / LIFT", icon: "fa-bed" },
-            { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
-            { label: "Office Asset / Furniture", icon: "fa-chair" },
-            { label: "Others", icon: "fa-box" }
-        ];
+        function filterAssetsByCriteria(assets, criteria, excludeField = null) {
+            const eamKw = excludeField === 'eam' ? '' : (criteria.eam || '').toLowerCase().trim();
+            const serialKw = excludeField === 'serial' ? '' : (criteria.serial || '').toLowerCase().trim();
+            const typeKw = excludeField === 'type' ? '' : (criteria.type || '').toLowerCase().trim();
+            const remarkKw = excludeField === 'remark' ? '' : (criteria.remark || '').toLowerCase().trim();
+            const locationKw = excludeField === 'location' ? '' : (criteria.location || '').toLowerCase().trim();
+
+            return (assets || []).filter(asset => {
+                const eam = String(asset.eam || '').toLowerCase().trim();
+                const serial = String(asset.serial || '').toLowerCase().trim();
+                const description = String(asset.description || '').toLowerCase().trim();
+                const remark = String(asset.remark || '').toLowerCase().trim();
+                const ward = String(asset.ward || '').toLowerCase().trim();
+
+                if (eamKw && !eam.includes(eamKw)) return false;
+                if (serialKw && !serial.includes(serialKw)) return false;
+                if (typeKw && !description.includes(typeKw)) return false;
+                if (remarkKw && !remark.includes(remarkKw)) return false;
+                if (locationKw && !ward.includes(locationKw)) return false;
+                return true;
+            });
+        }
+
+        function setDatalistValues(datalistId, values) {
+            const dl = document.getElementById(datalistId);
+            if (!dl) return;
+            const sorted = [...new Set(
+                (values || [])
+                    .filter(v => v !== undefined && v !== null && String(v).trim() !== '')
+                    .map(v => String(v).trim())
+            )].sort((x, y) => x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' }));
+
+            dl.innerHTML = sorted.map(v => `<option value="${v.replace(/"/g, '&quot;')}"></option>`).join('');
+        }
+
+        function syncLinkedSearchDatalists(criteria) {
+            setDatalistValues('eamDatalist', filterAssetsByCriteria(allAssets, criteria, 'eam').map(a => a.eam));
+            setDatalistValues('serialDatalist', filterAssetsByCriteria(allAssets, criteria, 'serial').map(a => a.serial));
+            setDatalistValues('typeDatalist', filterAssetsByCriteria(allAssets, criteria, 'type').map(a => a.description));
+            setDatalistValues('remarkDatalist', filterAssetsByCriteria(allAssets, criteria, 'remark').map(a => a.remark));
+            setDatalistValues('locationDatalist', filterAssetsByCriteria(allAssets, criteria, 'location').map(a => a.ward));
+        }
 
         function populateSearchDatalists() {
-            const eamSet = new Set();
-            const serialSet = new Set();
-            const typeSet = new Set(ASSET_TYPES.map(t => t.label));
-            const remarkSet = new Set();
-            const locationSet = new Set();
-
-            (allAssets || []).forEach(a => {
-                if (a.eam && String(a.eam).trim()) eamSet.add(String(a.eam).trim());
-                if (a.serial && String(a.serial).trim()) serialSet.add(String(a.serial).trim());
-                if (a.description && String(a.description).trim()) typeSet.add(String(a.description).trim());
-                if (a.remark && String(a.remark).trim()) remarkSet.add(String(a.remark).trim());
-                if (a.ward && String(a.ward).trim()) locationSet.add(String(a.ward).trim());
-            });
-
-            (floorHierarchyData || []).forEach(h => {
-                if (h.wardKey && String(h.wardKey).trim()) locationSet.add(String(h.wardKey).trim());
-                if (h.wardName && String(h.wardName).trim()) locationSet.add(String(h.wardName).trim());
-            });
-
-            const fillList = (id, values) => {
-                const dl = document.getElementById(id);
-                if (!dl) return;
-                const sorted = [...values].sort((x, y) => String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: 'base' }));
-                dl.innerHTML = sorted.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}"></option>`).join('');
+            const criteria = {
+                eam: document.getElementById('searchEamInput')?.value || '',
+                serial: document.getElementById('searchSerialInput')?.value || '',
+                type: document.getElementById('searchTypeInput')?.value || '',
+                remark: document.getElementById('searchRemarkInput')?.value || '',
+                location: document.getElementById('searchLocationInput')?.value || ''
             };
-
-            fillList('eamDatalist', eamSet);
-            fillList('serialDatalist', serialSet);
-            fillList('typeDatalist', typeSet);
-            fillList('remarkDatalist', remarkSet);
-            fillList('locationDatalist', locationSet);
+            syncLinkedSearchDatalists(criteria);
         }
 
         function hasActiveMultiSearch() {
@@ -225,13 +219,17 @@
         }
 
         function applyMultiFieldSearch() {
-            const eamKw = (document.getElementById('searchEamInput')?.value || '').toLowerCase().trim();
-            const serialKw = (document.getElementById('searchSerialInput')?.value || '').toLowerCase().trim();
-            const typeKw = (document.getElementById('searchTypeInput')?.value || '').toLowerCase().trim();
-            const remarkKw = (document.getElementById('searchRemarkInput')?.value || '').toLowerCase().trim();
-            const locationKw = (document.getElementById('searchLocationInput')?.value || '').toLowerCase().trim();
+            const criteria = {
+                eam: document.getElementById('searchEamInput')?.value || '',
+                serial: document.getElementById('searchSerialInput')?.value || '',
+                type: document.getElementById('searchTypeInput')?.value || '',
+                remark: document.getElementById('searchRemarkInput')?.value || '',
+                location: document.getElementById('searchLocationInput')?.value || ''
+            };
 
-            if (!eamKw && !serialKw && !typeKw && !remarkKw && !locationKw) {
+            syncLinkedSearchDatalists(criteria);
+
+            if (!hasActiveMultiSearch()) {
                 const wardSelect = document.getElementById('wardSelect');
                 if (wardSelect && wardSelect.value) {
                     onWardChange();
@@ -241,23 +239,7 @@
                 return;
             }
 
-            const matchedAssets = (allAssets || []).filter(asset => {
-                const eam = String(asset.eam || '').toLowerCase().trim();
-                const serial = String(asset.serial || '').toLowerCase().trim();
-                const description = String(asset.description || '').toLowerCase().trim();
-                const remark = String(asset.remark || '').toLowerCase().trim();
-                const ward = String(asset.ward || '').toLowerCase().trim();
-                const block = String(asset.block || '').toLowerCase().trim();
-                const floor = String(asset.floor || '').toLowerCase().trim();
-
-                if (eamKw && !eam.includes(eamKw)) return false;
-                if (serialKw && !serial.includes(serialKw)) return false;
-                if (typeKw && !description.includes(typeKw)) return false;
-                if (remarkKw && !remark.includes(remarkKw)) return false;
-                if (locationKw && !ward.includes(locationKw) && !block.includes(locationKw) && !floor.includes(locationKw)) return false;
-                return true;
-            });
-
+            const matchedAssets = filterAssetsByCriteria(allAssets, criteria, null);
             renderAssetSidebarList(matchedAssets);
         }
 
@@ -292,7 +274,7 @@
                     }
                 })
                 .catch(err => console.error("抓取資產失敗:", err));
-         }
+        }
 
         function fetchHierarchy() {
             fetch(`${GAS_API_URL}?action=getHierarchy`)
@@ -448,35 +430,6 @@
                 fetchAllAssets();
             })
             .catch(err => alert("更新失敗: " + err));
-        }
-
-        function deleteAssetFromSheet(eam) {
-            fetch(GAS_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'deleteAsset', eam: eam })
-            })
-            .then(res => res.json())
-            .then(() => {
-                alert("資產已刪除！");
-                fetchAllAssets();
-            })
-            .catch(err => alert("刪除失敗: " + err));
-        }
-
-        function addNewAssetApi(newAsset) {
-            newAsset.dept = "NSD";
-            fetch(GAS_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'addAsset', asset: newAsset })
-            })
-            .then(res => res.json())
-            .then(() => {
-                alert("新資產新增成功！");
-                fetchAllAssets();
-            })
-            .catch(err => alert("新增失敗: " + err));
         }
 
         function initDropdowns(hierarchy) {
@@ -804,99 +757,178 @@
                 currentFloor,
                 currentWard
             );
-            return;
         }
 
         function openSelectEamToMoveModal(targetX, targetY, targetBlock, targetFloor, targetWard) {
             const existingModal = document.getElementById('selectEamMoveModal');
             if (existingModal) existingModal.remove();
 
-            const sortedAssets = [...(allAssets || [])].sort((a, b) =>
-                String(a.eam || '').localeCompare(String(b.eam || ''), undefined, { numeric: true, sensitivity: 'base' })
-            );
-
             const modal = document.createElement('div');
             modal.id = 'selectEamMoveModal';
             modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
             modal.innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-slate-800">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-md shadow-2xl text-slate-800 max-h-[90vh] overflow-y-auto">
                     <h3 class="text-xs font-bold mb-1 text-emerald-600 text-center flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-location-crosshairs"></i> 選擇要移動到此位置的資產 (EAM)
+                        <i class="fa-solid fa-location-crosshairs"></i> 篩選並選擇要移動的資產
                     </h3>
-                    <p class="text-[11px] text-slate-500 text-center mb-4">
-                        目標位置：<span class="font-semibold text-slate-700">${targetWard}</span> (${targetX}%, ${targetY}%)
+                    <p class="text-[11px] text-slate-500 text-center mb-3">
+                        目標位置：<span class="font-bold text-slate-700">${targetWard}</span>
                     </p>
 
-                    <div class="space-y-3 text-xs">
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">快速篩選 EAM / 名稱 / SN:</label>
-                            <input id="filterMoveEamInput" type="text" placeholder="輸入關鍵字篩選..."
-                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500">
+                    <div id="moveFilterStep" class="space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">EAM</label>
+                                <input id="moveFilterEam" list="moveEamDatalist" type="text" placeholder="輸入或選 EAM..."
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs">
+                                <datalist id="moveEamDatalist"></datalist>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">S/N (Serial)</label>
+                                <input id="moveFilterSerial" list="moveSerialDatalist" type="text" placeholder="輸入或選 S/N..."
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs">
+                                <datalist id="moveSerialDatalist"></datalist>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (現有資產類型)</label>
+                                <input id="moveFilterType" list="moveTypeDatalist" type="text" placeholder="輸入或選現有 Type..."
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs">
+                                <datalist id="moveTypeDatalist"></datalist>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Remark (備註)</label>
+                                <input id="moveFilterRemark" list="moveRemarkDatalist" type="text" placeholder="輸入或選 Remark..."
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs">
+                                <datalist id="moveRemarkDatalist"></datalist>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Location (Ward Key)</label>
+                                <input id="moveFilterLocation" list="moveLocationDatalist" type="text" placeholder="輸入 Ward Key..."
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs">
+                                <datalist id="moveLocationDatalist"></datalist>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">選擇既有 EAM:</label>
-                            <select id="selectMoveEamDropdown" size="6"
-                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-slate-800 focus:outline-none focus:border-emerald-500">
-                            </select>
+
+                        <div class="flex justify-between items-center pt-1">
+                            <span id="moveMatchCount" class="text-[11px] text-slate-500 font-medium">符合 0 筆</span>
+                            <button type="button" id="btnResetMoveFilter" class="text-[11px] text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg cursor-pointer">清除篩選</button>
+                        </div>
+
+                        <select id="selectMoveEamDropdown" size="5"
+                            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs"></select>
+
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" id="btnPrepareMoveConfirm" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl cursor-pointer">下一步</button>
+                            <button type="button" id="btnCancelMoveEam" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl cursor-pointer">取消</button>
                         </div>
                     </div>
 
-                    <div class="flex gap-2 mt-5">
-                        <button id="btnConfirmMoveEam" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-md cursor-pointer">確認移動至此</button>
-                        <button id="btnCancelMoveEam" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl transition-all cursor-pointer">取消</button>
+                    <!-- 最精簡確認畫面：只顯示從原本 Ward 移到 targetWard -->
+                    <div id="moveConfirmStep" class="hidden space-y-3 text-xs">
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2">
+                            <p class="font-bold text-amber-800">確定要移動此資產嗎？</p>
+                            <div class="text-slate-700 space-y-1 bg-white/90 p-2.5 rounded-lg border border-amber-100">
+                                <div><span class="font-bold">資產：</span><span id="confirmAssetSummary"></span></div>
+                                <div><span class="font-bold text-rose-700">原本位置：</span><span id="confirmFromWard"></span></div>
+                                <div><span class="font-bold text-emerald-700">新位置：</span><span id="confirmToWard"></span></div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" id="btnExecuteMoveConfirmed" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl cursor-pointer">確定移動</button>
+                            <button type="button" id="btnBackToMoveSelect" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl cursor-pointer">返回重選</button>
+                        </div>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
 
+            const eamInput = document.getElementById('moveFilterEam');
+            const serialInput = document.getElementById('moveFilterSerial');
+            const typeInput = document.getElementById('moveFilterType');
+            const remarkInput = document.getElementById('moveFilterRemark');
+            const locationInput = document.getElementById('moveFilterLocation');
             const selectEl = document.getElementById('selectMoveEamDropdown');
-            const filterEl = document.getElementById('filterMoveEamInput');
+            const countEl = document.getElementById('moveMatchCount');
 
-            function populateOptions(keyword = '') {
-                const kw = keyword.trim().toLowerCase();
-                const filtered = sortedAssets.filter(a => {
-                    if (!kw) return true;
-                    const eam = String(a.eam || '').toLowerCase();
-                    const desc = String(a.description || '').toLowerCase();
-                    const sn = String(a.serial || '').toLowerCase();
-                    const ward = String(a.ward || '').toLowerCase();
-                    return eam.includes(kw) || desc.includes(kw) || sn.includes(kw) || ward.includes(kw);
-                });
-
-                selectEl.innerHTML = filtered.map(a => {
-                    const label = `${a.eam} — ${a.description || '無類型'} (${a.ward || 'NSD'})`;
-                    return `<option value="${a.eam}">${label}</option>`;
-                }).join('');
-
-                if (selectEl.options.length > 0 && selectEl.selectedIndex === -1) {
-                    selectEl.selectedIndex = 0;
-                }
+            function fillList(id, values) {
+                const dl = document.getElementById(id);
+                if (!dl) return;
+                const sorted = [...new Set(
+                    (values || [])
+                        .filter(v => v !== undefined && v !== null && String(v).trim() !== '')
+                        .map(v => String(v).trim())
+                )].sort((x, y) => x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' }));
+                dl.innerHTML = sorted.map(v => `<option value="${v.replace(/"/g, '&quot;')}"></option>`).join('');
             }
 
-            populateOptions('');
-            filterEl.oninput = () => populateOptions(filterEl.value);
-            filterEl.focus();
+            function refreshMoveOptions() {
+                const criteria = {
+                    eam: eamInput.value,
+                    serial: serialInput.value,
+                    type: typeInput.value,
+                    remark: remarkInput.value,
+                    location: locationInput.value
+                };
 
-            document.getElementById('btnConfirmMoveEam').onclick = () => {
+                fillList('moveEamDatalist', filterAssetsByCriteria(allAssets, criteria, 'eam').map(a => a.eam));
+                fillList('moveSerialDatalist', filterAssetsByCriteria(allAssets, criteria, 'serial').map(a => a.serial));
+                fillList('moveTypeDatalist', filterAssetsByCriteria(allAssets, criteria, 'type').map(a => a.description));
+                fillList('moveRemarkDatalist', filterAssetsByCriteria(allAssets, criteria, 'remark').map(a => a.remark));
+                fillList('moveLocationDatalist', filterAssetsByCriteria(allAssets, criteria, 'location').map(a => a.ward));
+
+                const matched = filterAssetsByCriteria(allAssets, criteria, null).sort((a, b) =>
+                    String(a.eam || '').localeCompare(String(b.eam || ''), undefined, { numeric: true, sensitivity: 'base' })
+                );
+
+                countEl.innerText = `符合 ${matched.length} 筆`;
+                selectEl.innerHTML = matched.map(a =>
+                    `<option value="${a.eam}">${a.eam} — ${a.description || '無類型'} | ${a.ward || '無 Ward'}</option>`
+                ).join('');
+                if (selectEl.options.length > 0 && selectEl.selectedIndex === -1) selectEl.selectedIndex = 0;
+            }
+
+            [eamInput, serialInput, typeInput, remarkInput, locationInput].forEach(inp => {
+                inp.addEventListener('input', refreshMoveOptions);
+                inp.addEventListener('change', refreshMoveOptions);
+            });
+
+            document.getElementById('btnResetMoveFilter').onclick = () => {
+                [eamInput, serialInput, typeInput, remarkInput, locationInput].forEach(inp => { inp.value = ''; });
+                refreshMoveOptions();
+            };
+
+            refreshMoveOptions();
+
+            let pendingAsset = null;
+            document.getElementById('btnPrepareMoveConfirm').onclick = () => {
                 const chosenEam = selectEl.value;
-                if (!chosenEam) {
-                    alert("請先選擇一個 EAM！");
-                    return;
-                }
-                const targetAsset = allAssets.find(a => String(a.eam).trim() === String(chosenEam).trim());
-                if (!targetAsset) {
-                    alert("找不到所選的資產資料！");
-                    return;
-                }
+                if (!chosenEam) return alert('請先選擇一個資產 (EAM)！');
+                const found = allAssets.find(a => String(a.eam).trim() === String(chosenEam).trim());
+                if (!found) return alert('找不到所選資產！');
+                pendingAsset = found;
 
-                targetAsset.x = targetX;
-                targetAsset.y = targetY;
-                targetAsset.block = targetBlock;
-                targetAsset.floor = targetFloor;
-                targetAsset.ward = targetWard;
+                document.getElementById('confirmAssetSummary').innerText = `${found.eam} (${found.description || '無類型'})`;
+                document.getElementById('confirmFromWard').innerText = found.ward || '未設定';
+                document.getElementById('confirmToWard').innerText = targetWard;
 
+                document.getElementById('moveFilterStep').classList.add('hidden');
+                document.getElementById('moveConfirmStep').classList.remove('hidden');
+            };
+
+            document.getElementById('btnBackToMoveSelect').onclick = () => {
+                document.getElementById('moveConfirmStep').classList.add('hidden');
+                document.getElementById('moveFilterStep').classList.remove('hidden');
+            };
+
+            document.getElementById('btnExecuteMoveConfirmed').onclick = () => {
+                if (!pendingAsset) return;
+                pendingAsset.x = targetX;
+                pendingAsset.y = targetY;
+                pendingAsset.block = targetBlock;
+                pendingAsset.floor = targetFloor;
+                pendingAsset.ward = targetWard;
                 modal.remove();
-                updateAssetInSheet(targetAsset);
+                updateAssetInSheet(pendingAsset);
             };
 
             document.getElementById('btnCancelMoveEam').onclick = () => modal.remove();
