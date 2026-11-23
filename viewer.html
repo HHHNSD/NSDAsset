@@ -690,9 +690,13 @@
             }, 50);
         
             function executeHighlightAndScroll() {
-                const wardAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === String(targetWard).trim().toLowerCase());
+                const wardAssets = allAssets.filter(
+                    a => a.ward && String(a.ward).trim().toLowerCase() === String(targetWard || '').trim().toLowerCase()
+                );
                 const orderedWardAssets = [...wardAssets];
-                const index = orderedWardAssets.findIndex(a => String(a.eam).trim().toLowerCase() === String(asset.eam).trim().toLowerCase());
+                const index = orderedWardAssets.findIndex(
+                    a => String(a.eam || '').trim().toLowerCase() === String(asset.eam || '').trim().toLowerCase()
+                );
                 if (index > -1) {
                     const [matched] = orderedWardAssets.splice(index, 1);
                     orderedWardAssets.unshift(matched);
@@ -700,27 +704,27 @@
                     orderedWardAssets.unshift(asset);
                 }
                 currentFilteredAssets = orderedWardAssets;
-
+            
                 renderSidebarWithPriority(currentFilteredAssets);
                 renderAssetMarkers(currentFilteredAssets, asset.eam);
-        
+            
+                // 直接將畫面定位到平面圖，不捲動右側清單卡片
                 const mapContainer = document.getElementById('mapContainer');
                 if (mapContainer) {
-                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-        
+            
                 const assetCards = document.querySelectorAll('[data-eam]');
                 assetCards.forEach(card => {
-                    if (card.getAttribute('data-eam').toLowerCase() === String(asset.eam).trim().toLowerCase()) {
+                    if (String(card.getAttribute('data-eam') || '').toLowerCase() === String(asset.eam || '').trim().toLowerCase()) {
                         card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
-                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 3000);
                     }
                 });
-        
+            
                 const hasCoordinates = (asset.x !== undefined && asset.x !== null && asset.x !== '') &&
                                        (asset.y !== undefined && asset.y !== null && asset.y !== '');
-        
+            
                 if (!hasCoordinates) {
                     isMovingAsset = asset;
                     isRelocatingMode = true;
