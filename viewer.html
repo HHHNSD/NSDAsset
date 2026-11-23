@@ -79,31 +79,65 @@
             </div>
         </div>
 
-        <!-- 右側：資產清單與搜尋面板 -->
+        <!-- 右側：獨立欄位資產清單與搜尋面板 -->
         <aside class="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col h-full shadow-sm overflow-hidden min-h-0">
             <div class="pb-3 border-b border-slate-100 mb-3 space-y-2 shrink-0">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xs font-bold flex items-center gap-2 text-slate-700">
-                        <i class="fa-solid fa-boxes-stacked text-blue-600"></i> 資產清單與搜尋
+                        <i class="fa-solid fa-boxes-stacked text-blue-600"></i> 獨立欄位搜尋與清單
                     </h2>
-                    <span id="assetCountBadge" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-semibold">0 項</span>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="resetSearchFilters()" title="清除所有搜尋條件" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-semibold cursor-pointer transition-colors">
+                            清除
+                        </button>
+                        <span id="assetCountBadge" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-semibold">0 項</span>
+                    </div>
                 </div>
 
-                <div class="flex gap-2 items-center">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
-                        <input id="assetSearchInput" type="text" oninput="onSearchInput(this.value)" placeholder="搜尋 EAM, Serial, Remark, Ward..." 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+                <!-- 5 個獨立欄位（皆支援輸入與自動帶出候選） -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">EAM</label>
+                        <input id="searchEamInput" list="eamDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選 EAM..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+                        <datalist id="eamDatalist"></datalist>
                     </div>
-                    <button onclick="openScannerModal()" title="開啟條碼掃描器" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm transition-all cursor-pointer hover:shadow">
-                        <i class="fa-solid fa-barcode text-base"></i>
-                        <span class="hidden sm:inline">掃瞄</span>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">S/N (Serial)</label>
+                        <input id="searchSerialInput" list="serialDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選 S/N..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+                        <datalist id="serialDatalist"></datalist>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (資產類型)</label>
+                        <input id="searchTypeInput" list="typeDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選 Type..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+                        <datalist id="typeDatalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Remark (備註)</label>
+                        <input id="searchRemarkInput" list="remarkDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選 Remark..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+                        <datalist id="remarkDatalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Location (如打 NS → NSD)</label>
+                        <input id="searchLocationInput" list="locationDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入如 NS..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+                        <datalist id="locationDatalist"></datalist>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-0.5">
+                    <button type="button" onclick="openScannerModal()" title="開啟條碼掃描器" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 shadow-sm transition-all cursor-pointer hover:shadow">
+                        <i class="fa-solid fa-barcode text-sm"></i>
+                        <span>條碼掃描定位</span>
                     </button>
                 </div>
             </div>
 
             <div id="assetListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-0">
-                <p class="text-xs text-slate-400 text-center mt-12">請先選擇上方單位或輸入 EAM 搜尋</p>
+                <p class="text-xs text-slate-400 text-center mt-12">請先選擇上方單位或使用獨立欄位搜尋</p>
             </div>
         </aside>
     </main>
@@ -121,7 +155,7 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        // 🌟 嚴謹區分 Scanner 與 Printer 的 20 種分類與圖示
+        // 🌟 嚴謹區分 Scanner 與 Printer 的分類與圖示
         const ASSET_TYPES = [
             { label: "COMPUTER DESKTOP", icon: "fa-hard-drive" },
             { label: "NOTEBOOK / LAPTOP", icon: "fa-house-laptop" },
@@ -144,8 +178,100 @@
             { label: "BEDS, ELECTRIC / WARMER / LIFT", icon: "fa-bed" },
             { label: "Medical Equipment (General)", icon: "fa-suitcase-medical" },
             { label: "Office Asset / Furniture", icon: "fa-chair" },
-            { label: "Others", icon: "fa-box" } // 🌟 新增 Others 選項
+            { label: "Others", icon: "fa-box" }
         ];
+
+        function populateSearchDatalists() {
+            const eamSet = new Set();
+            const serialSet = new Set();
+            const typeSet = new Set(ASSET_TYPES.map(t => t.label));
+            const remarkSet = new Set();
+            const locationSet = new Set();
+
+            (allAssets || []).forEach(a => {
+                if (a.eam && String(a.eam).trim()) eamSet.add(String(a.eam).trim());
+                if (a.serial && String(a.serial).trim()) serialSet.add(String(a.serial).trim());
+                if (a.description && String(a.description).trim()) typeSet.add(String(a.description).trim());
+                if (a.remark && String(a.remark).trim()) remarkSet.add(String(a.remark).trim());
+                if (a.ward && String(a.ward).trim()) locationSet.add(String(a.ward).trim());
+            });
+
+            (floorHierarchyData || []).forEach(h => {
+                if (h.wardKey && String(h.wardKey).trim()) locationSet.add(String(h.wardKey).trim());
+                if (h.wardName && String(h.wardName).trim()) locationSet.add(String(h.wardName).trim());
+            });
+
+            const fillList = (id, values) => {
+                const dl = document.getElementById(id);
+                if (!dl) return;
+                const sorted = [...values].sort((x, y) => String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: 'base' }));
+                dl.innerHTML = sorted.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}"></option>`).join('');
+            };
+
+            fillList('eamDatalist', eamSet);
+            fillList('serialDatalist', serialSet);
+            fillList('typeDatalist', typeSet);
+            fillList('remarkDatalist', remarkSet);
+            fillList('locationDatalist', locationSet);
+        }
+
+        function hasActiveMultiSearch() {
+            const eam = (document.getElementById('searchEamInput')?.value || '').trim();
+            const serial = (document.getElementById('searchSerialInput')?.value || '').trim();
+            const type = (document.getElementById('searchTypeInput')?.value || '').trim();
+            const remark = (document.getElementById('searchRemarkInput')?.value || '').trim();
+            const location = (document.getElementById('searchLocationInput')?.value || '').trim();
+            return Boolean(eam || serial || type || remark || location);
+        }
+
+        function applyMultiFieldSearch() {
+            const eamKw = (document.getElementById('searchEamInput')?.value || '').toLowerCase().trim();
+            const serialKw = (document.getElementById('searchSerialInput')?.value || '').toLowerCase().trim();
+            const typeKw = (document.getElementById('searchTypeInput')?.value || '').toLowerCase().trim();
+            const remarkKw = (document.getElementById('searchRemarkInput')?.value || '').toLowerCase().trim();
+            const locationKw = (document.getElementById('searchLocationInput')?.value || '').toLowerCase().trim();
+
+            if (!eamKw && !serialKw && !typeKw && !remarkKw && !locationKw) {
+                const wardSelect = document.getElementById('wardSelect');
+                if (wardSelect && wardSelect.value) {
+                    onWardChange();
+                } else {
+                    renderAssetSidebarList(allAssets);
+                }
+                return;
+            }
+
+            const matchedAssets = (allAssets || []).filter(asset => {
+                const eam = String(asset.eam || '').toLowerCase().trim();
+                const serial = String(asset.serial || '').toLowerCase().trim();
+                const description = String(asset.description || '').toLowerCase().trim();
+                const remark = String(asset.remark || '').toLowerCase().trim();
+                const ward = String(asset.ward || '').toLowerCase().trim();
+                const block = String(asset.block || '').toLowerCase().trim();
+                const floor = String(asset.floor || '').toLowerCase().trim();
+
+                if (eamKw && !eam.includes(eamKw)) return false;
+                if (serialKw && !serial.includes(serialKw)) return false;
+                if (typeKw && !description.includes(typeKw)) return false;
+                if (remarkKw && !remark.includes(remarkKw)) return false;
+                if (locationKw && !ward.includes(locationKw) && !block.includes(locationKw) && !floor.includes(locationKw)) return false;
+                return true;
+            });
+
+            renderAssetSidebarList(matchedAssets);
+        }
+
+        function resetSearchFilters() {
+            ['searchEamInput', 'searchSerialInput', 'searchTypeInput', 'searchRemarkInput', 'searchLocationInput'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            applyMultiFieldSearch();
+        }
+
+        function onSearchInput(query) {
+            applyMultiFieldSearch();
+        }
 
         function fetchAllAssets() {
             fetch(`${GAS_API_URL}?action=getAllAssets`)
@@ -153,11 +279,16 @@
                 .then(data => {
                     allAssets = data || [];
                     window.allAssets = allAssets;
-                    renderAssetSidebarList(allAssets);
+                    populateSearchDatalists();
 
-                    const wardSelect = document.getElementById('wardSelect');
-                    if (wardSelect && wardSelect.value) {
-                        onWardChange();
+                    if (hasActiveMultiSearch()) {
+                        applyMultiFieldSearch();
+                    } else {
+                        renderAssetSidebarList(allAssets);
+                        const wardSelect = document.getElementById('wardSelect');
+                        if (wardSelect && wardSelect.value) {
+                            onWardChange();
+                        }
                     }
                 })
                 .catch(err => console.error("抓取資產失敗:", err));
@@ -170,6 +301,7 @@
                     floorHierarchyData = data || [];
                     rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
+                    populateSearchDatalists();
 
                     floorHierarchyData.forEach(item => {
                         const wardKey = item.wardKey;
@@ -383,98 +515,76 @@
             currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardKey.trim().toLowerCase());
             window.currentLoadedAssets = currentFilteredAssets;
             renderAssetMarkers(currentFilteredAssets);
-            renderAssetSidebarList(currentFilteredAssets);
+            if (!hasActiveMultiSearch()) {
+                renderAssetSidebarList(currentFilteredAssets);
+            }
         }
 
-        // 🌟 嚴格區分 Scanner 與 Printer 的分類判定邏輯
         function getAssetTypeConfig(description) {
             const desc = (description || '').toLowerCase();
-            
-            // 1. 電腦桌面 (Desktop) -> 天空藍 (Sky)
             if (desc.includes('desktop') || desc.includes('thinkcentre') || desc.includes('elitedesk') || desc.includes('imac') || desc.includes('workstation')) {
                 return { icon: 'fa-hard-drive', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-500' };
             }
-            // 2. 筆記型電腦 (Laptop) -> 經典藍 (Blue)
             if (desc.includes('laptop') || desc.includes('notebook') || desc.includes('thinkpad') || desc.includes('probook') || desc.includes('elitebook')) {
                 return { icon: 'fa-house-laptop', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500' };
             }
-            // 3. iPad / 平板 (iOS) -> 靛藍色 (Indigo)
             if (desc.includes('ipad') || desc.includes('ios tablet')) {
                 return { icon: 'fa-tablet-screen-button', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500' };
             }
-            // 4. Windows 平板 / 手持 (Tablet) -> 紫羅蘭色 (Violet)
             if (desc.includes('tablet') || desc.includes('handheld') || desc.includes('microsoft spro') || desc.includes('pda')) {
                 return { icon: 'fa-tablet', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-500' };
             }
-            // 5. 螢幕 / 顯示器 (Monitor / LCD) -> 
             if (desc.includes('monitor') || desc.includes('display') || desc.includes('lcd')) {
                 return { icon: 'fa-desktop', color: 'text-cyan-600', bg: 'bg-teal-50', border: 'border-teal-500' };
             }
-            // 6. 電視 (Television) -> 青色 (Cyan)
             if (desc.includes('television') || desc.includes('tv')) {
                 return { icon: 'fa-tv', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-500' };
             }
-            // 7. 條碼/熱感應印表機 (Thermal/Barcode Printer) -> 紫色 (Purple)
             if ((desc.includes('printer') && (desc.includes('thermal') || desc.includes('label') || desc.includes('spp-r'))) || desc.includes('bixolon')) {
                 return { icon: 'fa-print', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-500' };
             }
-            // 8. 條碼掃描器 (Barcode Scanner) -> 翠綠色 (Emerald - 象徵掃描成功)
             if (desc.includes('scanner') || desc.includes('barcode') || desc.includes('bht')) {
                 return { icon: 'fa-barcode', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500' };
             }
-            // 9. 雷射印表機 / 影印機 / 傳真機 (Laser Printer / Copying) -> 紫紅/洋紅色 (Fuchsia)
             if (desc.includes('printer') || desc.includes('photo-copying') || desc.includes('photocopying') || desc.includes('facsimile') || desc.includes('copier')) {
                 return { icon: 'fa-file-invoice', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-500' };
             }
-            // 10. 相機 / 錄影設備 (Camera) -> 活力橙色 (Orange)
             if (desc.includes('camera') || desc.includes('video system') || desc.includes('endoscope')) {
                 return { icon: 'fa-camera', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-500' };
             }
-            // 11. 櫃子 / 儲存櫃 / 層架 (Cabinet / Storage) -> 琥珀棕色 (Amber)
             if (desc.includes('cabinet') || desc.includes('shelv') || desc.includes('storage') || desc.includes('locker')) {
                 return { icon: 'fa-box-archive', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-600' };
             }
-            // 12. 推車 / 車架 (Trolley / Cart) -> 石灰色 (Stone)
             if (desc.includes('trolley') || desc.includes('cart')) {
                 return { icon: 'fa-cart-flatbed', color: 'text-stone-600', bg: 'bg-stone-50', border: 'border-stone-500' };
             }
-            // 13. 冰箱 / 冰櫃 (Refrigerator) -> 深冰藍色 (Cyan Deep)
             if (desc.includes('refrigerator') || desc.includes('fridge') || desc.includes('freezer')) {
                 return { icon: 'fa-snowflake', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-600' };
             }
-            // 14. 暖氣機 / 發熱器 (Radiator / Heater) -> 烈火紅/暖橘色 (Red & Amber)
             if (desc.includes('radiator') || desc.includes('heater') || desc.includes('heating') || desc.includes('steam')) {
                 return { icon: 'fa-fire-burner', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-500' };
             }
-            // 15. 碎紙機 (Shredding Machine) -> 玫瑰紅 (Rose)
             if (desc.includes('shredding') || desc.includes('shredder')) {
                 return { icon: 'fa-file-lines', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-600' };
             }
-            // 16. 除顫儀 / 心律調整器 / 心電圖 (Defibrillator / ECG) -> 急救紅 (Red)
-            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed') || desc.includes('electrocardiographs') || desc.includes('cardiopulmonary')    ) {
+            if (desc.includes('defibrillator') || desc.includes('pacemaker') || desc.includes('aed') || desc.includes('electrocardiographs') || desc.includes('cardiopulmonary')) {
                 return { icon: 'fa-heart-pulse', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-500' };
             }
-            // 17. 輸液泵 / 醫療泵 (Infusion Pump) -> 粉紅色 (Pink)
             if (desc.includes('infusion pump') || desc.includes('pump') || desc.includes('syringe')) {
                 return { icon: 'fa-pills', color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-500' };
             }
-            // 18. 氧氣設備 / 流量計 / 加濕器 (Oxygen / Suction) -> 醫療藍 (Blue)
             if (desc.includes('oxygen') || desc.includes('flowmeter') || desc.includes('regulator') || desc.includes('suction') || desc.includes('humidifier')) {
                 return { icon: 'fa-lungs', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-400' };
             }
-            // 19. 病床 / 升降梯 / 暖身箱 (Beds / Lift / Warmer) -> 森林綠 (Emerald)
-            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher') || desc.includes('warming') || desc.includes('transfer')  ) {
+            if (desc.includes('bed') || desc.includes('lift') || desc.includes('stretcher') || desc.includes('warming') || desc.includes('transfer')) {
                 return { icon: 'fa-bed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-600' };
             }
-            // 20. 其他精密醫療儀器 (Medical Equipment) -> 柔和玫瑰紅 (Rose)
             if (desc.includes('medical') || desc.includes('analyzer') || desc.includes('thermometer') || desc.includes('otoscope') || desc.includes('laryngoscope') || desc.includes('oximeter') || desc.includes('ultrasonic') || desc.includes('train') || desc.includes('meter') || desc.includes('patient')) {
                 return { icon: 'fa-suitcase-medical', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-500' };
             }
-            // 21. 一般辦公傢俱 / 資產 (Office Asset / Chair / Desk) -> 暖木琥珀色 (Amber)
             if (desc.includes('office') || desc.includes('chair') || desc.includes('desk') || desc.includes('table')) {
                 return { icon: 'fa-chair', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500' };
             }
-            // 22. 預設 / 其他雜項 (Others / Miscellaneous) -> 中性石板灰 (Slate)
             return { icon: 'fa-box', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
         }
 
@@ -582,23 +692,6 @@
             });
         }
 
-        function onSearchInput(query) {
-            const keyword = query ? query.toLowerCase().trim() : "";
-            if (!keyword) {
-                onWardChange();
-                return;
-            }
-            const matchedAssets = allAssets.filter(asset => {
-                const eam = asset.eam ? asset.eam.toLowerCase().trim() : "";
-                const serial = asset.serial ? asset.serial.toLowerCase().trim() : "";
-                const remark = asset.remark ? asset.remark.toLowerCase().trim() : "";
-                const ward = asset.ward ? asset.ward.toLowerCase().trim() : "";
-                const description = asset.description ? asset.description.toLowerCase().trim() : "";
-                return eam.includes(keyword) || serial.includes(keyword) || remark.includes(keyword) || ward.includes(keyword) || description.includes(keyword);
-            });
-            renderAssetSidebarList(matchedAssets);
-        }
-
         function locateAndHighlightAsset(asset) {
             if (!asset) return;
         
@@ -704,7 +797,6 @@
                 return;
             }
 
-            // 先點地圖空位 -> 彈出選擇既有 EAM 視窗，直接移動到該座標（不提供新增資產）
             openSelectEamToMoveModal(
                 parseFloat(x.toFixed(2)),
                 parseFloat(y.toFixed(2)),
@@ -714,7 +806,7 @@
             );
             return;
         }
-        
+
         function openSelectEamToMoveModal(targetX, targetY, targetBlock, targetFloor, targetWard) {
             const existingModal = document.getElementById('selectEamMoveModal');
             if (existingModal) existingModal.remove();
@@ -844,126 +936,6 @@
             }
         }
 
-        function openAssetFormModal(assetData, isEdit = false) {
-            const existingModal = document.getElementById('customFormModal');
-            if (existingModal) existingModal.remove();
-        
-            // 🌟 處理 Supplies 給出不在預設清單中的長 Type 字串，強行加到選項最上方並預設選中
-            const currentDesc = (assetData.description || '').trim();
-            const isInPredefinedList = ASSET_TYPES.some(type => type.label === currentDesc);
-        
-            let customOptionHtml = '';
-            if (currentDesc && !isInPredefinedList) {
-                customOptionHtml = `<option value="${currentDesc}" selected>${currentDesc}</option>`;
-            }
-        
-            const standardOptionsHtml = ASSET_TYPES.map(type => 
-                `<option value="${type.label}" ${currentDesc === type.label ? 'selected' : ''}>${type.label}</option>`
-            ).join('');
-        
-            const typeOptionsHtml = customOptionHtml + standardOptionsHtml;
-        
-            const modal = document.createElement('div');
-            modal.id = 'customFormModal';
-            modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
-            modal.innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-slate-800">
-                    <h3 class="text-xs font-bold mb-4 text-blue-600 text-center flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-shapes"></i> ${isEdit ? '編輯資產資訊' : '新增 / 移動資產'}
-                    </h3>
-                    <div class="space-y-3 text-xs">
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">EAM 編號:</label>
-                            <input id="inputEam" type="text" value="${assetData.eam || ''}" ${isEdit ? 'disabled' : ''} placeholder="例如 1564148" 
-                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500 ${isEdit ? 'opacity-60 cursor-not-allowed' : ''}">
-                        </div>
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">Serial 編號:</label>
-                            <input id="inputSerial" type="text" value="${assetData.serial || 'SN'}" placeholder="請輸入 Serial" 
-                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">資產類型 (Type):</label>
-                            <select id="inputDesc" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">${typeOptionsHtml}</select>
-                        </div>
-                        <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">備註 (Remark):</label>
-                            <input id="inputRemark" type="text" value="${assetData.remark || ''}" placeholder="請輸入備註 (選填)" 
-                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
-                        </div>
-                    </div>
-                    <div class="flex gap-2 mt-5">
-                        <button id="btnSaveForm" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-md">確認儲存</button>
-                        <button id="btnCloseForm" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl transition-all">取消</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        
-            document.getElementById('btnSaveForm').onclick = () => {
-                const eamEl = document.getElementById('inputEam');
-                if (!eamEl || !eamEl.value.trim()) { 
-                    alert("EAM 編號不能為空！"); 
-                    return; 
-                }
-                const eam = eamEl.value.trim();
-                const targetWard = assetData.ward || document.getElementById('wardSelect').value;
-        
-                // 🌟 必須在 modal.remove() 之前，先把所有欄位的值讀取並存進變數！
-                const serialEl = document.getElementById('inputSerial');
-                const descEl = document.getElementById('inputDesc');
-                const remarkEl = document.getElementById('inputRemark');
-        
-                const serialVal = serialEl ? serialEl.value.trim() : (assetData.serial || 'SN');
-                const descVal = descEl ? descEl.value : (assetData.description || ASSET_TYPES[0].label);
-                const remarkVal = remarkEl ? remarkEl.value.trim() : (assetData.remark || '');
-        
-                // 讀取完畢後，才安全地關閉/移除 modal
-                modal.remove();
-        
-                if (isEdit) {
-                    // 1. 編輯模式：更新詳細資料
-                    assetData.serial = serialVal; 
-                    assetData.dept = "NSD"; 
-                    assetData.description = descVal; 
-                    assetData.remark = remarkVal; 
-                    assetData.ward = targetWard;
-                    updateAssetInSheet(assetData);
-                } else {
-                    // 2. 新增 / 移動模式：檢查 EAM 是否已存在
-                    const existingAsset = allAssets.find(a => a.eam.toLowerCase() === eam.toLowerCase());
-                    if (existingAsset) {
-                        // 已存在：只改位置，保留原本的 serial, description, remark
-                        existingAsset.block = assetData.block; 
-                        existingAsset.floor = assetData.floor; 
-                        existingAsset.ward = targetWard;
-                        existingAsset.x = assetData.x; 
-                        existingAsset.y = assetData.y;
-                        
-                        alert(`⚠️ 偵測到 EAM [${eam}] 已存在。\n系統已自動幫您將其移動至新位置，原本的詳細資料保持不見不變！`);
-                        updateAssetInSheet(existingAsset);
-                    } else {
-                        // 完全新 EAM：使用剛剛讀取到的變數新增
-                        const newAsset = { 
-                            eam, 
-                            serial: serialVal, 
-                            dept: "NSD", 
-                            description: descVal, 
-                            remark: remarkVal, 
-                            block: assetData.block, 
-                            floor: assetData.floor, 
-                            ward: targetWard, 
-                            x: assetData.x, 
-                            y: assetData.y 
-                        };
-                        addNewAssetApi(newAsset);
-                    }
-                }
-            };
-            
-            document.getElementById('btnCloseForm').onclick = () => modal.remove();
-        }
-
         function openActionModal(asset) {
             const existingModal = document.getElementById('customActionModal');
             if (existingModal) existingModal.remove();
@@ -1078,8 +1050,6 @@
             };
         };
 
-        let pendingNewAssetEam = null;
-        
         function handleBarcodeScan(rawInput) {
             if (!rawInput) return;
             let cleanedEam = String(rawInput).trim().replace(/^0+/, '')
@@ -1088,13 +1058,13 @@
             const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
 
             if (targetAsset) {
-                // 🌟 如果已存在，直接定位並高亮，不會覆寫任何資料
                 locateAndHighlightAsset(targetAsset);
                 openActionModal(targetAsset);
             } else {
                 alert(`找不到 EAM [${cleanedEam}] 紀錄（此頁面僅支援檢視、移動或報廢既有資產）。`);
             }
         }
+
         document.addEventListener("DOMContentLoaded", () => {
             fetchHierarchy();
             fetchAllAssets();
