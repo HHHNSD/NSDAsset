@@ -94,7 +94,7 @@
                     </div>
                 </div>
 
-                <!-- 5 個獨立欄位（連動候選清單、Location 僅用 ward_key、Type 僅取現有資產類型） -->
+                <!-- 5 個獨立欄位（最高優先權、連動候選清單、Location 僅用 ward_key、Type 僅取現有資產類型） -->
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 mb-0.5">EAM</label>
@@ -155,6 +155,16 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
+        function getCurrentSearchCriteria() {
+            return {
+                eam: document.getElementById('searchEamInput')?.value || '',
+                serial: document.getElementById('searchSerialInput')?.value || '',
+                type: document.getElementById('searchTypeInput')?.value || '',
+                remark: document.getElementById('searchRemarkInput')?.value || '',
+                location: document.getElementById('searchLocationInput')?.value || ''
+            };
+        }
+
         function filterAssetsByCriteria(assets, criteria, excludeField = null) {
             const eamKw = excludeField === 'eam' ? '' : (criteria.eam || '').toLowerCase().trim();
             const serialKw = excludeField === 'serial' ? '' : (criteria.serial || '').toLowerCase().trim();
@@ -199,34 +209,40 @@
         }
 
         function populateSearchDatalists() {
-            const criteria = {
-                eam: document.getElementById('searchEamInput')?.value || '',
-                serial: document.getElementById('searchSerialInput')?.value || '',
-                type: document.getElementById('searchTypeInput')?.value || '',
-                remark: document.getElementById('searchRemarkInput')?.value || '',
-                location: document.getElementById('searchLocationInput')?.value || ''
-            };
-            syncLinkedSearchDatalists(criteria);
+            syncLinkedSearchDatalists(getCurrentSearchCriteria());
         }
 
         function hasActiveMultiSearch() {
-            const eam = (document.getElementById('searchEamInput')?.value || '').trim();
-            const serial = (document.getElementById('searchSerialInput')?.value || '').trim();
-            const type = (document.getElementById('searchTypeInput')?.value || '').trim();
-            const remark = (document.getElementById('searchRemarkInput')?.value || '').trim();
-            const location = (document.getElementById('searchLocationInput')?.value || '').trim();
-            return Boolean(eam || serial || type || remark || location);
+            const c = getCurrentSearchCriteria();
+            return Boolean(
+                c.eam.trim() ||
+                c.serial.trim() ||
+                c.type.trim() ||
+                c.remark.trim() ||
+                c.location.trim()
+            );
+        }
+
+        function renderSidebarWithPriority(fallbackAssets = null) {
+            if (hasActiveMultiSearch()) {
+                const matchedAssets = filterAssetsByCriteria(allAssets, getCurrentSearchCriteria(), null);
+                renderAssetSidebarList(matchedAssets);
+                return;
+            }
+            if (Array.isArray(fallbackAssets)) {
+                renderAssetSidebarList(fallbackAssets);
+                return;
+            }
+            const wardSelect = document.getElementById('wardSelect');
+            if (wardSelect && wardSelect.value) {
+                renderAssetSidebarList(currentFilteredAssets);
+            } else {
+                renderAssetSidebarList(allAssets);
+            }
         }
 
         function applyMultiFieldSearch() {
-            const criteria = {
-                eam: document.getElementById('searchEamInput')?.value || '',
-                serial: document.getElementById('searchSerialInput')?.value || '',
-                type: document.getElementById('searchTypeInput')?.value || '',
-                remark: document.getElementById('searchRemarkInput')?.value || '',
-                location: document.getElementById('searchLocationInput')?.value || ''
-            };
-
+            const criteria = getCurrentSearchCriteria();
             syncLinkedSearchDatalists(criteria);
 
             if (!hasActiveMultiSearch()) {
@@ -239,8 +255,7 @@
                 return;
             }
 
-            const matchedAssets = filterAssetsByCriteria(allAssets, criteria, null);
-            renderAssetSidebarList(matchedAssets);
+            renderSidebarWithPriority();
         }
 
         function resetSearchFilters() {
@@ -255,29 +270,35 @@
             applyMultiFieldSearch();
         }
 
-        function fetchAllAssets() {
-            fetch(`${GAS_API_URL}?action=getAllAssets`)
+        function fetchAllAssets(focusEam = null) {
+            return fetch(`${GAS_API_URL}?action=getAllAssets&_t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     allAssets = data || [];
                     window.allAssets = allAssets;
                     populateSearchDatalists();
 
-                    if (hasActiveMultiSearch()) {
-                        applyMultiFieldSearch();
-                    } else {
-                        renderAssetSidebarList(allAssets);
-                        const wardSelect = document.getElementById('wardSelect');
-                        if (wardSelect && wardSelect.value) {
-                            onWardChange();
+                    if (focusEam) {
+                        const updatedAsset = allAssets.find(a => String(a.eam || '').trim() === String(focusEam).trim());
+                        if (updatedAsset) {
+                            locateAndHighlightAsset(updatedAsset);
+                            return;
                         }
                     }
+
+                    const wardSelect = document.getElementById('wardSelect');
+                    if (wardSelect && wardSelect.value) {
+                        currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardSelect.value.trim().toLowerCase());
+                        window.currentLoadedAssets = currentFilteredAssets;
+                        renderAssetMarkers(currentFilteredAssets);
+                    }
+                    renderSidebarWithPriority(wardSelect && wardSelect.value ? currentFilteredAssets : allAssets);
                 })
                 .catch(err => console.error("抓取資產失敗:", err));
         }
 
         function fetchHierarchy() {
-            fetch(`${GAS_API_URL}?action=getHierarchy`)
+            fetch(`${GAS_API_URL}?action=getHierarchy&_t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     floorHierarchyData = data || [];
@@ -417,17 +438,17 @@
             document.getElementById('btnCloseCondemn').onclick = () => modal.remove();
         }
 
-        function updateAssetInSheet(asset) {
+        function updateAssetInSheet(asset, focusEam = null) {
             asset.dept = "NSD";
-            fetch(GAS_API_URL, {
+            return fetch(GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'updateAsset', asset: asset })
             })
             .then(res => res.json())
             .then(() => {
-                alert("資產更新成功！");
-                fetchAllAssets();
+                alert("資產更新成功，正在重新載入最新位置...");
+                return fetchAllAssets(focusEam || asset.eam);
             })
             .catch(err => alert("更新失敗: " + err));
         }
@@ -468,9 +489,7 @@
             currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardKey.trim().toLowerCase());
             window.currentLoadedAssets = currentFilteredAssets;
             renderAssetMarkers(currentFilteredAssets);
-            if (!hasActiveMultiSearch()) {
-                renderAssetSidebarList(currentFilteredAssets);
-            }
+            renderSidebarWithPriority(currentFilteredAssets);
         }
 
         function getAssetTypeConfig(description) {
@@ -671,17 +690,18 @@
             }, 50);
         
             function executeHighlightAndScroll() {
-                currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === String(targetWard).trim().toLowerCase());
-        
-                const index = currentFilteredAssets.findIndex(a => String(a.eam).trim().toLowerCase() === String(asset.eam).trim().toLowerCase());
+                const wardAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === String(targetWard).trim().toLowerCase());
+                const orderedWardAssets = [...wardAssets];
+                const index = orderedWardAssets.findIndex(a => String(a.eam).trim().toLowerCase() === String(asset.eam).trim().toLowerCase());
                 if (index > -1) {
-                    const [matched] = currentFilteredAssets.splice(index, 1);
-                    currentFilteredAssets.unshift(matched);
+                    const [matched] = orderedWardAssets.splice(index, 1);
+                    orderedWardAssets.unshift(matched);
                 } else {
-                    currentFilteredAssets.unshift(asset);
+                    orderedWardAssets.unshift(asset);
                 }
-        
-                renderAssetSidebarList(currentFilteredAssets);
+                currentFilteredAssets = orderedWardAssets;
+
+                renderSidebarWithPriority(currentFilteredAssets);
                 renderAssetMarkers(currentFilteredAssets, asset.eam);
         
                 const mapContainer = document.getElementById('mapContainer');
@@ -740,13 +760,14 @@
             }
 
             if (isRelocatingMode && isMovingAsset) {
-                isMovingAsset.x = parseFloat(x.toFixed(2));
-                isMovingAsset.y = parseFloat(y.toFixed(2));
-                isMovingAsset.block = currentBlock;
-                isMovingAsset.floor = currentFloor;
-                isMovingAsset.ward = currentWard;
-                updateAssetInSheet(isMovingAsset);
+                const movingTarget = isMovingAsset;
+                movingTarget.x = parseFloat(x.toFixed(2));
+                movingTarget.y = parseFloat(y.toFixed(2));
+                movingTarget.block = currentBlock;
+                movingTarget.floor = currentFloor;
+                movingTarget.ward = currentWard;
                 cancelRelocate();
+                updateAssetInSheet(movingTarget, movingTarget.eam);
                 return;
             }
 
@@ -823,7 +844,6 @@
                         </div>
                     </div>
 
-                    <!-- 最精簡確認畫面：只顯示從原本 Ward 移到 targetWard -->
                     <div id="moveConfirmStep" class="hidden space-y-3 text-xs">
                         <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2">
                             <p class="font-bold text-amber-800">確定要移動此資產嗎？</p>
@@ -927,8 +947,9 @@
                 pendingAsset.block = targetBlock;
                 pendingAsset.floor = targetFloor;
                 pendingAsset.ward = targetWard;
+                const movedEam = pendingAsset.eam;
                 modal.remove();
-                updateAssetInSheet(pendingAsset);
+                updateAssetInSheet(pendingAsset, movedEam);
             };
 
             document.getElementById('btnCancelMoveEam').onclick = () => modal.remove();
