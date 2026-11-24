@@ -1039,13 +1039,68 @@
                 return;
             }
 
-            openSelectEamToMoveModal(
+            openMapClickModeModal(
                 parseFloat(x.toFixed(2)),
                 parseFloat(y.toFixed(2)),
                 currentBlock,
                 currentFloor,
                 currentWard
             );
+        }
+
+        function openMapClickModeModal(targetX, targetY, targetBlock, targetFloor, targetWard) {
+            const existingModal = document.getElementById('mapClickModeModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'mapClickModeModal';
+            modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-xs shadow-2xl text-slate-800 text-center">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 text-blue-600">
+                        <i class="fa-solid fa-map-pin text-base"></i>
+                    </div>
+                    <h3 class="text-xs font-bold mb-1 text-slate-800">選擇地圖操作</h3>
+                    <p class="text-[11px] text-slate-500 mb-4">
+                        位置：<span class="font-bold text-blue-700">${targetWard}</span> (${targetX}, ${targetY})
+                    </p>
+
+                    <div class="space-y-2.5">
+                        <button id="btnAddAssetAtPin" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-plus-circle"></i> 在此新增 Asset
+                        </button>
+                        <button id="btnMoveAssetToPin" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-location-crosshairs"></i> 移動既有 Asset 至此
+                        </button>
+                    </div>
+
+                    <button id="btnCancelMapClickMode" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-2 rounded-xl transition-all cursor-pointer">取消</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnAddAssetAtPin').onclick = () => {
+                modal.remove();
+                openAssetFormModal({
+                    eam: "",
+                    serial: "SN",
+                    dept: "NSD",
+                    description: ASSET_TYPES[0].label,
+                    remark: "",
+                    block: targetBlock,
+                    floor: targetFloor,
+                    ward: targetWard,
+                    x: targetX,
+                    y: targetY
+                }, false);
+            };
+
+            document.getElementById('btnMoveAssetToPin').onclick = () => {
+                modal.remove();
+                openSelectEamToMoveModal(targetX, targetY, targetBlock, targetFloor, targetWard);
+            };
+
+            document.getElementById('btnCancelMapClickMode').onclick = () => modal.remove();
         }
 
         function openSelectEamToMoveModal(targetX, targetY, targetBlock, targetFloor, targetWard) {
