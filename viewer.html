@@ -1268,20 +1268,17 @@
                     </div>
                     
                     <div class="space-y-2">
-                        <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-pen-to-square"></i> 更改資產資訊
-                        </button>
-                        
                         ${lockedPos ? '' : `
                         <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置
                         </button>`}
+        
+                        <button id="btnEditRemark" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-pen-to-square"></i> 修改備註 (Remark)
+                        </button>
                         
                         <button id="btnCondemn" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-right-left"></i> Transfer / Condemn / Surplus
-                        </button>
-                        <button id="btnDelete" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-trash"></i> 刪除此資產
                         </button>
                     </div>
         
@@ -1289,11 +1286,6 @@
                 </div>
             `;
             document.body.appendChild(modal);
-        
-            document.getElementById('btnEdit').onclick = () => {
-                modal.remove();
-                openAssetFormModal(asset, true);
-            };
         
             const moveBtn = document.getElementById('btnMove');
             if (moveBtn) {
@@ -1316,19 +1308,17 @@
                 };
             }
         
+            document.getElementById('btnEditRemark').onclick = () => {
+                modal.remove();
+                openEditRemarkModal(asset);
+            };
+        
             document.getElementById('btnCondemn').onclick = () => {
                 modal.remove();
                 if (typeof openCondemnUploadModal === 'function') {
                     openCondemnUploadModal(asset);
                 } else {
                     alert("找不到 openCondemnUploadModal 函數！");
-                }
-            };
-        
-            document.getElementById('btnDelete').onclick = () => {
-                modal.remove();
-                if (confirm(`確定要刪除資產 [${asset.eam}] 嗎？`)) {
-                    deleteAssetFromSheet(asset.eam);
                 }
             };
         
