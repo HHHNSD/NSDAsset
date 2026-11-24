@@ -145,7 +145,7 @@
     <!-- 核心運作腳本 -->
     <script>
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz_z5U4DjeWY1k8dELIxaSxfMUW110kMnzutPXsqvCGQB3k5qJIwHRTJJmKha1eiNrBlQ/exec";
-        const LOCKED_STATUS_WARDS = ['transfer', 'condemn', 'surplus'];
+        const LOCKED_STATUS_WARDS = ['transfer', 'condemn', 'surplus', 'suplus'];
 
         let allAssets = [];
         let floorHierarchyData = [];
@@ -161,7 +161,6 @@
             return LOCKED_STATUS_WARDS.includes(String(wardOrStatus || '').trim().toLowerCase());
         }
 
-        // 🌟 自動計算整齊的 (x, y)：最新一個的 y + 2，若 >= 80 則 x + 2 且 y = 0
         function computeNextAutoCoordinates(statusWard) {
             const targetKey = String(statusWard || '').trim().toLowerCase();
             const existing = (allAssets || []).filter(
@@ -174,7 +173,6 @@
                 return { x: 10, y: 10 };
             }
 
-            // 找出最新一筆（依 x 遞增、y 遞增排序取最後一筆）
             const sorted = [...existing].sort((a, b) => {
                 const dx = Number(a.x) - Number(b.x);
                 if (dx !== 0) return dx;
@@ -199,7 +197,6 @@
             };
         }
 
-        // 🌟 統一檔案命名：Status_AssetEAMno_Date（例如 Condemn_21122555_20261124）
         function buildStandardFileName(status, eam, originalFileName = '') {
             const cleanStatus = String(status || 'Status').trim();
             const cleanEam = String(eam || '').trim();
@@ -447,7 +444,6 @@
                 });
         }
 
-        // 🌟 支援 Transfer / Condemn / Surplus（強制上傳表單、自動生成整齊 x/y、統一檔名 Status_AssetEAMno_Date）
         function openCondemnUploadModal(asset) {
             const existingModal = document.getElementById('condemnModal');
             if (existingModal) existingModal.remove();
@@ -542,7 +538,6 @@
                     return;
                 }
 
-                // 強制要求必須上傳表單檔案，避免未附檔直接記錄
                 if (!fileInput.files || fileInput.files.length === 0) {
                     alert(`請先上傳 ${type} Form 檔案或拍照後再存檔！`);
                     fileInput.focus();
@@ -562,6 +557,8 @@
 
                 const file = fileInput.files[0];
                 const standardizedFileName = buildStandardFileName(type, asset.eam, file.name);
+                cancelRelocate();
+                pendingNewAssetEam = null;
                 modal.remove();
 
                 const reader = new FileReader();
@@ -666,6 +663,8 @@
         function onWardChange() {
             const wardKey = document.getElementById('wardSelect').value;
             if (!wardKey) return;
+            cancelRelocate();
+            pendingNewAssetEam = null;
             loadFloorPlan(wardKey);
             currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardKey.trim().toLowerCase());
             window.currentLoadedAssets = currentFilteredAssets;
@@ -856,6 +855,9 @@
         function locateAndHighlightAsset(asset) {
             if (!asset) return;
 
+            cancelRelocate();
+            pendingNewAssetEam = null;
+
             const blockSelect = document.getElementById('blockSelect');
             const floorSelect = document.getElementById('floorSelect');
             const wardSelect = document.getElementById('wardSelect');
@@ -872,10 +874,11 @@
                 targetBlock = String(matchedHierarchy.block || '').trim();
                 targetFloor = String(matchedHierarchy.floor || '').trim();
                 targetWard = String(matchedHierarchy.wardKey || '').trim();
-            } else if (['pending', 'condemn', 'surplus', 'transfer'].includes(targetWard.toLowerCase())) {
+            } else if (['pending', 'condemn', 'surplus', 'suplus', 'transfer'].includes(targetWard.toLowerCase())) {
                 targetBlock = 'System';
                 targetFloor = 'System';
-                targetWard = targetWard.charAt(0).toUpperCase() + targetWard.slice(1).toLowerCase();
+                const lowerW = targetWard.toLowerCase();
+                targetWard = lowerW === 'suplus' ? 'Surplus' : (lowerW.charAt(0).toUpperCase() + lowerW.slice(1));
             }
 
             if (blockSelect) {
@@ -953,7 +956,8 @@
                 const hasCoordinates = (asset.x !== undefined && asset.x !== null && asset.x !== '') &&
                                        (asset.y !== undefined && asset.y !== null && asset.y !== '');
 
-                if (!hasCoordinates && !isLockedStatusWard(asset.ward)) {
+                // 鎖定狀態（Transfer / Condemn / Surplus）絕對不進入地圖選點定位模式
+                if (!hasCoordinates && !isLockedStatusWard(asset.ward) && !isLockedStatusWard(targetWard)) {
                     isMovingAsset = asset;
                     isRelocatingMode = true;
                     const banner = document.getElementById('selectionBanner');
@@ -991,9 +995,8 @@
                 return;
             }
 
-            // 🌟 禁止直接在 Transfer / Condemn / Surplus 平面圖上新增或更改位置
             if (isLockedStatusWard(currentWard)) {
-                alert(`⚠️ [${currentWard}] 狀態資產不可直接在平面圖上新增或更改位置。\n請使用「Transfer / Condemn / Surplus」功能上傳表單以自動產生座標。`);
+                alert(`⚠️ [${currentWard}] 狀態不可直接在平面圖上新增或更改位置。`);
                 cancelRelocate();
                 pendingNewAssetEam = null;
                 return;
@@ -1001,7 +1004,7 @@
 
             if (isRelocatingMode && isMovingAsset) {
                 if (isLockedStatusWard(isMovingAsset.ward)) {
-                    alert(`⚠️ 資產 [${isMovingAsset.eam}] 已處於 [${isMovingAsset.ward}] 狀態，不能更改地圖位置。`);
+                    alert(`⚠️ 資產 [${isMovingAsset.eam}] 已處於 [${isMovingAsset.ward}] 狀態，不能更改位置。`);
                     cancelRelocate();
                     return;
                 }
@@ -1140,7 +1143,6 @@
             const selectEl = document.getElementById('selectMoveEamDropdown');
             const countEl = document.getElementById('moveMatchCount');
 
-            // 可移動候選排除已處於 Transfer / Condemn / Surplus 的資產
             const movableAssets = (allAssets || []).filter(a => !isLockedStatusWard(a.ward));
 
             function fillList(id, values) {
@@ -1197,7 +1199,7 @@
                 const chosenEam = selectEl.value;
                 if (!chosenEam) return alert('請先選擇一個資產 (EAM)！');
                 const found = movableAssets.find(a => String(a.eam).trim() === String(chosenEam).trim());
-                if (!found) return alert('找不到所選資產或該資產已鎖定位置！');
+                if (!found || isLockedStatusWard(found.ward)) return alert('此資產已鎖定位置，不能移動！');
                 pendingAsset = found;
 
                 document.getElementById('confirmAssetSummary').innerText = `${found.eam} (${found.description || '無類型'})`;
@@ -1214,7 +1216,7 @@
             };
 
             document.getElementById('btnExecuteMoveConfirmed').onclick = () => {
-                if (!pendingAsset) return;
+                if (!pendingAsset || isLockedStatusWard(pendingAsset.ward)) return;
                 pendingAsset.x = targetX;
                 pendingAsset.y = targetY;
                 pendingAsset.block = targetBlock;
@@ -1409,9 +1411,10 @@
                             <i class="fa-solid fa-pen-to-square"></i> 更改資產資訊
                         </button>
                         
-                        <button id="btnMove" ${lockedPos ? 'disabled' : ''} class="w-full ${lockedPos ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'} text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-location-crosshairs"></i> ${lockedPos ? `已鎖定位置 (${asset.ward})` : '在地圖中點擊更改位置'}
-                        </button>
+                        ${lockedPos ? '' : `
+                        <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置
+                        </button>`}
                         
                         <button id="btnCondemn" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-right-left"></i> Transfer / Condemn / Surplus
@@ -1431,23 +1434,26 @@
                 openAssetFormModal(asset, true);
             };
 
-            document.getElementById('btnMove').onclick = () => {
-                if (lockedPos) return;
-                modal.remove();
-                isMovingAsset = asset;
-                isRelocatingMode = true; 
-                const banner = document.getElementById('selectionBanner');
-                const bannerText = document.getElementById('bannerText');
-                if (banner && bannerText) {
-                    banner.classList.remove('hidden');
-                    bannerText.innerText = `請在地圖點擊 [${asset.eam}] 的新位置...`;
-                }
-            
-                const mapContainer = document.getElementById('mapContainer');
-                if (mapContainer) {
-                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            };
+            const moveBtn = document.getElementById('btnMove');
+            if (moveBtn) {
+                moveBtn.onclick = () => {
+                    if (isLockedStatusWard(asset.ward)) return;
+                    modal.remove();
+                    isMovingAsset = asset;
+                    isRelocatingMode = true; 
+                    const banner = document.getElementById('selectionBanner');
+                    const bannerText = document.getElementById('bannerText');
+                    if (banner && bannerText) {
+                        banner.classList.remove('hidden');
+                        bannerText.innerText = `請在地圖點擊 [${asset.eam}] 的新位置...`;
+                    }
+                
+                    const mapContainer = document.getElementById('mapContainer');
+                    if (mapContainer) {
+                        mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+            }
 
             document.getElementById('btnCondemn').onclick = () => {
                 modal.remove();
