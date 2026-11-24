@@ -1402,7 +1402,7 @@
                 ? (isTransferred && asset.dept && asset.dept !== 'NSD' ? `${rawWard} → ${asset.dept}` : rawWard)
                 : '未設定';
         
-            const remarkDisplay = (asset.remark || '').trim() || '無';
+            const remarkDisplay = (asset.remark || '').trim() || 'N/A';
         
             const modal = document.createElement('div');
             modal.id = 'customActionModal';
