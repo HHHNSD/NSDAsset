@@ -154,6 +154,8 @@
         let isMovingAsset = null;
         let isRelocatingMode = false;
         let pendingNewAssetEam = null;
+        let isSelectingPairOnMap = false;
+        let pendingPairTargetAsset = null;
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
@@ -357,6 +359,64 @@
             };
         }
 
+        function startSelectPairOnMap(primaryAsset) {
+            if (!primaryAsset) return;
+            cancelRelocate();
+            pendingNewAssetEam = null;
+            isSelectingPairOnMap = true;
+            pendingPairTargetAsset = primaryAsset;
+
+            const banner = document.getElementById('selectionBanner');
+            const bannerText = document.getElementById('bannerText');
+            if (banner && bannerText) {
+                banner.classList.remove('hidden');
+                bannerText.innerText = `🔗 正在為 [${primaryAsset.eam}] 挑選依賴資產：請直接在地圖上點選資產圖釘...`;
+            }
+
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapContainer) {
+                mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        async function handleMapPinPairSelection(clickedAsset) {
+            if (!isSelectingPairOnMap || !pendingPairTargetAsset || !clickedAsset) return false;
+
+            const targetEam = String(pendingPairTargetAsset.eam || '').trim();
+            const pickedEam = String(clickedAsset.eam || '').trim();
+
+            if (!pickedEam) return true;
+
+            if (pickedEam.toLowerCase() === targetEam.toLowerCase()) {
+                alert("⚠️ 不能將資產綁定到自己本身！");
+                return true;
+            }
+
+            if (isLockedStatusWard(clickedAsset.ward)) {
+                alert(`⚠️ [${pickedEam}] 已處於 [${clickedAsset.ward}] 狀態，無法加入 Pair 依賴。`);
+                return true;
+            }
+
+            const currentList = parsePairedEamList(pendingPairTargetAsset.pair);
+            const exists = currentList.some(e => e.toLowerCase() === pickedEam.toLowerCase());
+
+            if (exists) {
+                const removeConfirm = confirm(`資產 [${pickedEam}] 已在 [${targetEam}] 的 Pair 清單中，是否要將其移除？`);
+                if (removeConfirm) {
+                    const nextList = currentList.filter(e => e.toLowerCase() !== pickedEam.toLowerCase());
+                    pendingPairTargetAsset.pair = nextList.join(', ');
+                    await updateAssetInSheet(pendingPairTargetAsset, targetEam);
+                }
+                return true;
+            }
+
+            currentList.push(pickedEam);
+            pendingPairTargetAsset.pair = currentList.join(', ');
+            alert(`✅ 已將 [${pickedEam}] (${clickedAsset.description || '無類型'}) 加入 [${targetEam}] 的 Pair 依賴清單！\n目前 Pair：${pendingPairTargetAsset.pair}`);
+            await updateAssetInSheet(pendingPairTargetAsset, targetEam);
+            return true;
+        }
+
         function openPairUpModal(asset) {
             const existingModal = document.getElementById('pairUpModal');
             if (existingModal) existingModal.remove();
@@ -376,6 +436,12 @@
                         主資產：<span class="font-bold text-slate-700">${asset.eam}</span> (${asset.description || '無類型'})
                     </p>
 
+                    <div class="mb-3">
+                        <button type="button" id="btnPickPairFromMap" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-map-location-dot"></i> 直接在地圖點選 Asset
+                        </button>
+                    </div>
+
                     <div class="space-y-3 text-xs">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 mb-1">此資產依賴的 Asset EAM（多個請用逗號分隔）:</label>
@@ -391,7 +457,7 @@
                             </div>
                             <div id="currentPairMembersList" class="space-y-1.5 text-[11px]">
                                 ${currentDependents.length === 0
-                                    ? '<p class="text-slate-400 italic">尚未設定依賴設備，可在上方輸入或從下方勾選</p>'
+                                    ? '<p class="text-slate-400 italic">尚未設定依賴設備，可在上方輸入、點地圖或從下方勾選</p>'
                                     : currentDependents.map(m => `
                                         <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-indigo-100">
                                             <span class="truncate"><strong class="text-blue-700">${m.eam}</strong> — ${m.description || '無類型'} (${m.ward || 'N/A'})</span>
@@ -417,6 +483,11 @@
                 </div>
             `;
             document.body.appendChild(modal);
+
+            document.getElementById('btnPickPairFromMap').onclick = () => {
+                modal.remove();
+                startSelectPairOnMap(asset);
+            };
 
             const pairEamsInput = document.getElementById('pairEamsInput');
             const searchInput = document.getElementById('pairSearchInput');
@@ -1153,8 +1224,12 @@
                     </div>
                 `;
                 
-                marker.onclick = (e) => {
+                marker.onclick = async (e) => {
                     e.stopPropagation();
+                    if (isSelectingPairOnMap && pendingPairTargetAsset) {
+                        await handleMapPinPairSelection(asset);
+                        return;
+                    }
                     openActionModal(asset);
                 };
                 markersLayer.appendChild(marker);
@@ -1349,6 +1424,12 @@
             setTimeout(() => { isMapClickProcessing = false; }, 300);
 
             if (event) event.stopPropagation();
+
+            if (isSelectingPairOnMap && pendingPairTargetAsset) {
+                alert(`目前處於「點選資產圖釘加入 Pair」模式，請直接點選地圖上的資產圖釘，或按右上方「取消」結束。`);
+                return;
+            }
+
             const mapWrapper = document.getElementById('mapWrapper');
             if (!mapWrapper) return;
             const rect = mapWrapper.getBoundingClientRect();
@@ -1942,7 +2023,10 @@
         }
         
         function cancelRelocate() {
-            isMovingAsset = null; isRelocatingMode = false;
+            isMovingAsset = null;
+            isRelocatingMode = false;
+            isSelectingPairOnMap = false;
+            pendingPairTargetAsset = null;
             const banner = document.getElementById('selectionBanner');
             if (banner) banner.classList.add('hidden');
         }
