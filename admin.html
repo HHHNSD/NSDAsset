@@ -890,7 +890,7 @@
         }
 
         function fetchHierarchy() {
-            fetch(`${GAS_API_URL}?action=getHierarchy&_t=${Date.now()}`)
+            return fetch(`${GAS_API_URL}?action=getHierarchy&_t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     floorHierarchyData = data || [];
@@ -2291,11 +2291,10 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            fetchHierarchy();
-            setTimeout(() => {
+            fetchHierarchy().finally(() => {
                 fetchAllAssets();
-            }, 350);
-
+            });
+        
             const img = document.getElementById('floorPlanImg');
             if (img) {
                 img.onload = () => {
@@ -2306,9 +2305,10 @@
                     if (currentFilteredAssets) renderAssetMarkers(currentFilteredAssets);
                 };
             }
-
+        
             window.addEventListener('resize', updateMarkersLayerSize);
         });
+        
     </script>
 </body>
 </html>
