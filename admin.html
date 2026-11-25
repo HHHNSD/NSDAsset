@@ -263,19 +263,134 @@
             });
         }
 
+        function isPositionOccupied(x, y, occupiedCoords, threshold = 1.2) {
+            return occupiedCoords.some(pt =>
+                Math.abs(Number(pt.x) - Number(x)) < threshold &&
+                Math.abs(Number(pt.y) - Number(y)) < threshold
+            );
+        }
+
+        function clampCoord(val, min = 2, max = 98) {
+            return parseFloat(Math.max(min, Math.min(max, val)).toFixed(2));
+        }
+
+        // Pair 座標規則：
+        // 預設下方 y + 2, y + 4...
+        // 若下方有 item -> 右方 x + 2, x + 4...
+        // 若右方也有 item -> 上方 y - 2, y - 4...
+        // 若上方也有 item -> 左方 x - 2, x - 4...
+        function computePairFollowCoordinate(baseX, baseY, index, wardAssets, alreadyPlacedCoords) {
+            const k = index + 1;
+            const step = 2 * k;
+
+            const occupied = [
+                ...alreadyPlacedCoords,
+                ...(wardAssets || [])
+                    .filter(a => a.x !== undefined && a.y !== undefined && a.x !== '' && a.y !== '')
+                    .map(a => ({ x: Number(a.x), y: Number(a.y) }))
+            ];
+
+            // 1. 下方：y + 2, y + 4...
+            const downX = clampCoord(baseX);
+            const downY = clampCoord(baseY + step);
+            if (!isPositionOccupied(downX, downY, occupied)) {
+                return { x: downX, y: downY };
+            }
+
+            // 2. 下方有 item -> 右方：x + 2, x + 4...
+            const rightX = clampCoord(baseX + step);
+            const rightY = clampCoord(baseY);
+            if (!isPositionOccupied(rightX, rightY, occupied)) {
+                return { x: rightX, y: rightY };
+            }
+
+            // 3. 右方也有 item -> 上方：y - 2, y - 4...
+            const upX = clampCoord(baseX);
+            const upY = clampCoord(baseY - step);
+            if (!isPositionOccupied(upX, upY, occupied)) {
+                return { x: upX, y: upY };
+            }
+
+            // 4. 上方也有 item -> 左方：x - 2, x - 4...
+            const leftX = clampCoord(baseX - step);
+            const leftY = clampCoord(baseY);
+            return { x: leftX, y: leftY };
+        }
+
+        // 本地同步資料與地圖（不觸發全量 getAllAssets；僅於 jumpToTargetPage=true 時跳轉到目標狀態頁）
+        function applyAssetListToLocalState(updatedList, focusEam = null, jumpToTargetPage = false) {
+            const list = Array.isArray(updatedList) ? updatedList : [updatedList];
+            if (list.length === 0) return;
+
+            list.forEach(updatedAsset => {
+                if (!updatedAsset || !updatedAsset.eam) return;
+                const targetEam = String(updatedAsset.eam).trim().toLowerCase();
+                const idx = allAssets.findIndex(a => String(a.eam || '').trim().toLowerCase() === targetEam);
+                if (idx > -1) {
+                    allAssets[idx] = { ...allAssets[idx], ...updatedAsset };
+                } else {
+                    allAssets.push({ ...updatedAsset });
+                }
+            });
+
+            window.allAssets = allAssets;
+            populateSearchDatalists();
+
+            const targetFocus = focusEam
+                ? allAssets.find(a => String(a.eam || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase())
+                : list[0];
+
+            if (jumpToTargetPage && targetFocus) {
+                locateAndHighlightAsset(targetFocus);
+                return;
+            }
+
+            const wardSelect = document.getElementById('wardSelect');
+            const selectedWard = wardSelect ? String(wardSelect.value || '').trim().toLowerCase() : '';
+
+            if (selectedWard) {
+                currentFilteredAssets = allAssets.filter(
+                    a => a.ward && String(a.ward).trim().toLowerCase() === selectedWard
+                );
+                window.currentLoadedAssets = currentFilteredAssets;
+                renderAssetMarkers(currentFilteredAssets, focusEam || (list[0] && list[0].eam));
+            }
+
+            renderSidebarWithPriority(selectedWard ? currentFilteredAssets : allAssets);
+
+            if (focusEam) {
+                setTimeout(() => {
+                    document.querySelectorAll('[data-eam]').forEach(card => {
+                        if (String(card.getAttribute('data-eam') || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase()) {
+                            card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
+                            setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 2500);
+                        }
+                    });
+                }, 50);
+            }
+        }
+
+        function syncLocalAssetAfterUpdate(updatedAsset) {
+            applyAssetListToLocalState([updatedAsset], updatedAsset && updatedAsset.eam, false);
+        }
+
         async function batchUpdateAssetsInSheet(assetsToUpdate, focusEam = null) {
             try {
                 for (const item of assetsToUpdate) {
                     item.dept = item.dept || "NSD";
                     item.pair = item.pair ? String(item.pair).trim() : "";
-                    await fetch(GAS_API_URL, {
+                    const res = await fetch(GAS_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'updateAsset', asset: item })
-                    }).then(res => res.json());
+                    }).then(r => r.json());
+
+                    if (res && res.status === 'error') {
+                        throw new Error(res.message || `更新 [${item.eam}] 失敗`);
+                    }
                 }
                 alert(`✅ 已成功更新 ${assetsToUpdate.length} 項資產！`);
-                return fetchAllAssets(focusEam || (assetsToUpdate[0] && assetsToUpdate[0].eam));
+                applyAssetListToLocalState(assetsToUpdate, focusEam || (assetsToUpdate[0] && assetsToUpdate[0].eam), false);
             } catch (err) {
                 alert("批次更新失敗: " + err);
             }
@@ -408,14 +523,31 @@
                 primaryAsset.y = targetY;
                 primaryAsset.dept = "NSD";
 
+                const wardAssets = (allAssets || []).filter(
+                    a => String(a.ward || '').trim().toLowerCase() === String(targetWard || '').trim().toLowerCase() &&
+                         String(a.eam || '').trim().toLowerCase() !== String(primaryAsset.eam || '').trim().toLowerCase()
+                );
+                const placedCoords = [{ x: Number(targetX), y: Number(targetY) }];
+                let followIndex = 0;
+
                 const batchList = [primaryAsset];
                 dependents.forEach(dep => {
                     if (checkedEams.has(String(dep.eam).trim())) {
+                        const nextPt = computePairFollowCoordinate(
+                            Number(targetX),
+                            Number(targetY),
+                            followIndex,
+                            wardAssets,
+                            placedCoords
+                        );
+                        followIndex += 1;
+                        placedCoords.push(nextPt);
+
                         dep.block = targetBlock;
                         dep.floor = targetFloor;
                         dep.ward = targetWard;
-                        dep.x = targetX;
-                        dep.y = targetY;
+                        dep.x = nextPt.x;
+                        dep.y = nextPt.y;
                         dep.dept = "NSD";
                         batchList.push(dep);
                     }
@@ -862,32 +994,32 @@
             applyMultiFieldSearch();
         }
 
-        // 逐段等待（例如 5000ms -> 再等 30000ms -> 再等 60000ms）補打，成功即停止後續計時器
+        // 逐段等待（例如 5000ms -> 再等 30000ms -> 再等 60000ms）補打，成功即停止並以 AbortController 中止舊連線
         function callWithSequentialWaits(buildUrl, onSuccess, onError, waitSteps = [5000, 30000, 60000]) {
             let settled = false;
             let lastError = null;
             let timerId = null;
             const controllers = new Set();
-        
+
             function clearPendingTimer() {
                 if (timerId !== null) {
                     clearTimeout(timerId);
                     timerId = null;
                 }
             }
-        
+
             function abortInFlightRequests() {
                 controllers.forEach(ctrl => {
                     try { ctrl.abort(); } catch (_) {}
                 });
                 controllers.clear();
             }
-        
+
             function sendRequest() {
                 if (settled) return;
                 const controller = new AbortController();
                 controllers.add(controller);
-        
+
                 fetch(buildUrl(), { signal: controller.signal })
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -907,10 +1039,10 @@
                         lastError = err;
                     });
             }
-        
+
             function scheduleNext(stepIndex) {
                 if (settled) return;
-        
+
                 if (stepIndex >= waitSteps.length) {
                     timerId = setTimeout(() => {
                         if (!settled) {
@@ -921,7 +1053,7 @@
                     }, 5000);
                     return;
                 }
-        
+
                 const waitMs = waitSteps[stepIndex];
                 timerId = setTimeout(() => {
                     if (settled) return;
@@ -929,7 +1061,7 @@
                     scheduleNext(stepIndex + 1);
                 }, waitMs);
             }
-        
+
             sendRequest();
             scheduleNext(0);
         }
@@ -973,7 +1105,7 @@
                 () => `${GAS_API_URL}?action=getAllAssets&_t=${Date.now()}`,
                 data => applyAllAssetsData(data, focusEam),
                 () => notifyNeedF5("抓取資產"),
-                [3000, 4000, 5000]
+                [5000, 30000, 60000]
             );
         }
 
@@ -987,7 +1119,7 @@
                     populateSearchDatalists();
                 },
                 () => notifyNeedF5("抓取選單階層"),
-                [3000, 4000, 5000]
+                [5000, 30000, 60000]
             );
         }
 
@@ -1183,7 +1315,8 @@
                                 `檔案已命名為：${standardizedFileName}\n` +
                                 `自動座標：(${autoCoords.x}, ${autoCoords.y})${unpairMsg}`
                             );
-                            fetchAllAssets(asset.eam);
+                            // 僅 Condemn / Surplus / Transfer 跳轉至對應頁面
+                            applyAssetListToLocalState([asset, ...unpairedPeers], asset.eam, true);
                         }
                     }).catch(err => alert("❌ 系統通訊失敗：" + err));
                 };
@@ -1201,9 +1334,12 @@
                 body: JSON.stringify({ action: 'updateAsset', asset: asset })
             })
             .then(res => res.json())
-            .then(() => {
+            .then(result => {
+                if (result && result.status === 'error') {
+                    throw new Error(result.message || '更新失敗');
+                }
                 alert("資產更新成功！");
-                return fetchAllAssets(focusEam || asset.eam);
+                syncLocalAssetAfterUpdate(asset);
             })
             .catch(err => alert("更新失敗: " + err));
         }
@@ -1215,9 +1351,24 @@
                 body: JSON.stringify({ action: 'deleteAsset', eam: eam })
             })
             .then(res => res.json())
-            .then(() => {
+            .then(result => {
+                if (result && result.status === 'error') {
+                    throw new Error(result.message || '刪除失敗');
+                }
                 alert("資產已刪除！");
-                fetchAllAssets();
+                const cleanEam = String(eam || '').trim().toLowerCase();
+                allAssets = allAssets.filter(a => String(a.eam || '').trim().toLowerCase() !== cleanEam);
+                window.allAssets = allAssets;
+                populateSearchDatalists();
+
+                const wardSelect = document.getElementById('wardSelect');
+                const selectedWard = wardSelect ? String(wardSelect.value || '').trim().toLowerCase() : '';
+                if (selectedWard) {
+                    currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === selectedWard);
+                    window.currentLoadedAssets = currentFilteredAssets;
+                    renderAssetMarkers(currentFilteredAssets);
+                }
+                renderSidebarWithPriority(selectedWard ? currentFilteredAssets : allAssets);
             })
             .catch(err => alert("刪除失敗: " + err));
         }
@@ -1231,9 +1382,12 @@
                 body: JSON.stringify({ action: 'addAsset', asset: newAsset })
             })
             .then(res => res.json())
-            .then(() => {
+            .then(res => {
+                if (res && res.status === 'error') {
+                    throw new Error(res.message || '新增失敗');
+                }
                 alert("新資產新增成功！");
-                fetchAllAssets(newAsset.eam);
+                applyAssetListToLocalState([newAsset], newAsset.eam, false);
             })
             .catch(err => alert("新增失敗: " + err));
         }
