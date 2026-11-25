@@ -862,43 +862,117 @@
             applyMultiFieldSearch();
         }
 
-        function fetchAllAssets(focusEam = null) {
-            return fetch(`${GAS_API_URL}?action=getAllAssets&_t=${Date.now()}`)
-                .then(res => res.json())
-                .then(data => {
-                    allAssets = data || [];
-                    window.allAssets = allAssets;
-                    populateSearchDatalists();
+        // 逐段等待（例如 3000ms -> 再等 4000ms -> 再等 5000ms）補打，成功即停止後續計時器
+        function callWithSequentialWaits(buildUrl, onSuccess, onError, waitSteps = [3000, 4000, 5000]) {
+            let settled = false;
+            let lastError = null;
+            let timerId = null;
 
-                    if (focusEam) {
-                        const updatedAsset = allAssets.find(a => String(a.eam || '').trim() === String(focusEam).trim());
-                        if (updatedAsset) {
-                            locateAndHighlightAsset(updatedAsset);
-                            return;
+            function clearPendingTimer() {
+                if (timerId !== null) {
+                    clearTimeout(timerId);
+                    timerId = null;
+                }
+            }
+
+            function sendRequest() {
+                if (settled) return;
+                fetch(buildUrl())
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (settled) return;
+                        settled = true;
+                        clearPendingTimer();
+                        if (onSuccess) onSuccess(data);
+                    })
+                    .catch(err => {
+                        lastError = err;
+                    });
+            }
+
+            function scheduleNext(stepIndex) {
+                if (settled) return;
+
+                if (stepIndex >= waitSteps.length) {
+                    timerId = setTimeout(() => {
+                        if (!settled) {
+                            settled = true;
+                            if (onError) onError(lastError || new Error("多次嘗試後仍無法取得資料"));
                         }
-                    }
+                    }, 3000);
+                    return;
+                }
 
-                    const wardSelect = document.getElementById('wardSelect');
-                    if (wardSelect && wardSelect.value) {
-                        currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardSelect.value.trim().toLowerCase());
-                        window.currentLoadedAssets = currentFilteredAssets;
-                        renderAssetMarkers(currentFilteredAssets);
-                    }
-                    renderSidebarWithPriority(wardSelect && wardSelect.value ? currentFilteredAssets : allAssets);
-                })
-                .catch(err => console.error("抓取資產失敗:", err));
+                const waitMs = waitSteps[stepIndex];
+                timerId = setTimeout(() => {
+                    if (settled) return;
+                    sendRequest();
+                    scheduleNext(stepIndex + 1);
+                }, waitMs);
+            }
+
+            sendRequest();
+            scheduleNext(0);
+        }
+
+        function notifyNeedF5(label) {
+            console.error(`${label} 多次嘗試仍失敗，請按 F5 重新整理。`);
+            const blockSelect = document.getElementById('blockSelect');
+            if (blockSelect && blockSelect.options.length <= 1) {
+                blockSelect.innerHTML = '<option value="">載入失敗，請按 F5</option>';
+            }
+            const listContainer = document.getElementById('assetListContainer');
+            if (listContainer && (!allAssets || allAssets.length === 0)) {
+                listContainer.innerHTML = `<p class="text-xs text-rose-600 font-semibold text-center mt-12">連線逾時或中斷，請按 F5 重新整理頁面</p>`;
+            }
+        }
+
+        function applyAllAssetsData(data, focusEam = null) {
+            allAssets = data || [];
+            window.allAssets = allAssets;
+            populateSearchDatalists();
+
+            if (focusEam) {
+                const updatedAsset = allAssets.find(a => String(a.eam || '').trim() === String(focusEam).trim());
+                if (updatedAsset) {
+                    locateAndHighlightAsset(updatedAsset);
+                    return;
+                }
+            }
+
+            const wardSelect = document.getElementById('wardSelect');
+            if (wardSelect && wardSelect.value) {
+                currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardSelect.value.trim().toLowerCase());
+                window.currentLoadedAssets = currentFilteredAssets;
+                renderAssetMarkers(currentFilteredAssets);
+            }
+            renderSidebarWithPriority(wardSelect && wardSelect.value ? currentFilteredAssets : allAssets);
+        }
+
+        function fetchAllAssets(focusEam = null) {
+            callWithSequentialWaits(
+                () => `${GAS_API_URL}?action=getAllAssets&_t=${Date.now()}`,
+                data => applyAllAssetsData(data, focusEam),
+                () => notifyNeedF5("抓取資產"),
+                [3000, 4000, 5000]
+            );
         }
 
         function fetchHierarchy() {
-            return fetch(`${GAS_API_URL}?action=getHierarchy&_t=${Date.now()}`)
-                .then(res => res.json())
-                .then(data => {
+            callWithSequentialWaits(
+                () => `${GAS_API_URL}?action=getHierarchy&_t=${Date.now()}`,
+                data => {
                     floorHierarchyData = data || [];
                     rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
                     populateSearchDatalists();
-                })
-                .catch(err => console.error("抓取選單階層失敗:", err));
+                },
+                () => notifyNeedF5("抓取選單階層"),
+                [3000, 4000, 5000]
+            );
         }
 
         // 直接從 GitHub images/ 資料夾載入平面圖，不再透過 GAS 抓圖
@@ -2291,10 +2365,9 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            fetchHierarchy().finally(() => {
-                fetchAllAssets();
-            });
-        
+            fetchHierarchy();
+            fetchAllAssets();
+
             const img = document.getElementById('floorPlanImg');
             if (img) {
                 img.onload = () => {
@@ -2305,10 +2378,9 @@
                     if (currentFilteredAssets) renderAssetMarkers(currentFilteredAssets);
                 };
             }
-        
+
             window.addEventListener('resize', updateMarkersLayerSize);
         });
-        
     </script>
 </body>
 </html>
