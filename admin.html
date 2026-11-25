@@ -168,6 +168,7 @@
     <!-- 核心運作腳本 -->
     <script>
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz_z5U4DjeWY1k8dELIxaSxfMUW110kMnzutPXsqvCGQB3k5qJIwHRTJJmKha1eiNrBlQ/exec";
+        const GITHUB_IMAGES_BASE_URL = "https://hhhnsd.github.io/NSDAsset/images/";
         const LOCKED_STATUS_WARDS = ['transfer', 'condemn', 'surplus', 'suplus'];
 
         let allAssets = [];
@@ -210,7 +211,6 @@
             });
         }
 
-        // 取得與某資產直接相關聯的所有 EAM（包含自己、自己依賴的、以及依賴自己的）
         function getRelatedPairEamSet(targetEam) {
             const relatedSet = new Set();
             const cleanTarget = String(targetEam || '').trim().toLowerCase();
@@ -233,7 +233,6 @@
             return relatedSet;
         }
 
-        // 滑鼠移入或聚焦某資產時，同步點亮地圖上整組相關圖釘與連接線
         function highlightPairGroupOnMap(targetEam) {
             const relatedSet = getRelatedPairEamSet(targetEam);
             if (relatedSet.size <= 1) return;
@@ -898,57 +897,56 @@
                     rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
                     populateSearchDatalists();
-
-                    floorHierarchyData.forEach(item => {
-                        const wardKey = item.wardKey;
-                        if (wardKey && !floorPlanCache[wardKey]) {
-                            fetch(`${GAS_API_URL}?action=getFloorPlan&wardKey=${encodeURIComponent(wardKey)}`)
-                                .then(res => res.json())
-                                .then(planData => {
-                                    if (planData && planData.base64) {
-                                        floorPlanCache[wardKey] = planData.base64;
-                                    }
-                                })
-                                .catch(err => console.warn(`預載失敗: ${wardKey}`, err));
-                        }
-                    });
                 })
                 .catch(err => console.error("抓取選單階層失敗:", err));
         }
 
+        // 直接從 GitHub images/ 資料夾載入平面圖，不再透過 GAS 抓圖
         function loadFloorPlan(wardKey) {
-            var imgEl = document.getElementById('floorPlanImg');
+            const imgEl = document.getElementById('floorPlanImg');
+            const placeholder = document.getElementById('placeholderText');
+            const cleanKey = String(wardKey || '').trim();
+            if (!imgEl || !cleanKey) return;
+
             isFloorPlanLoaded = false;
 
-            if (floorPlanCache[wardKey]) {
-                imgEl.src = floorPlanCache[wardKey];
+            if (floorPlanCache[cleanKey]) {
+                imgEl.src = floorPlanCache[cleanKey];
                 imgEl.classList.remove('hidden');
                 isFloorPlanLoaded = true;
-                const placeholder = document.getElementById('placeholderText');
                 if (placeholder) placeholder.classList.add('hidden');
                 return;
             }
 
-            fetch(`${GAS_API_URL}?action=getFloorPlan&wardKey=${encodeURIComponent(wardKey)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.base64) {
-                        floorPlanCache[wardKey] = data.base64;
-                        imgEl.src = data.base64;
-                        imgEl.classList.remove('hidden');
-                        isFloorPlanLoaded = true;
-                        const placeholder = document.getElementById('placeholderText');
-                        if (placeholder) placeholder.classList.add('hidden');
-                    } else {
-                        imgEl.src = '';
-                        imgEl.classList.add('hidden');
-                        isFloorPlanLoaded = false;
-                    }
-                })
-                .catch(err => {
-                    console.error("載入平面圖失敗: ", err);
+            const candidateUrls = [
+                `${GITHUB_IMAGES_BASE_URL}${encodeURIComponent(cleanKey)}.jpg`,
+                `${GITHUB_IMAGES_BASE_URL}${encodeURIComponent(cleanKey)}.jpeg`,
+                `${GITHUB_IMAGES_BASE_URL}${encodeURIComponent(cleanKey)}.png`,
+                `${GITHUB_IMAGES_BASE_URL}${encodeURIComponent(cleanKey)}.webp`
+            ];
+
+            function tryNextImageUrl(idx) {
+                if (idx >= candidateUrls.length) {
+                    imgEl.src = '';
+                    imgEl.classList.add('hidden');
                     isFloorPlanLoaded = false;
-                });
+                    return;
+                }
+
+                const url = candidateUrls[idx];
+                const probe = new Image();
+                probe.onload = () => {
+                    floorPlanCache[cleanKey] = url;
+                    imgEl.src = url;
+                    imgEl.classList.remove('hidden');
+                    isFloorPlanLoaded = true;
+                    if (placeholder) placeholder.classList.add('hidden');
+                };
+                probe.onerror = () => tryNextImageUrl(idx + 1);
+                probe.src = url;
+            }
+
+            tryNextImageUrl(0);
         }
 
         function openCondemnUploadModal(asset) {
@@ -1259,7 +1257,6 @@
             return { icon: 'fa-box', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
         }
 
-        // 計算標記位置；若多件綁定資產在同一座標，會自動微幅呈圓環散開，讓連線清晰可見
         function calculateMarkerPositions(assets) {
             if (!assets || !Array.isArray(assets)) return [];
             const GRID_X = 60, GRID_Y = 45;
@@ -1301,7 +1298,6 @@
 
             const processedAssets = calculateMarkerPositions(assets);
 
-            // 建立當前畫面資產座標索引，並統計哪些資產有 Pair 關係
             const posMap = {};
             const hasPairRelationSet = new Set();
             processedAssets.forEach(a => {
@@ -1315,7 +1311,6 @@
                 }
             });
 
-            // 繪製 SVG 連線層（連接主資產與同平面圖內的 Pair 依賴資產）
             const svgNS = "http://www.w3.org/2000/svg";
             const svg = document.createElementNS(svgNS, "svg");
             svg.setAttribute("viewBox", "0 0 100 100");
@@ -1337,7 +1332,6 @@
                     hasPairRelationSet.add(fromKey);
                     hasPairRelationSet.add(toKey);
 
-                    // 白色外描邊讓虛線在任何平面圖背景都清晰
                     const bgLine = document.createElementNS(svgNS, "line");
                     bgLine.setAttribute("x1", fromPos.x);
                     bgLine.setAttribute("y1", fromPos.y);
@@ -1348,7 +1342,6 @@
                     bgLine.setAttribute("vector-effect", "non-scaling-stroke");
                     svg.appendChild(bgLine);
 
-                    // 靛藍色動態虛線
                     const line = document.createElementNS(svgNS, "line");
                     line.setAttribute("x1", fromPos.x);
                     line.setAttribute("y1", fromPos.y);
