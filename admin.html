@@ -862,50 +862,66 @@
             applyMultiFieldSearch();
         }
 
-        // 逐段等待（例如 3000ms -> 再等 4000ms -> 再等 5000ms）補打，成功即停止後續計時器
-        function callWithSequentialWaits(buildUrl, onSuccess, onError, waitSteps = [3000, 4000, 5000]) {
+        // 逐段等待（例如 5000ms -> 再等 30000ms -> 再等 60000ms）補打，成功即停止後續計時器
+        function callWithSequentialWaits(buildUrl, onSuccess, onError, waitSteps = [5000, 30000, 60000]) {
             let settled = false;
             let lastError = null;
             let timerId = null;
-
+            const controllers = new Set();
+        
             function clearPendingTimer() {
                 if (timerId !== null) {
                     clearTimeout(timerId);
                     timerId = null;
                 }
             }
-
+        
+            function abortInFlightRequests() {
+                controllers.forEach(ctrl => {
+                    try { ctrl.abort(); } catch (_) {}
+                });
+                controllers.clear();
+            }
+        
             function sendRequest() {
                 if (settled) return;
-                fetch(buildUrl())
+                const controller = new AbortController();
+                controllers.add(controller);
+        
+                fetch(buildUrl(), { signal: controller.signal })
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.json();
                     })
                     .then(data => {
+                        controllers.delete(controller);
                         if (settled) return;
                         settled = true;
                         clearPendingTimer();
+                        abortInFlightRequests();
                         if (onSuccess) onSuccess(data);
                     })
                     .catch(err => {
+                        controllers.delete(controller);
+                        if (err && err.name === 'AbortError') return;
                         lastError = err;
                     });
             }
-
+        
             function scheduleNext(stepIndex) {
                 if (settled) return;
-
+        
                 if (stepIndex >= waitSteps.length) {
                     timerId = setTimeout(() => {
                         if (!settled) {
                             settled = true;
+                            abortInFlightRequests();
                             if (onError) onError(lastError || new Error("多次嘗試後仍無法取得資料"));
                         }
-                    }, 3000);
+                    }, 5000);
                     return;
                 }
-
+        
                 const waitMs = waitSteps[stepIndex];
                 timerId = setTimeout(() => {
                     if (settled) return;
@@ -913,7 +929,7 @@
                     scheduleNext(stepIndex + 1);
                 }, waitMs);
             }
-
+        
             sendRequest();
             scheduleNext(0);
         }
