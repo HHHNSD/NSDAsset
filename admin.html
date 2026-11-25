@@ -2292,7 +2292,9 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             fetchHierarchy();
-            fetchAllAssets();
+            setTimeout(() => {
+                fetchAllAssets();
+            }, 350);
 
             const img = document.getElementById('floorPlanImg');
             if (img) {
