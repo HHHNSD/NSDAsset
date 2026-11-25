@@ -9,6 +9,29 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- 引入 html5-qrcode 條碼掃描庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        @keyframes pairDashFlow {
+            to {
+                stroke-dashoffset: -16;
+            }
+        }
+        .pair-connection-line {
+            stroke-dasharray: 5, 3;
+            animation: pairDashFlow 1.2s linear infinite;
+            transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease;
+        }
+        .pair-connection-line.is-active {
+            stroke: #f59e0b !important;
+            stroke-width: 3.5 !important;
+            opacity: 1 !important;
+            filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.75));
+        }
+        .asset-pin-marker.pair-group-active > div {
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.55), 0 8px 16px rgba(0, 0, 0, 0.2);
+            transform: scale(1.22);
+            z-index: 35;
+        }
+    </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
 
@@ -184,6 +207,60 @@
                 return eamStr &&
                        eamStr.toLowerCase() !== selfEam &&
                        depEams.some(d => d.toLowerCase() === eamStr.toLowerCase());
+            });
+        }
+
+        // 取得與某資產直接相關聯的所有 EAM（包含自己、自己依賴的、以及依賴自己的）
+        function getRelatedPairEamSet(targetEam) {
+            const relatedSet = new Set();
+            const cleanTarget = String(targetEam || '').trim().toLowerCase();
+            if (!cleanTarget) return relatedSet;
+
+            relatedSet.add(cleanTarget);
+
+            (allAssets || []).forEach(item => {
+                const itemEam = String(item.eam || '').trim().toLowerCase();
+                if (!itemEam) return;
+                const deps = parsePairedEamList(item.pair).map(e => e.toLowerCase());
+
+                if (itemEam === cleanTarget) {
+                    deps.forEach(d => relatedSet.add(d));
+                } else if (deps.includes(cleanTarget)) {
+                    relatedSet.add(itemEam);
+                }
+            });
+
+            return relatedSet;
+        }
+
+        // 滑鼠移入或聚焦某資產時，同步點亮地圖上整組相關圖釘與連接線
+        function highlightPairGroupOnMap(targetEam) {
+            const relatedSet = getRelatedPairEamSet(targetEam);
+            if (relatedSet.size <= 1) return;
+
+            document.querySelectorAll('.asset-pin-marker').forEach(pin => {
+                const pinEam = String(pin.getAttribute('data-pin-eam') || '').toLowerCase();
+                if (relatedSet.has(pinEam)) {
+                    pin.classList.add('pair-group-active');
+                }
+            });
+
+            document.querySelectorAll('.pair-connection-line').forEach(line => {
+                const fromEam = String(line.getAttribute('data-from-eam') || '').toLowerCase();
+                const toEam = String(line.getAttribute('data-to-eam') || '').toLowerCase();
+                const cleanTarget = String(targetEam || '').trim().toLowerCase();
+                if (fromEam === cleanTarget || toEam === cleanTarget) {
+                    line.classList.add('is-active');
+                }
+            });
+        }
+
+        function clearPairGroupHighlightOnMap() {
+            document.querySelectorAll('.asset-pin-marker.pair-group-active').forEach(pin => {
+                pin.classList.remove('pair-group-active');
+            });
+            document.querySelectorAll('.pair-connection-line.is-active').forEach(line => {
+                line.classList.remove('is-active');
             });
         }
 
@@ -1182,14 +1259,36 @@
             return { icon: 'fa-box', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-400' };
         }
 
+        // 計算標記位置；若多件綁定資產在同一座標，會自動微幅呈圓環散開，讓連線清晰可見
         function calculateMarkerPositions(assets) {
             if (!assets || !Array.isArray(assets)) return [];
             const GRID_X = 60, GRID_Y = 45;
-            return assets.map(asset => {
+            const baseList = assets.map(asset => {
                 const snappedX = Math.round(asset.x * (GRID_X / 100)) / (GRID_X / 100);
                 const snappedY = Math.round(asset.y * (GRID_Y / 100)) / (GRID_Y / 100);
-                return { ...asset, baseX: snappedX, baseY: snappedY, offsetX: 0, offsetY: 0 };
+                return { ...asset, baseX: snappedX, baseY: snappedY };
             });
+
+            const coordBuckets = {};
+            baseList.forEach((item, idx) => {
+                const key = `${item.baseX.toFixed(2)}_${item.baseY.toFixed(2)}`;
+                if (!coordBuckets[key]) coordBuckets[key] = [];
+                coordBuckets[key].push(idx);
+            });
+
+            Object.values(coordBuckets).forEach(indices => {
+                if (indices.length <= 1) return;
+                const radius = 1.45;
+                indices.forEach((assetIdx, order) => {
+                    const angle = (2 * Math.PI * order) / indices.length - Math.PI / 4;
+                    const nx = Math.max(1, Math.min(99, baseList[assetIdx].baseX + Math.cos(angle) * radius));
+                    const ny = Math.max(1, Math.min(99, baseList[assetIdx].baseY + Math.sin(angle) * radius));
+                    baseList[assetIdx].baseX = parseFloat(nx.toFixed(2));
+                    baseList[assetIdx].baseY = parseFloat(ny.toFixed(2));
+                });
+            });
+
+            return baseList;
         }
 
         function renderAssetMarkers(assets, highlightEam = null) {
@@ -1201,11 +1300,79 @@
             if (!floorPlanImg || floorPlanImg.classList.contains('hidden')) return;
 
             const processedAssets = calculateMarkerPositions(assets);
+
+            // 建立當前畫面資產座標索引，並統計哪些資產有 Pair 關係
+            const posMap = {};
+            const hasPairRelationSet = new Set();
+            processedAssets.forEach(a => {
+                const key = String(a.eam || '').trim().toLowerCase();
+                if (key && a.x !== undefined && a.y !== undefined) {
+                    posMap[key] = {
+                        eam: String(a.eam).trim(),
+                        x: a.baseX !== undefined ? a.baseX : a.x,
+                        y: a.baseY !== undefined ? a.baseY : a.y
+                    };
+                }
+            });
+
+            // 繪製 SVG 連線層（連接主資產與同平面圖內的 Pair 依賴資產）
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("viewBox", "0 0 100 100");
+            svg.setAttribute("preserveAspectRatio", "none");
+            svg.setAttribute("class", "absolute inset-0 w-full h-full pointer-events-none z-[5]");
+
+            processedAssets.forEach(asset => {
+                const fromKey = String(asset.eam || '').trim().toLowerCase();
+                const fromPos = posMap[fromKey];
+                if (!fromPos) return;
+
+                const depEams = parsePairedEamList(asset.pair);
+                depEams.forEach(depRaw => {
+                    const toKey = depRaw.toLowerCase();
+                    if (toKey === fromKey) return;
+                    const toPos = posMap[toKey];
+                    if (!toPos) return;
+
+                    hasPairRelationSet.add(fromKey);
+                    hasPairRelationSet.add(toKey);
+
+                    // 白色外描邊讓虛線在任何平面圖背景都清晰
+                    const bgLine = document.createElementNS(svgNS, "line");
+                    bgLine.setAttribute("x1", fromPos.x);
+                    bgLine.setAttribute("y1", fromPos.y);
+                    bgLine.setAttribute("x2", toPos.x);
+                    bgLine.setAttribute("y2", toPos.y);
+                    bgLine.setAttribute("stroke", "rgba(255, 255, 255, 0.85)");
+                    bgLine.setAttribute("stroke-width", "4");
+                    bgLine.setAttribute("vector-effect", "non-scaling-stroke");
+                    svg.appendChild(bgLine);
+
+                    // 靛藍色動態虛線
+                    const line = document.createElementNS(svgNS, "line");
+                    line.setAttribute("x1", fromPos.x);
+                    line.setAttribute("y1", fromPos.y);
+                    line.setAttribute("x2", toPos.x);
+                    line.setAttribute("y2", toPos.y);
+                    line.setAttribute("stroke", "#4f46e5");
+                    line.setAttribute("stroke-width", "2.2");
+                    line.setAttribute("opacity", "0.85");
+                    line.setAttribute("vector-effect", "non-scaling-stroke");
+                    line.setAttribute("data-from-eam", fromPos.eam);
+                    line.setAttribute("data-to-eam", toPos.eam);
+                    line.classList.add("pair-connection-line");
+                    svg.appendChild(line);
+                });
+            });
+
+            markersLayer.appendChild(svg);
+
             processedAssets.forEach(asset => {
                 if (asset.x === undefined || asset.y === undefined) return;
                 const typeConfig = getAssetTypeConfig(asset.description);
                 const marker = document.createElement('div');
                 marker.className = 'asset-pin-marker absolute cursor-pointer transition-all pointer-events-auto z-10';
+                marker.setAttribute('data-pin-eam', String(asset.eam || '').trim());
 
                 const posX = asset.baseX !== undefined ? asset.baseX : asset.x;
                 const posY = asset.baseY !== undefined ? asset.baseY : asset.y;
@@ -1215,14 +1382,25 @@
                 marker.style.transformOrigin = 'center center';
                 marker.style.transform = `translate(-50%, -50%) scale(var(--map-scale, 1))`;
 
+                const eamLower = String(asset.eam || '').trim().toLowerCase();
+                const isPaired = hasPairRelationSet.has(eamLower) || parsePairedEamList(asset.pair).length > 0;
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
+
+                const linkBadgeHtml = isPaired
+                    ? `<span title="已綁定 Pair 關聯" class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center border border-white shadow-xs"><i class="fa-solid fa-link text-[7px]"></i></span>`
+                    : '';
+
                 marker.innerHTML = `
                     <div class="relative flex items-center justify-center w-7 h-7 rounded-full border-2 shadow-md transition-transform hover:scale-110 ${typeConfig.bg} ${typeConfig.border} ${
                         isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                     }">
                         <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
+                        ${linkBadgeHtml}
                     </div>
                 `;
+
+                marker.onmouseenter = () => highlightPairGroupOnMap(asset.eam);
+                marker.onmouseleave = () => clearPairGroupHighlightOnMap();
                 
                 marker.onclick = async (e) => {
                     e.stopPropagation();
@@ -1253,6 +1431,9 @@
                 const card = document.createElement('div');
                 card.className = 'bg-gradient-to-br from-white to-slate-50/80 border border-slate-200/80 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 rounded-2xl p-3.5 cursor-pointer transition-all shadow-xs hover:shadow-md flex items-center justify-between gap-3';
                 card.setAttribute('data-eam', asset.eam);
+
+                card.onmouseenter = () => highlightPairGroupOnMap(asset.eam);
+                card.onmouseleave = () => clearPairGroupHighlightOnMap();
 
                 const isTransferred = String(asset.ward || '').trim().toLowerCase() === 'transfer' || (asset.dept && asset.dept !== 'NSD');
                 const badgeText = isTransferred
@@ -1387,6 +1568,8 @@
 
                 renderSidebarWithPriority(currentFilteredAssets);
                 renderAssetMarkers(currentFilteredAssets, asset.eam);
+                highlightPairGroupOnMap(asset.eam);
+                setTimeout(clearPairGroupHighlightOnMap, 3000);
 
                 const mapContainer = document.getElementById('mapContainer');
                 if (mapContainer) {
