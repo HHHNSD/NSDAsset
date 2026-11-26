@@ -111,7 +111,7 @@
                     </h2>
                     <div class="flex items-center gap-1.5">
                         <button type="button" onclick="resetSearchFilters()" title="清除所有搜尋條件" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-semibold cursor-pointer transition-colors">
-                            清除
+                            清除篩選
                         </button>
                         <span id="assetCountBadge" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-semibold">0 項</span>
                     </div>
@@ -154,7 +154,7 @@
                 <div class="flex justify-end pt-0.5">
                     <button type="button" onclick="openScannerModal()" title="開啟條碼掃描器" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 shadow-sm transition-all cursor-pointer hover:shadow">
                         <i class="fa-solid fa-barcode text-sm"></i>
-                        <span>條碼掃描定位</span>
+                        <span>掃描 EAM</span>
                     </button>
                 </div>
             </div>
@@ -1251,7 +1251,7 @@
                             <select id="condemnType" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-amber-500">
                                 <option value="Transfer">Transfer (轉出至其他部門)</option>
                                 <option value="Condemn">Condemn (報廢)</option>
-                                <option value="Surplus">Surplus (轉出/盈餘)</option>
+                                <option value="Surplus">Surplus (盈餘)</option>
                             </select>
                         </div>
                         <div id="transferDeptWrapper">
@@ -2462,16 +2462,16 @@
                     
                     <div class="space-y-2">
                         <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-pen-to-square"></i> 更改資產資訊
+                            <i class="fa-solid fa-pen-to-square"></i> 更改資料
                         </button>
                         
                         ${lockedPos ? '' : `
                         <button id="btnMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-location-crosshairs"></i> 在地圖中點擊更改位置
+                            <i class="fa-solid fa-location-crosshairs"></i> 更改位置
                         </button>`}
 
                         <button id="btnPairUp" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-link"></i> 主件配對配件
+                            <i class="fa-solid fa-link"></i> 綁定配件
                         </button>
                         
                         <button id="btnCondemn" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
@@ -2565,13 +2565,13 @@
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-sm shadow-2xl text-slate-800 text-center">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
-                            <i class="fa-solid fa-camera text-blue-600"></i> 即時相機條碼掃描器
+                            <i class="fa-solid fa-camera text-blue-600"></i> 掃描 Asset EAM
                         </h3>
                         <button id="btnCloseScanner" class="text-slate-400 hover:text-slate-600 text-sm p-1 font-bold">✕</button>
                     </div>
 
                     <div id="qr-reader" class="w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 mb-3" style="min-height: 220px;"></div>
-                    <p class="text-[11px] text-slate-500">提示：請將條碼或 QR Code 放入視窗中央即可自動讀取。</p>
+                    <p class="text-[11px] text-slate-500"> 提示：請將 Asset EAM 條碼對準視窗中央即可自動讀取 </p>
                 </div>
             `;
             document.body.appendChild(modal);
