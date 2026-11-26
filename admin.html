@@ -31,6 +31,24 @@
             transform: scale(1.22);
             z-index: 35;
         }
+    
+        .kiosk-joystick-pad {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .kiosk-quad-btn {
+            transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .kiosk-quad-btn:active {
+            transform: scale(0.95);
+        }
+        .kiosk-nav-btn {
+            transition: transform 0.12s ease, background-color 0.15s ease;
+        }
+        .kiosk-nav-btn:active {
+            transform: scale(0.92);
+        }
+
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
@@ -98,6 +116,89 @@
                 <div id="mapWrapper" class="relative w-full aspect-[12/9] bg-slate-50" onclick="handleMapClick(event)">
                     <img id="floorPlanImg" alt="Floor Plan" class="hidden absolute inset-0 w-full h-full object-fill pointer-events-auto" onclick="handleMapClick(event)">
                     <div id="markersLayer" class="absolute inset-0 pointer-events-none"></div>
+
+                    <!-- 地圖左下角：商場指南式快速切換搖桿 -->
+                    <div id="kioskJoystick" onclick="event.stopPropagation()" class="kiosk-joystick-pad absolute bottom-3 left-3 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 shadow-xl flex flex-col items-center gap-1.5 w-[212px] sm:w-[228px] pointer-events-auto">
+                        <!-- 頂部狀態列：目前棟別 / 樓層 / 單位 -->
+                        <div class="w-full flex items-center justify-between px-1 pb-1 border-b border-slate-100">
+                            <span class="text-[10px] font-black text-blue-700 flex items-center gap-1">
+                                <i class="fa-solid fa-compass"></i> 場景快切
+                            </span>
+                            <span id="joystickStatusLabel" class="text-[10px] font-bold text-slate-600 truncate max-w-[138px]">尚未選擇場景</span>
+                        </div>
+
+                        <!-- 上：樓層 (往上循環) -->
+                        <button type="button" onclick="cycleJoystickFloor(-1)" title="上一層樓（循環）"
+                            class="kiosk-nav-btn w-full h-7 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer">
+                            <i class="fa-solid fa-chevron-up text-[10px]"></i>
+                            <span id="joystickFloorUpText">樓層 ▲</span>
+                        </button>
+
+                        <!-- 中列：左(單位▲) + 中央圓形4格(M/T/Annuel/System) + 右(單位▼) -->
+                        <div class="w-full grid grid-cols-[34px_1fr_34px] items-center gap-1.5">
+                            <!-- 左：切換單位（循環） -->
+                            <button type="button" onclick="cycleJoystickWard(-1)" title="上一個單位（循環）"
+                                class="kiosk-nav-btn h-24 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200/80 flex flex-col items-center justify-center gap-1 cursor-pointer">
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                                <span class="text-[9px] font-extrabold writing-vertical">單位</span>
+                            </button>
+
+                            <!-- 中央圓形 4 格：M block / T block / Annuel Building / System -->
+                            <div class="relative w-28 h-28 mx-auto rounded-full bg-slate-100 border-2 border-slate-300/90 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden">
+                                <!-- 十字分隔線 -->
+                                <div class="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[1.5px] bg-slate-300/80 z-10"></div>
+                                <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-slate-300/80 z-10"></div>
+
+                                <!-- 左上：M block -->
+                                <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1.5 pl-1.5 text-slate-700 hover:bg-blue-100/80 cursor-pointer">
+                                    <span class="text-xs font-black leading-none">M</span>
+                                    <span class="text-[8px] font-bold text-slate-500 mt-0.5">Block</span>
+                                </button>
+
+                                <!-- 右上：T block -->
+                                <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1.5 pr-1.5 text-slate-700 hover:bg-blue-100/80 cursor-pointer">
+                                    <span class="text-xs font-black leading-none">T</span>
+                                    <span class="text-[8px] font-bold text-slate-500 mt-0.5">Block</span>
+                                </button>
+
+                                <!-- 左下：Annuel Building -->
+                                <button type="button" data-joy-block="ANNUEL" onclick="selectJoystickBlock('ANNUEL')" title="Annuel Building"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1.5 pl-1.5 text-slate-700 hover:bg-amber-100/80 cursor-pointer">
+                                    <span class="text-[9px] font-black leading-tight">Annuel</span>
+                                    <span class="text-[7px] font-bold text-slate-500">Buiding</span>
+                                </button>
+
+                                <!-- 右下：System -->
+                                <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1.5 pr-1.5 text-slate-700 hover:bg-purple-100/80 cursor-pointer">
+                                    <span class="text-[9px] font-black leading-tight">Sys</span>
+                                    <span class="text-[7px] font-bold text-slate-500">tem</span>
+                                </button>
+
+                                <!-- 圓心徽章 -->
+                                <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-slate-300 shadow-sm flex items-center justify-center z-20">
+                                    <span id="joystickCenterBadge" class="text-[9px] font-black text-blue-600">棟</span>
+                                </div>
+                            </div>
+
+                            <!-- 右：切換單位（循環） -->
+                            <button type="button" onclick="cycleJoystickWard(1)" title="下一個單位（循環）"
+                                class="kiosk-nav-btn h-24 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200/80 flex flex-col items-center justify-center gap-1 cursor-pointer">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                                <span class="text-[9px] font-extrabold">單位</span>
+                            </button>
+                        </div>
+
+                        <!-- 下：樓層 (往下循環) -->
+                        <button type="button" onclick="cycleJoystickFloor(1)" title="下一層樓（循環）"
+                            class="kiosk-nav-btn w-full h-7 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer">
+                            <span id="joystickFloorDownText">樓層 ▼</span>
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -1468,6 +1569,7 @@
             if (!block) return;
             const floors = [...new Set(floorHierarchyData.filter(h => h.block === block).map(h => h.floor))];
             floorSelect.innerHTML += floors.map(f => `<option value="${f}">${f}</option>`).join('');
+            updateJoystickUI();
         }
 
         function onFloorChange() {
@@ -1478,6 +1580,7 @@
             if (!floor) return;
             const wards = floorHierarchyData.filter(h => h.block === block && h.floor === floor);
             wardSelect.innerHTML += wards.map(w => `<option value="${w.wardKey}">${w.wardName} (${w.wardKey})</option>`).join('');
+            updateJoystickUI();
         }
 
         function onWardChange() {
@@ -1506,6 +1609,7 @@
             window.currentLoadedAssets = currentFilteredAssets;
             renderAssetMarkers(currentFilteredAssets);
             renderSidebarWithPriority(currentFilteredAssets);
+            updateJoystickUI();
         }
 
         function getAssetTypeConfig(description) {
@@ -2637,9 +2741,200 @@
             }
         }
 
+
+        // ========== 商場指南式搖桿控制邏輯 ==========
+        function normalizeJoyKey(val) {
+            return String(val || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function resolveMatchingBlockValue(quadKey) {
+            const blockSelect = document.getElementById('blockSelect');
+            const options = blockSelect
+                ? Array.from(blockSelect.options).map(o => o.value).filter(v => v && v.trim() !== '')
+                : [];
+            const pool = options.length > 0
+                ? options
+                : [...new Set((floorHierarchyData || []).map(h => h.block).filter(Boolean))];
+
+            const q = normalizeJoyKey(quadKey);
+            if (!q) return '';
+
+            // 精準或包含比對（含 Annuel / Annual 容錯）
+            let match = pool.find(b => normalizeJoyKey(b) === q);
+            if (!match) {
+                match = pool.find(b => normalizeJoyKey(b).includes(q) || q.includes(normalizeJoyKey(b)));
+            }
+            if (!match && q === 'annuel') {
+                match = pool.find(b => normalizeJoyKey(b).includes('annuel') || normalizeJoyKey(b).includes('annual'));
+            }
+            return match || '';
+        }
+
+        function updateJoystickUI() {
+            const blockVal = document.getElementById('blockSelect')?.value || '';
+            const floorVal = document.getElementById('floorSelect')?.value || '';
+            const wardSelect = document.getElementById('wardSelect');
+            const wardVal = wardSelect?.value || '';
+            const wardText = wardSelect && wardSelect.selectedIndex >= 0
+                ? (wardSelect.options[wardSelect.selectedIndex]?.text || wardVal)
+                : wardVal;
+
+            const statusEl = document.getElementById('joystickStatusLabel');
+            const centerEl = document.getElementById('joystickCenterBadge');
+            const upEl = document.getElementById('joystickFloorUpText');
+            const downEl = document.getElementById('joystickFloorDownText');
+
+            if (statusEl) {
+                const parts = [blockVal, floorVal, wardText].filter(Boolean);
+                statusEl.innerText = parts.length > 0 ? parts.join(' / ') : '尚未選擇場景';
+            }
+
+            if (centerEl) {
+                if (!blockVal) {
+                    centerEl.innerText = '棟';
+                } else {
+                    const nb = normalizeJoyKey(blockVal);
+                    if (nb.startsWith('m')) centerEl.innerText = 'M';
+                    else if (nb.startsWith('t')) centerEl.innerText = 'T';
+                    else if (nb.includes('annuel') || nb.includes('annual')) centerEl.innerText = 'AB';
+                    else if (nb.includes('sys')) centerEl.innerText = 'SYS';
+                    else centerEl.innerText = blockVal.slice(0, 3).toUpperCase();
+                }
+            }
+
+            if (upEl) upEl.innerText = floorVal ? `樓層 ▲ (${floorVal})` : '樓層 ▲';
+            if (downEl) downEl.innerText = floorVal ? `樓層 ▼ (${floorVal})` : '樓層 ▼';
+
+            document.querySelectorAll('.joy-block-quad').forEach(btn => {
+                const quadKey = btn.getAttribute('data-joy-block');
+                const resolved = resolveMatchingBlockValue(quadKey);
+                const isActive = Boolean(resolved && blockVal && resolved.toLowerCase() === blockVal.toLowerCase());
+                btn.classList.toggle('bg-blue-600', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('font-extrabold', isActive);
+            });
+        }
+
+        function selectJoystickBlock(quadKey) {
+            const matchedBlock = resolveMatchingBlockValue(quadKey);
+            if (!matchedBlock) {
+                alert(`找不到對應的棟別：${quadKey}`);
+                return;
+            }
+
+            const blockSelect = document.getElementById('blockSelect');
+            if (!blockSelect) return;
+
+            blockSelect.value = matchedBlock;
+            onBlockChange();
+
+            // 自動帶出該棟第一層樓與第一個單位，方便直接切換場景
+            const floorSelect = document.getElementById('floorSelect');
+            if (floorSelect && floorSelect.options.length > 1) {
+                floorSelect.selectedIndex = 1;
+                onFloorChange();
+
+                const wardSelect = document.getElementById('wardSelect');
+                if (wardSelect && wardSelect.options.length > 1) {
+                    wardSelect.selectedIndex = 1;
+                    onWardChange();
+                }
+            }
+            updateJoystickUI();
+        }
+
+        function cycleJoystickFloor(direction = 1) {
+            const blockSelect = document.getElementById('blockSelect');
+            const floorSelect = document.getElementById('floorSelect');
+            if (!blockSelect || !floorSelect) return;
+
+            if (!blockSelect.value) {
+                selectJoystickBlock('M');
+                return;
+            }
+
+            // 收集有效樓層選項（排除空白/請選擇）
+            const validIndices = [];
+            for (let i = 0; i < floorSelect.options.length; i++) {
+                if (String(floorSelect.options[i].value || '').trim() !== '') {
+                    validIndices.push(i);
+                }
+            }
+
+            if (validIndices.length === 0) {
+                alert(`棟別 [${blockSelect.value}] 目前沒有可切換的樓層`);
+                return;
+            }
+
+            const currentPos = validIndices.indexOf(floorSelect.selectedIndex);
+            let nextPos;
+            if (currentPos === -1) {
+                nextPos = direction >= 0 ? 0 : validIndices.length - 1;
+            } else {
+                nextPos = (currentPos + direction + validIndices.length) % validIndices.length;
+            }
+
+            floorSelect.selectedIndex = validIndices[nextPos];
+            onFloorChange();
+
+            // 換樓層後自動選該樓層第一個單位
+            const wardSelect = document.getElementById('wardSelect');
+            if (wardSelect) {
+                for (let j = 0; j < wardSelect.options.length; j++) {
+                    if (String(wardSelect.options[j].value || '').trim() !== '') {
+                        wardSelect.selectedIndex = j;
+                        onWardChange();
+                        break;
+                    }
+                }
+            }
+            updateJoystickUI();
+        }
+
+        function cycleJoystickWard(direction = 1) {
+            const blockSelect = document.getElementById('blockSelect');
+            const floorSelect = document.getElementById('floorSelect');
+            const wardSelect = document.getElementById('wardSelect');
+            if (!wardSelect) return;
+
+            if (!blockSelect?.value) {
+                selectJoystickBlock('M');
+                return;
+            }
+            if (!floorSelect?.value) {
+                cycleJoystickFloor(1);
+                return;
+            }
+
+            const validIndices = [];
+            for (let i = 0; i < wardSelect.options.length; i++) {
+                if (String(wardSelect.options[i].value || '').trim() !== '') {
+                    validIndices.push(i);
+                }
+            }
+
+            if (validIndices.length === 0) {
+                alert(`樓層 [${floorSelect.value}] 目前沒有可切換的單位`);
+                return;
+            }
+
+            const currentPos = validIndices.indexOf(wardSelect.selectedIndex);
+            let nextPos;
+            if (currentPos === -1) {
+                nextPos = direction >= 0 ? 0 : validIndices.length - 1;
+            } else {
+                nextPos = (currentPos + direction + validIndices.length) % validIndices.length;
+            }
+
+            wardSelect.selectedIndex = validIndices[nextPos];
+            onWardChange();
+            updateJoystickUI();
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             fetchHierarchy();
             fetchAllAssets();
+            updateJoystickUI();
 
             const img = document.getElementById('floorPlanImg');
             if (img) {
