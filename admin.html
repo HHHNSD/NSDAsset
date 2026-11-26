@@ -144,73 +144,73 @@
                             </div>
                         </div>
 
-                        <!-- 上：往下層 (Floor ▼) -->
-                        <button type="button" onclick="cycleJoystickFloor(-1)" title="下一層 Floor"
-                            class="kiosk-nav-btn w-full h-6 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100 hover:from-blue-50 hover:to-blue-100/70 hover:text-blue-700 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-1 text-[10px] font-bold cursor-pointer shadow-2xs">
+                        <!-- 上：往上層 (Floor ▲) -->
+                        <button type="button" onclick="cycleJoystickFloor(1)" title="往上層 Floor（到最高樓層自動換 Block）"
+                            class="kiosk-nav-btn w-full h-6 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:via-blue-500 hover:to-indigo-500 text-white border border-blue-400/50 flex items-center justify-center gap-1 text-[10px] font-extrabold cursor-pointer shadow-xs">
                             <i class="fa-solid fa-chevron-up text-[9px]"></i>
                             <span id="joystickFloorUpText">Floor ▲</span>
                         </button>
 
-                        <!-- 中列：左(單位▲) + 中央圓形4格(M Block / T Block / Annex Building / System) + 右(單位▼) -->
+                        <!-- 中列：左(上一個單位) + 中央圓形4格(左上 T Block / 右上 M Block / 左下 Annex / 右下 Sys) + 右(下一個單位) -->
                         <div class="w-full grid grid-cols-[28px_1fr_28px] items-center gap-1">
-                            <!-- 左：上一個單位（循環） -->
-                            <button type="button" onclick="cycleJoystickWard(-1)" title="上一個單位（循環）"
-                                class="kiosk-nav-btn h-24 rounded-xl bg-gradient-to-r from-emerald-50/70 to-slate-100 hover:from-emerald-100 hover:to-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200/80 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                            <!-- 左：上一個單位（首次點擊從 T Block G/F 開始） -->
+                            <button type="button" onclick="cycleJoystickWard(-1)" title="上一個單位（首次點擊從 T Block G/F 開始）"
+                                class="kiosk-nav-btn h-24 rounded-xl bg-gradient-to-b from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white border border-emerald-400/50 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-xs">
                                 <i class="fa-solid fa-chevron-left text-[10px]"></i>
                                 <span class="text-[8px] font-extrabold leading-none">單位</span>
                             </button>
 
-                            <!-- 中央圓形 4 格：M Block / T Block / Annex Building / System -->
-                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-300/90 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden">
+                            <!-- 中央圓形 4 格：左上 T Block / 右上 M Block / 左下 Annex / 右下 Sys -->
+                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden">
                                 <!-- 十字分隔線 -->
-                                <div class="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[1.5px] bg-slate-300/80 z-10"></div>
-                                <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-slate-300/80 z-10"></div>
+                                <div class="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/90 z-10"></div>
+                                <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/90 z-10"></div>
 
-                                <!-- 左上：M Block -->
-                                <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pl-1 text-slate-700 hover:bg-blue-100/80 cursor-pointer">
-                                    <span class="text-[11px] sm:text-xs font-black leading-none">M</span>
-                                    <span class="text-[7px] sm:text-[8px] font-bold text-slate-500 mt-0.5">Block</span>
-                                </button>
-
-                                <!-- 右上：T Block -->
-                                <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pr-1 text-slate-700 hover:bg-blue-100/80 cursor-pointer">
+                                <!-- 左上：T Block -->
+                                <button type="button" data-joy-block="T" data-joy-active-bg="bg-sky-600" data-joy-active-sub="text-sky-100" onclick="selectJoystickBlock('T')" title="T Block"
+                                    class="kiosk-quad-btn joy-block-quad bg-sky-50/95 hover:bg-sky-100 text-sky-900 flex flex-col items-center justify-center pt-1 pl-1 cursor-pointer">
                                     <span class="text-[11px] sm:text-xs font-black leading-none">T</span>
-                                    <span class="text-[7px] sm:text-[8px] font-bold text-slate-500 mt-0.5">Block</span>
+                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold text-sky-700/80 mt-0.5">Block</span>
                                 </button>
 
-                                <!-- 左下：Annex Building -->
-                                <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pl-1 text-slate-700 hover:bg-amber-100/80 cursor-pointer">
-                                    <span class="text-[8px] sm:text-[9px] font-black leading-tight">Annex</span>
-                                    <span class="text-[6.5px] sm:text-[7px] font-bold text-slate-500">Building</span>
+                                <!-- 右上：M Block -->
+                                <button type="button" data-joy-block="M" data-joy-active-bg="bg-indigo-600" data-joy-active-sub="text-indigo-100" onclick="selectJoystickBlock('M')" title="M Block"
+                                    class="kiosk-quad-btn joy-block-quad bg-indigo-50/95 hover:bg-indigo-100 text-indigo-900 flex flex-col items-center justify-center pt-1 pr-1 cursor-pointer">
+                                    <span class="text-[11px] sm:text-xs font-black leading-none">M</span>
+                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold text-indigo-700/80 mt-0.5">Block</span>
                                 </button>
 
-                                <!-- 右下：System -->
-                                <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pr-1 text-slate-700 hover:bg-purple-100/80 cursor-pointer">
-                                    <span class="text-[8px] sm:text-[9px] font-black leading-tight">Sys</span>
-                                    <span class="text-[6.5px] sm:text-[7px] font-bold text-slate-500">tem</span>
+                                <!-- 左下：Annex -->
+                                <button type="button" data-joy-block="ANNEX" data-joy-active-bg="bg-amber-600" data-joy-active-sub="text-amber-100" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
+                                    class="kiosk-quad-btn joy-block-quad bg-amber-50/95 hover:bg-amber-100 text-amber-900 flex flex-col items-center justify-center pb-1 pl-1 cursor-pointer">
+                                    <span class="text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
+                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold text-amber-700/80">Bldg</span>
+                                </button>
+
+                                <!-- 右下：Sys -->
+                                <button type="button" data-joy-block="SYSTEM" data-joy-active-bg="bg-purple-600" data-joy-active-sub="text-purple-100" onclick="selectJoystickBlock('SYSTEM')" title="System"
+                                    class="kiosk-quad-btn joy-block-quad bg-purple-50/95 hover:bg-purple-100 text-purple-900 flex flex-col items-center justify-center pb-1 pr-1 cursor-pointer">
+                                    <span class="text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
+                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold text-purple-700/80">tem</span>
                                 </button>
 
                                 <!-- 圓心徽章 -->
-                                <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border border-slate-300 shadow-sm flex items-center justify-center z-20">
-                                    <span id="joystickCenterBadge" class="text-[8px] sm:text-[9px] font-black text-blue-600">棟</span>
+                                <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-slate-200 shadow-md flex items-center justify-center z-20">
+                                    <span id="joystickCenterBadge" class="text-[8px] sm:text-[9px] font-black text-indigo-600">棟</span>
                                 </div>
                             </div>
 
-                            <!-- 右：下一個單位（循環） -->
-                            <button type="button" onclick="cycleJoystickWard(1)" title="下一個單位（循環）"
-                                class="kiosk-nav-btn h-24 rounded-xl bg-gradient-to-l from-emerald-50/70 to-slate-100 hover:from-emerald-100 hover:to-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200/80 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                            <!-- 右：下一個單位（首次點擊從 T Block G/F 開始） -->
+                            <button type="button" onclick="cycleJoystickWard(1)" title="下一個單位（首次點擊從 T Block G/F 開始）"
+                                class="kiosk-nav-btn h-24 rounded-xl bg-gradient-to-b from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white border border-emerald-400/50 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-xs">
                                 <i class="fa-solid fa-chevron-right text-[10px]"></i>
                                 <span class="text-[8px] font-extrabold leading-none">單位</span>
                             </button>
                         </div>
 
-                        <!-- 下：往上層 (Floor ▲) -->
-                        <button type="button" onclick="cycleJoystickFloor(1)" title="上一層 Floor（到最高樓層自動換 Block）"
-                            class="kiosk-nav-btn w-full h-6 rounded-xl bg-gradient-to-t from-slate-50 to-slate-100 hover:from-blue-50 hover:to-blue-100/70 hover:text-blue-700 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-1 text-[10px] font-bold cursor-pointer shadow-2xs">
+                        <!-- 下：往下層 (Floor ▼) -->
+                        <button type="button" onclick="cycleJoystickFloor(-1)" title="往下層 Floor"
+                            class="kiosk-nav-btn w-full h-6 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white border border-orange-300/60 flex items-center justify-center gap-1 text-[10px] font-extrabold cursor-pointer shadow-xs">
                             <span id="joystickFloorDownText">Floor ▼</span>
                             <i class="fa-solid fa-chevron-down text-[9px]"></i>
                         </button>
@@ -2768,6 +2768,7 @@
         let dragStartPointerY = 0;
         let dragStartOffsetX = 0;
         let dragStartOffsetY = 0;
+        let hasStartedWardNavigationFromTGF = false;
 
         function computeResponsiveJoystickScale() {
             const mapWrapper = document.getElementById('mapWrapper');
@@ -2853,7 +2854,7 @@
             return 200;
         }
 
-        // 指定順序：T Block -> Main Block -> Annex Building -> System
+        // 順序：T Block -> Main Block -> Annex Building -> System
         function getOrderedBlockList() {
             const blockSelect = document.getElementById('blockSelect');
             const rawBlocks = blockSelect
@@ -2952,6 +2953,21 @@
             return slots;
         }
 
+        function getTBlockGFStartSlot(slots) {
+            const list = Array.isArray(slots) && slots.length > 0 ? slots : buildGlobalNavigationSlots();
+            if (list.length === 0) return null;
+
+            const tGF = list.find(s => {
+                const nb = normalizeJoyKey(s.block);
+                const nf = normalizeJoyKey(s.floor);
+                return nb.startsWith('t') && (nf === 'gf' || nf === 'g');
+            });
+            if (tGF) return tGF;
+
+            const tAny = list.find(s => normalizeJoyKey(s.block).startsWith('t'));
+            return tAny || list[0];
+        }
+
         function applyNavigationSlot(slot) {
             if (!slot) return;
             const blockSelect = document.getElementById('blockSelect');
@@ -3045,7 +3061,7 @@
 
             if (statusEl) {
                 const labelText = wardNameOnly || '尚未選擇單位';
-                statusEl.innerHTML = `<i class="fa-solid fa-grip-dots-vertical text-slate-400 mr-1 text-[10px]"></i>${labelText}`;
+                statusEl.innerHTML = `<i class="fa-solid fa-grip-dots-vertical text-indigo-500 mr-1 text-[10px]"></i>${labelText}`;
                 statusEl.title = labelText;
             }
 
@@ -3062,17 +3078,24 @@
                 }
             }
 
-            // 調轉後：上方按鈕為往下層 (Floor ▼)，下方按鈕為往上層 (Floor ▲)
-            if (upEl) upEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
-            if (downEl) downEl.innerText = floorVal ? `Floor ▲ (${floorVal})` : 'Floor ▲';
+            // 上方按鈕為往上層 (Floor ▲)，下方按鈕為往下層 (Floor ▼)
+            if (upEl) upEl.innerText = floorVal ? `Floor ▲ (${floorVal})` : 'Floor ▲';
+            if (downEl) downEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
 
             document.querySelectorAll('.joy-block-quad').forEach(btn => {
                 const quadKey = btn.getAttribute('data-joy-block');
+                const activeBg = btn.getAttribute('data-joy-active-bg') || 'bg-blue-600';
+                const activeSub = btn.getAttribute('data-joy-active-sub') || 'text-blue-100';
+                const subLabel = btn.querySelector('.joy-sub-label');
                 const resolved = resolveMatchingBlockValue(quadKey);
                 const isActive = Boolean(resolved && blockVal && resolved.toLowerCase() === blockVal.toLowerCase());
-                btn.classList.toggle('bg-blue-600', isActive);
+
+                btn.classList.toggle(activeBg, isActive);
                 btn.classList.toggle('text-white', isActive);
                 btn.classList.toggle('font-extrabold', isActive);
+                if (subLabel) {
+                    subLabel.classList.toggle(activeSub, isActive);
+                }
             });
 
             applyJoystickTransform();
@@ -3085,6 +3108,7 @@
                 return;
             }
 
+            hasStartedWardNavigationFromTGF = true;
             const floors = getOrderedFloorsForBlock(matchedBlock);
             const firstFloor = floors[0] || '';
             const wards = firstFloor ? getOrderedWardsForBlockFloor(matchedBlock, firstFloor) : [];
@@ -3100,18 +3124,19 @@
             const slots = buildGlobalNavigationSlots();
             if (slots.length === 0) return;
 
+            hasStartedWardNavigationFromTGF = true;
             const curBlock = String(document.getElementById('blockSelect')?.value || '').trim();
             const curFloor = String(document.getElementById('floorSelect')?.value || '').trim();
 
             if (!curBlock) {
-                applyNavigationSlot(slots[0]);
+                applyNavigationSlot(getTBlockGFStartSlot(slots) || slots[0]);
                 return;
             }
 
             const orderedBlocks = getOrderedBlockList();
             const bIdx = orderedBlocks.findIndex(b => b.toLowerCase() === curBlock.toLowerCase());
             if (bIdx === -1) {
-                applyNavigationSlot(slots[0]);
+                applyNavigationSlot(getTBlockGFStartSlot(slots) || slots[0]);
                 return;
             }
 
@@ -3151,10 +3176,17 @@
             stepFloorWithBlockTransition(direction);
         }
 
-        // 左右單位切換：到盡頭直接去下一個／上一個節點（跨 Floor / 跨 Block 依指定順序前進）
+        // 左右單位切換：首次按左／右皆從 T Block G/F 開始，之後依序跨 Floor / 跨 Block 前進
         function cycleJoystickWard(direction = 1) {
             const slots = buildGlobalNavigationSlots();
             if (slots.length === 0) return;
+
+            const startSlot = getTBlockGFStartSlot(slots) || slots[0];
+            if (!hasStartedWardNavigationFromTGF) {
+                hasStartedWardNavigationFromTGF = true;
+                applyNavigationSlot(startSlot);
+                return;
+            }
 
             const curBlock = String(document.getElementById('blockSelect')?.value || '').trim().toLowerCase();
             const curFloor = String(document.getElementById('floorSelect')?.value || '').trim().toLowerCase();
@@ -3174,7 +3206,7 @@
             }
 
             if (currentSlotIdx === -1) {
-                applyNavigationSlot(direction >= 0 ? slots[0] : slots[slots.length - 1]);
+                applyNavigationSlot(startSlot);
                 return;
             }
 
