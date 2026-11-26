@@ -144,8 +144,8 @@
                             </div>
                         </div>
 
-                        <!-- 上：往上層 (Floor ▲) -->
-                        <button type="button" onclick="cycleJoystickFloor(-1)" title="上一層 Floor（循環）"
+                        <!-- 上：往下層 (Floor ▼) -->
+                        <button type="button" onclick="cycleJoystickFloor(-1)" title="下一層 Floor"
                             class="kiosk-nav-btn w-full h-6 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100 hover:from-blue-50 hover:to-blue-100/70 hover:text-blue-700 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-1 text-[10px] font-bold cursor-pointer shadow-2xs">
                             <i class="fa-solid fa-chevron-up text-[9px]"></i>
                             <span id="joystickFloorUpText">Floor ▲</span>
@@ -208,8 +208,8 @@
                             </button>
                         </div>
 
-                        <!-- 下：往下層 (Floor ▼) -->
-                        <button type="button" onclick="cycleJoystickFloor(1)" title="下一層 Floor（循環）"
+                        <!-- 下：往上層 (Floor ▲) -->
+                        <button type="button" onclick="cycleJoystickFloor(1)" title="上一層 Floor（到最高樓層自動換 Block）"
                             class="kiosk-nav-btn w-full h-6 rounded-xl bg-gradient-to-t from-slate-50 to-slate-100 hover:from-blue-50 hover:to-blue-100/70 hover:text-blue-700 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-1 text-[10px] font-bold cursor-pointer shadow-2xs">
                             <span id="joystickFloorDownText">Floor ▼</span>
                             <i class="fa-solid fa-chevron-down text-[9px]"></i>
@@ -2759,7 +2759,7 @@
         }
 
 
-        // ========== 商場指南式搖桿控制邏輯（拖曳、縮放、Ward Name、Floor、Annex Building） ==========
+        // ========== 商場指南式搖桿控制邏輯（拖曳、縮放、Ward Name、Floor、全域順序跳轉） ==========
         let joyUserScale = 1.0;
         let joyOffsetX = 0;
         let joyOffsetY = 0;
@@ -2772,7 +2772,6 @@
         function computeResponsiveJoystickScale() {
             const mapWrapper = document.getElementById('mapWrapper');
             const wrapperWidth = mapWrapper ? mapWrapper.clientWidth : window.innerWidth;
-            // 手機或窄地圖自動等比例縮小，避免占用過多地圖面積
             const autoFactor = Math.max(0.55, Math.min(1.0, wrapperWidth / 640));
             return parseFloat((autoFactor * joyUserScale).toFixed(2));
         }
@@ -2842,26 +2841,176 @@
             return String(val || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
         }
 
-        function resolveMatchingBlockValue(quadKey) {
+        function parseFloorOrderRank(floorStr) {
+            const s = String(floorStr || '').trim().toUpperCase();
+            if (!s) return 999;
+            if (s.includes('B2') || s === '-2' || s === '2/F B') return -20;
+            if (s.includes('B1') || s === '-1' || s === '1/F B') return -10;
+            if (s === 'G/F' || s === 'GF' || s === 'G') return 0;
+            const m = s.match(/(\d+)\s*\/\s*F/) || s.match(/^(\d+)F?$/);
+            if (m) return parseInt(m[1], 10);
+            if (s.includes('SYSTEM')) return 500;
+            return 200;
+        }
+
+        // 指定順序：T Block -> Main Block -> Annex Building -> System
+        function getOrderedBlockList() {
             const blockSelect = document.getElementById('blockSelect');
-            const options = blockSelect
+            const rawBlocks = blockSelect
                 ? Array.from(blockSelect.options).map(o => o.value).filter(v => v && v.trim() !== '')
-                : [];
-            const pool = options.length > 0
-                ? options
                 : [...new Set((floorHierarchyData || []).map(h => h.block).filter(Boolean))];
 
+            const priorityOrder = [
+                { keys: ['t', 'tblock'], rank: 1 },
+                { keys: ['m', 'mainblock', 'mblock'], rank: 2 },
+                { keys: ['annex', 'annexbuilding'], rank: 3 },
+                { keys: ['system', 'sys'], rank: 4 }
+            ];
+
+            function getBlockRank(b) {
+                const nb = normalizeJoyKey(b);
+                for (const item of priorityOrder) {
+                    if (item.keys.some(k => nb === k || nb.includes(k))) {
+                        return item.rank;
+                    }
+                }
+                return 99;
+            }
+
+            return [...new Set(rawBlocks)].sort((a, b) => {
+                const ra = getBlockRank(a);
+                const rb = getBlockRank(b);
+                if (ra !== rb) return ra - rb;
+                return String(a).localeCompare(String(b));
+            });
+        }
+
+        // T Block: G/F -> 5/F；Main Block: G/F -> 4/F
+        function getOrderedFloorsForBlock(blockVal) {
+            const targetBlock = String(blockVal || '').trim();
+            if (!targetBlock) return [];
+
+            const items = (floorHierarchyData || []).filter(
+                h => String(h.block || '').trim().toLowerCase() === targetBlock.toLowerCase() && h.floor
+            );
+            const floors = [...new Set(items.map(h => String(h.floor).trim()))];
+
+            const nb = normalizeJoyKey(targetBlock);
+            const explicitSeq = nb.startsWith('t')
+                ? ['G/F', '1/F', '2/F', '3/F', '4/F', '5/F']
+                : (nb.startsWith('m') || nb.includes('main'))
+                    ? ['G/F', '1/F', '2/F', '3/F', '4/F']
+                    : null;
+
+            return floors.sort((a, b) => {
+                const ua = a.toUpperCase();
+                const ub = b.toUpperCase();
+                if (explicitSeq) {
+                    const ia = explicitSeq.indexOf(ua);
+                    const ib = explicitSeq.indexOf(ub);
+                    if (ia !== -1 && ib !== -1) return ia - ib;
+                    if (ia !== -1) return -1;
+                    if (ib !== -1) return 1;
+                }
+                const ra = parseFloorOrderRank(ua);
+                const rb = parseFloorOrderRank(ub);
+                if (ra !== rb) return ra - rb;
+                return ua.localeCompare(ub, undefined, { numeric: true });
+            });
+        }
+
+        function getOrderedWardsForBlockFloor(blockVal, floorVal) {
+            const bKey = String(blockVal || '').trim().toLowerCase();
+            const fKey = String(floorVal || '').trim().toLowerCase();
+            return (floorHierarchyData || [])
+                .filter(h =>
+                    String(h.block || '').trim().toLowerCase() === bKey &&
+                    String(h.floor || '').trim().toLowerCase() === fKey &&
+                    h.wardKey
+                )
+                .map(h => String(h.wardKey).trim());
+        }
+
+        function buildGlobalNavigationSlots() {
+            const slots = [];
+            const orderedBlocks = getOrderedBlockList();
+
+            orderedBlocks.forEach(blk => {
+                const floors = getOrderedFloorsForBlock(blk);
+                floors.forEach(flr => {
+                    const wards = getOrderedWardsForBlockFloor(blk, flr);
+                    if (wards.length > 0) {
+                        wards.forEach(wKey => {
+                            slots.push({ block: blk, floor: flr, ward: wKey });
+                        });
+                    } else {
+                        slots.push({ block: blk, floor: flr, ward: '' });
+                    }
+                });
+            });
+
+            return slots;
+        }
+
+        function applyNavigationSlot(slot) {
+            if (!slot) return;
+            const blockSelect = document.getElementById('blockSelect');
+            const floorSelect = document.getElementById('floorSelect');
+            const wardSelect = document.getElementById('wardSelect');
+            if (!blockSelect || !floorSelect || !wardSelect) return;
+
+            blockSelect.value = slot.block || '';
+            onBlockChange();
+
+            if (slot.floor) {
+                const fOpt = Array.from(floorSelect.options).find(
+                    o => String(o.value || '').trim().toLowerCase() === String(slot.floor).trim().toLowerCase()
+                );
+                floorSelect.value = fOpt ? fOpt.value : slot.floor;
+                onFloorChange();
+            }
+
+            if (slot.ward) {
+                const wOpt = Array.from(wardSelect.options).find(
+                    o => String(o.value || '').trim().toLowerCase() === String(slot.ward).trim().toLowerCase()
+                );
+                wardSelect.value = wOpt ? wOpt.value : slot.ward;
+                onWardChange();
+            } else if (wardSelect.options.length > 1) {
+                wardSelect.selectedIndex = 1;
+                onWardChange();
+            }
+
+            updateJoystickUI();
+        }
+
+        function resolveMatchingBlockValue(quadKey) {
+            const orderedBlocks = getOrderedBlockList();
             const q = normalizeJoyKey(quadKey);
             if (!q) return '';
 
-            let match = pool.find(b => normalizeJoyKey(b) === q);
-            if (!match) {
-                match = pool.find(b => normalizeJoyKey(b).includes(q) || q.includes(normalizeJoyKey(b)));
+            if (q === 't' || q === 'tblock') {
+                return orderedBlocks.find(b => {
+                    const nb = normalizeJoyKey(b);
+                    return nb === 't' || nb === 'tblock' || nb.startsWith('t');
+                }) || '';
             }
-            if (!match && q === 'annex') {
-                match = pool.find(b => normalizeJoyKey(b).includes('annex'));
+            if (q === 'm' || q === 'mblock' || q === 'mainblock') {
+                return orderedBlocks.find(b => {
+                    const nb = normalizeJoyKey(b);
+                    return nb === 'm' || nb === 'mblock' || nb.includes('main') || nb.startsWith('m');
+                }) || '';
             }
-            return match || '';
+            if (q === 'annex' || q === 'annexbuilding') {
+                return orderedBlocks.find(b => normalizeJoyKey(b).includes('annex')) || '';
+            }
+            if (q === 'system' || q === 'sys') {
+                return orderedBlocks.find(b => normalizeJoyKey(b).includes('sys')) || '';
+            }
+
+            return orderedBlocks.find(b => normalizeJoyKey(b) === q)
+                || orderedBlocks.find(b => normalizeJoyKey(b).includes(q) || q.includes(normalizeJoyKey(b)))
+                || '';
         }
 
         function getCurrentWardNameOnly() {
@@ -2905,16 +3054,17 @@
                     centerEl.innerText = '棟';
                 } else {
                     const nb = normalizeJoyKey(blockVal);
-                    if (nb.startsWith('m')) centerEl.innerText = 'M';
-                    else if (nb.startsWith('t')) centerEl.innerText = 'T';
+                    if (nb.startsWith('t')) centerEl.innerText = 'T';
+                    else if (nb.startsWith('m') || nb.includes('main')) centerEl.innerText = 'M';
                     else if (nb.includes('annex')) centerEl.innerText = 'ANX';
                     else if (nb.includes('sys')) centerEl.innerText = 'SYS';
                     else centerEl.innerText = blockVal.slice(0, 3).toUpperCase();
                 }
             }
 
-            if (upEl) upEl.innerText = floorVal ? `Floor ▲ (${floorVal})` : 'Floor ▲';
-            if (downEl) downEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
+            // 調轉後：上方按鈕為往下層 (Floor ▼)，下方按鈕為往上層 (Floor ▲)
+            if (upEl) upEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
+            if (downEl) downEl.innerText = floorVal ? `Floor ▲ (${floorVal})` : 'Floor ▲';
 
             document.querySelectorAll('.joy-block-quad').forEach(btn => {
                 const quadKey = btn.getAttribute('data-joy-block');
@@ -2935,112 +3085,101 @@
                 return;
             }
 
-            const blockSelect = document.getElementById('blockSelect');
-            if (!blockSelect) return;
-
-            blockSelect.value = matchedBlock;
-            onBlockChange();
-
-            const floorSelect = document.getElementById('floorSelect');
-            if (floorSelect && floorSelect.options.length > 1) {
-                floorSelect.selectedIndex = 1;
-                onFloorChange();
-
-                const wardSelect = document.getElementById('wardSelect');
-                if (wardSelect && wardSelect.options.length > 1) {
-                    wardSelect.selectedIndex = 1;
-                    onWardChange();
-                }
-            }
-            updateJoystickUI();
+            const floors = getOrderedFloorsForBlock(matchedBlock);
+            const firstFloor = floors[0] || '';
+            const wards = firstFloor ? getOrderedWardsForBlockFloor(matchedBlock, firstFloor) : [];
+            applyNavigationSlot({
+                block: matchedBlock,
+                floor: firstFloor,
+                ward: wards[0] || ''
+            });
         }
 
-        // 修正上下樓層順序：
-        // 選項陣列通常由下往上（如 G/F, 1/F, 2/F...），因此「往上 ▲ (direction = +1)」往索引遞增方向走，「往下 ▼ (direction = -1)」往索引遞減方向走，皆可循環
+        // floorStep: +1 往上層（到最高樓層直接換下一個 Block）；-1 往下層
+        function stepFloorWithBlockTransition(floorStep) {
+            const slots = buildGlobalNavigationSlots();
+            if (slots.length === 0) return;
+
+            const curBlock = String(document.getElementById('blockSelect')?.value || '').trim();
+            const curFloor = String(document.getElementById('floorSelect')?.value || '').trim();
+
+            if (!curBlock) {
+                applyNavigationSlot(slots[0]);
+                return;
+            }
+
+            const orderedBlocks = getOrderedBlockList();
+            const bIdx = orderedBlocks.findIndex(b => b.toLowerCase() === curBlock.toLowerCase());
+            if (bIdx === -1) {
+                applyNavigationSlot(slots[0]);
+                return;
+            }
+
+            const floorsInBlock = getOrderedFloorsForBlock(orderedBlocks[bIdx]);
+            const fIdx = floorsInBlock.findIndex(f => f.toLowerCase() === curFloor.toLowerCase());
+
+            if (floorStep > 0) {
+                if (fIdx !== -1 && fIdx + 1 < floorsInBlock.length) {
+                    const nextFloor = floorsInBlock[fIdx + 1];
+                    const nextWards = getOrderedWardsForBlockFloor(orderedBlocks[bIdx], nextFloor);
+                    applyNavigationSlot({ block: orderedBlocks[bIdx], floor: nextFloor, ward: nextWards[0] || '' });
+                } else {
+                    const nextBlockIdx = (bIdx + 1) % orderedBlocks.length;
+                    const nextBlock = orderedBlocks[nextBlockIdx];
+                    const nextBlockFloors = getOrderedFloorsForBlock(nextBlock);
+                    const targetFloor = nextBlockFloors[0] || '';
+                    const targetWards = targetFloor ? getOrderedWardsForBlockFloor(nextBlock, targetFloor) : [];
+                    applyNavigationSlot({ block: nextBlock, floor: targetFloor, ward: targetWards[0] || '' });
+                }
+            } else {
+                if (fIdx > 0) {
+                    const prevFloor = floorsInBlock[fIdx - 1];
+                    const prevWards = getOrderedWardsForBlockFloor(orderedBlocks[bIdx], prevFloor);
+                    applyNavigationSlot({ block: orderedBlocks[bIdx], floor: prevFloor, ward: prevWards[0] || '' });
+                } else {
+                    const prevBlockIdx = (bIdx - 1 + orderedBlocks.length) % orderedBlocks.length;
+                    const prevBlock = orderedBlocks[prevBlockIdx];
+                    const prevBlockFloors = getOrderedFloorsForBlock(prevBlock);
+                    const targetFloor = prevBlockFloors[prevBlockFloors.length - 1] || '';
+                    const targetWards = targetFloor ? getOrderedWardsForBlockFloor(prevBlock, targetFloor) : [];
+                    applyNavigationSlot({ block: prevBlock, floor: targetFloor, ward: targetWards[0] || '' });
+                }
+            }
+        }
+
         function cycleJoystickFloor(direction = 1) {
-            const blockSelect = document.getElementById('blockSelect');
-            const floorSelect = document.getElementById('floorSelect');
-            if (!blockSelect || !floorSelect) return;
-
-            if (!blockSelect.value) {
-                selectJoystickBlock('M');
-                return;
-            }
-
-            const validIndices = [];
-            for (let i = 0; i < floorSelect.options.length; i++) {
-                if (String(floorSelect.options[i].value || '').trim() !== '') {
-                    validIndices.push(i);
-                }
-            }
-
-            if (validIndices.length === 0) {
-                alert(`棟別 [${blockSelect.value}] 目前沒有可切換的 Floor`);
-                return;
-            }
-
-            const currentPos = validIndices.indexOf(floorSelect.selectedIndex);
-            let nextPos;
-            if (currentPos === -1) {
-                nextPos = direction >= 0 ? 0 : validIndices.length - 1;
-            } else {
-                nextPos = (currentPos + direction + validIndices.length) % validIndices.length;
-            }
-
-            floorSelect.selectedIndex = validIndices[nextPos];
-            onFloorChange();
-
-            const wardSelect = document.getElementById('wardSelect');
-            if (wardSelect) {
-                for (let j = 0; j < wardSelect.options.length; j++) {
-                    if (String(wardSelect.options[j].value || '').trim() !== '') {
-                        wardSelect.selectedIndex = j;
-                        onWardChange();
-                        break;
-                    }
-                }
-            }
-            updateJoystickUI();
+            stepFloorWithBlockTransition(direction);
         }
 
+        // 左右單位切換：到盡頭直接去下一個／上一個節點（跨 Floor / 跨 Block 依指定順序前進）
         function cycleJoystickWard(direction = 1) {
-            const blockSelect = document.getElementById('blockSelect');
-            const floorSelect = document.getElementById('floorSelect');
-            const wardSelect = document.getElementById('wardSelect');
-            if (!wardSelect) return;
+            const slots = buildGlobalNavigationSlots();
+            if (slots.length === 0) return;
 
-            if (!blockSelect?.value) {
-                selectJoystickBlock('M');
+            const curBlock = String(document.getElementById('blockSelect')?.value || '').trim().toLowerCase();
+            const curFloor = String(document.getElementById('floorSelect')?.value || '').trim().toLowerCase();
+            const curWard = String(document.getElementById('wardSelect')?.value || '').trim().toLowerCase();
+
+            let currentSlotIdx = slots.findIndex(s =>
+                s.block.toLowerCase() === curBlock &&
+                s.floor.toLowerCase() === curFloor &&
+                s.ward.toLowerCase() === curWard
+            );
+
+            if (currentSlotIdx === -1) {
+                currentSlotIdx = slots.findIndex(s =>
+                    s.block.toLowerCase() === curBlock &&
+                    s.floor.toLowerCase() === curFloor
+                );
+            }
+
+            if (currentSlotIdx === -1) {
+                applyNavigationSlot(direction >= 0 ? slots[0] : slots[slots.length - 1]);
                 return;
             }
-            if (!floorSelect?.value) {
-                cycleJoystickFloor(1);
-                return;
-            }
 
-            const validIndices = [];
-            for (let i = 0; i < wardSelect.options.length; i++) {
-                if (String(wardSelect.options[i].value || '').trim() !== '') {
-                    validIndices.push(i);
-                }
-            }
-
-            if (validIndices.length === 0) {
-                alert(`Floor [${floorSelect.value}] 目前沒有可切換的單位`);
-                return;
-            }
-
-            const currentPos = validIndices.indexOf(wardSelect.selectedIndex);
-            let nextPos;
-            if (currentPos === -1) {
-                nextPos = direction >= 0 ? 0 : validIndices.length - 1;
-            } else {
-                nextPos = (currentPos + direction + validIndices.length) % validIndices.length;
-            }
-
-            wardSelect.selectedIndex = validIndices[nextPos];
-            onWardChange();
-            updateJoystickUI();
+            const nextSlotIdx = (currentSlotIdx + (direction >= 0 ? 1 : -1) + slots.length) % slots.length;
+            applyNavigationSlot(slots[nextSlotIdx]);
         }
 
         document.addEventListener("DOMContentLoaded", () => {
