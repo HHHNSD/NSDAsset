@@ -374,7 +374,7 @@
         function applyAssetListToLocalState(updatedList, focusEam = null, jumpToTargetPage = false) {
             const list = Array.isArray(updatedList) ? updatedList : [updatedList];
             if (list.length === 0) return;
-
+        
             list.forEach(updatedAsset => {
                 if (!updatedAsset || !updatedAsset.eam) return;
                 const targetEam = String(updatedAsset.eam).trim().toLowerCase();
@@ -385,22 +385,28 @@
                     allAssets.push({ ...updatedAsset });
                 }
             });
-
+        
             window.allAssets = allAssets;
             populateSearchDatalists();
-
+        
             const targetFocus = focusEam
                 ? allAssets.find(a => String(a.eam || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase())
                 : list[0];
-
+        
             if (jumpToTargetPage && targetFocus) {
                 locateAndHighlightAsset(targetFocus);
                 return;
             }
-
+        
             const wardSelect = document.getElementById('wardSelect');
             const selectedWard = wardSelect ? String(wardSelect.value || '').trim().toLowerCase() : '';
-
+        
+            // 若目標資產的 ward 與目前下拉選單不同（例如從 NSD 移到 CSSD），自動切到新 Ward 平面圖顯示
+            if (targetFocus && targetFocus.ward && String(targetFocus.ward).trim().toLowerCase() !== selectedWard) {
+                locateAndHighlightAsset(targetFocus);
+                return;
+            }
+        
             if (selectedWard) {
                 currentFilteredAssets = allAssets.filter(
                     a => a.ward && String(a.ward).trim().toLowerCase() === selectedWard
@@ -408,19 +414,8 @@
                 window.currentLoadedAssets = currentFilteredAssets;
                 renderAssetMarkers(currentFilteredAssets, focusEam || (list[0] && list[0].eam));
             }
-
+        
             renderSidebarWithPriority(selectedWard ? currentFilteredAssets : allAssets);
-
-            if (focusEam) {
-                setTimeout(() => {
-                    document.querySelectorAll('[data-eam]').forEach(card => {
-                        if (String(card.getAttribute('data-eam') || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase()) {
-                            card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
-                            setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 2500);
-                        }
-                    });
-                }, 50);
-            }
         }
 
         function syncLocalAssetAfterUpdate(updatedAsset) {
