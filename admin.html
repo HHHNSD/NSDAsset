@@ -203,6 +203,7 @@
             return (allAssets || []).find(a => String(a.eam || '').trim().toLowerCase() === target) || null;
         }
 
+        // 反查目前資產是哪些「主件」的「配件」
         function getPairOwnerAssets(asset) {
             if (!asset || !asset.eam) return [];
             const targetEamLower = String(asset.eam).trim().toLowerCase();
@@ -327,7 +328,7 @@
             return parseFloat(Math.max(min, Math.min(max, val)).toFixed(2));
         }
 
-        // Pair 座標規則：
+        // 配件座標錯開規則：
         // 預設下方 y + 2, y + 4...
         // 若下方有 item -> 右方 x + 2, x + 4...
         // 若右方也有 item -> 上方 y - 2, y - 4...
@@ -370,11 +371,11 @@
             return { x: leftX, y: leftY };
         }
 
-        // 本地同步資料與地圖（不觸發全量 getAllAssets；僅於 jumpToTargetPage=true 時跳轉到目標狀態頁）
+        // 本地同步資料與地圖（不觸發全量 getAllAssets；僅於 jumpToTargetPage=true 或跨 Ward 移動時切換畫面）
         function applyAssetListToLocalState(updatedList, focusEam = null, jumpToTargetPage = false) {
             const list = Array.isArray(updatedList) ? updatedList : [updatedList];
             if (list.length === 0) return;
-        
+
             list.forEach(updatedAsset => {
                 if (!updatedAsset || !updatedAsset.eam) return;
                 const targetEam = String(updatedAsset.eam).trim().toLowerCase();
@@ -385,28 +386,27 @@
                     allAssets.push({ ...updatedAsset });
                 }
             });
-        
+
             window.allAssets = allAssets;
             populateSearchDatalists();
-        
+
             const targetFocus = focusEam
                 ? allAssets.find(a => String(a.eam || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase())
                 : list[0];
-        
+
             if (jumpToTargetPage && targetFocus) {
                 locateAndHighlightAsset(targetFocus);
                 return;
             }
-        
+
             const wardSelect = document.getElementById('wardSelect');
             const selectedWard = wardSelect ? String(wardSelect.value || '').trim().toLowerCase() : '';
-        
-            // 若目標資產的 ward 與目前下拉選單不同（例如從 NSD 移到 CSSD），自動切到新 Ward 平面圖顯示
+
             if (targetFocus && targetFocus.ward && String(targetFocus.ward).trim().toLowerCase() !== selectedWard) {
                 locateAndHighlightAsset(targetFocus);
                 return;
             }
-        
+
             if (selectedWard) {
                 currentFilteredAssets = allAssets.filter(
                     a => a.ward && String(a.ward).trim().toLowerCase() === selectedWard
@@ -414,8 +414,19 @@
                 window.currentLoadedAssets = currentFilteredAssets;
                 renderAssetMarkers(currentFilteredAssets, focusEam || (list[0] && list[0].eam));
             }
-        
+
             renderSidebarWithPriority(selectedWard ? currentFilteredAssets : allAssets);
+
+            if (focusEam) {
+                setTimeout(() => {
+                    document.querySelectorAll('[data-eam]').forEach(card => {
+                        if (String(card.getAttribute('data-eam') || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase()) {
+                            card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
+                            setTimeout(() => card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50'), 2500);
+                        }
+                    });
+                }, 50);
+            }
         }
 
         function syncLocalAssetAfterUpdate(updatedAsset) {
@@ -478,7 +489,7 @@
                         body: JSON.stringify({ action: 'updateAsset', asset: relItem })
                     }).then(res => res.json());
                 } catch (err) {
-                    console.warn(`解除 [${relItem.eam}] 與 [${targetEamStr}] 綁定時發生錯誤:`, err);
+                    console.warn(`解除 [${relItem.eam}] 與 [${targetEamStr}] 配對時發生錯誤:`, err);
                 }
             }
 
@@ -508,15 +519,15 @@
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-md shadow-2xl text-slate-800 max-h-[90vh] overflow-y-auto">
                     <h3 class="text-xs font-bold mb-1 text-indigo-600 text-center flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-list-check"></i> 選擇要連帶移動的依賴物品
+                        <i class="fa-solid fa-list-check"></i> 選擇要一起移動的配件
                     </h3>
                     <p class="text-[11px] text-slate-500 text-center mb-3">
-                        主資產：<span class="font-bold text-slate-800">${primaryAsset.eam}</span> (${primaryAsset.description || '無類型'})<br>
+                        主件：<span class="font-bold text-slate-800">${primaryAsset.eam}</span> (${primaryAsset.description || '無類型'})<br>
                         目標位置：<span class="font-bold text-blue-700">${targetWard}</span> (${targetX}, ${targetY})
                     </p>
 
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 mb-2 flex items-center justify-between text-[11px]">
-                        <span class="font-bold text-slate-600">依賴設備清單（可取消不一起移動的項目）：</span>
+                        <span class="font-bold text-slate-600">已配對配件清單（可取消不一起移動）：</span>
                         <div class="flex gap-2">
                             <button type="button" id="btnSelectAllPairs" class="text-blue-600 hover:underline font-semibold cursor-pointer">全選</button>
                             <button type="button" id="btnDeselectAllPairs" class="text-slate-500 hover:underline font-semibold cursor-pointer">全不選</button>
@@ -541,7 +552,7 @@
 
                     <div class="flex gap-2">
                         <button type="button" id="btnConfirmSelectedPairMove" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl shadow cursor-pointer">
-                            確認移動已勾選項目
+                            確認移動主件與勾選配件
                         </button>
                         <button type="button" id="btnCancelPairMoveSelect" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl cursor-pointer">
                             取消
@@ -626,7 +637,7 @@
             const bannerText = document.getElementById('bannerText');
             if (banner && bannerText) {
                 banner.classList.remove('hidden');
-                bannerText.innerText = `🔗 正在為 [${primaryAsset.eam}] 挑選依賴資產：請直接在地圖上點選資產圖釘...`;
+                bannerText.innerText = `🔗 主件 [${primaryAsset.eam}] 正在挑選配件：請直接在地圖上點選配件圖釘...`;
             }
 
             const mapContainer = document.getElementById('mapContainer');
@@ -644,12 +655,12 @@
             if (!pickedEam) return true;
 
             if (pickedEam.toLowerCase() === targetEam.toLowerCase()) {
-                alert("⚠️ 不能將資產綁定到自己本身！");
+                alert("⚠️ 主件不能配對自己本身！");
                 return true;
             }
 
             if (isLockedStatusWard(clickedAsset.ward)) {
-                alert(`⚠️ [${pickedEam}] 已處於 [${clickedAsset.ward}] 狀態，無法加入 Pair 依賴。`);
+                alert(`⚠️ 配件 [${pickedEam}] 已處於 [${clickedAsset.ward}] 狀態，無法加入配對。`);
                 return true;
             }
 
@@ -657,7 +668,7 @@
             const exists = currentList.some(e => e.toLowerCase() === pickedEam.toLowerCase());
 
             if (exists) {
-                const removeConfirm = confirm(`資產 [${pickedEam}] 已在 [${targetEam}] 的 Pair 清單中，是否要將其移除？`);
+                const removeConfirm = confirm(`配件 [${pickedEam}] 已配對在主件 [${targetEam}] 下，是否要解除此配件配對？`);
                 if (removeConfirm) {
                     const nextList = currentList.filter(e => e.toLowerCase() !== pickedEam.toLowerCase());
                     pendingPairTargetAsset.pair = nextList.join(', ');
@@ -668,7 +679,7 @@
 
             currentList.push(pickedEam);
             pendingPairTargetAsset.pair = currentList.join(', ');
-            alert(`✅ 已將 [${pickedEam}] (${clickedAsset.description || '無類型'}) 加入 [${targetEam}] 的 Pair 依賴清單！\n目前 Pair：${pendingPairTargetAsset.pair}`);
+            alert(`✅ 已將配件 [${pickedEam}] (${clickedAsset.description || '無類型'}) 配對到主件 [${targetEam}]！\n已配對配件：${pendingPairTargetAsset.pair}`);
             await updateAssetInSheet(pendingPairTargetAsset, targetEam);
             return true;
         }
@@ -686,34 +697,34 @@
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-md shadow-2xl text-slate-800 max-h-[90vh] overflow-y-auto">
                     <h3 class="text-xs font-bold mb-1 text-indigo-600 text-center flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-link"></i> Pair Up 依賴資產設定 (K 欄 Pair)
+                        <i class="fa-solid fa-link"></i> 主件配對配件設定 (K 欄 Pair)
                     </h3>
                     <p class="text-[11px] text-slate-500 text-center mb-3">
-                        主資產：<span class="font-bold text-slate-700">${asset.eam}</span> (${asset.description || '無類型'})
+                        目前主件：<span class="font-bold text-slate-700">${asset.eam}</span> (${asset.description || '無類型'})
                     </p>
 
                     <div class="mb-3">
                         <button type="button" id="btnPickPairFromMap" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-map-location-dot"></i> 直接在地圖點選 Asset
+                            <i class="fa-solid fa-map-location-dot"></i> 直接在地圖點選配件
                         </button>
                     </div>
 
                     <div class="space-y-3 text-xs">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 mb-1">此資產依賴的 Asset EAM（多個請用逗號分隔）:</label>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">此主件配對的配件 EAM（多個請用逗號分隔）:</label>
                             <input id="pairEamsInput" type="text" value="${currentDepEams.join(', ')}" placeholder="例如：2034990, 2034991"
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-indigo-700 focus:outline-none focus:border-indigo-500">
-                            <p class="text-[10px] text-slate-400 mt-1">當移動 ${asset.eam} 時，此欄位列出的 EAM 設備會一併移動。</p>
+                            <p class="text-[10px] text-slate-400 mt-1">移動主件 ${asset.eam} 時，這裡列出的配件會一併移動。</p>
                         </div>
 
                         <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3">
                             <div class="flex items-center justify-between mb-1.5">
-                                <span class="text-[11px] font-bold text-indigo-800">目前依賴設備 (${currentDependents.length} 項)</span>
+                                <span class="text-[11px] font-bold text-indigo-800">目前已配對配件 (${currentDependents.length} 項)</span>
                                 ${currentDepEams.length > 0 ? `<button type="button" id="btnClearAllPairs" class="text-[10px] bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-0.5 rounded-md font-semibold cursor-pointer">全部清空</button>` : ''}
                             </div>
                             <div id="currentPairMembersList" class="space-y-1.5 text-[11px]">
                                 ${currentDependents.length === 0
-                                    ? '<p class="text-slate-400 italic">尚未設定依賴設備，可在上方輸入、點地圖或從下方勾選</p>'
+                                    ? '<p class="text-slate-400 italic">尚未配對配件，可在上方輸入、點地圖或從下方勾選</p>'
                                     : currentDependents.map(m => `
                                         <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-indigo-100">
                                             <span class="truncate"><strong class="text-blue-700">${m.eam}</strong> — ${m.description || '無類型'} (${m.ward || 'N/A'})</span>
@@ -725,7 +736,7 @@
                         </div>
 
                         <div class="border-t border-slate-100 pt-2.5">
-                            <label class="block text-[11px] font-bold text-slate-600 mb-1">搜尋並勾選依賴設備:</label>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">搜尋並勾選要配對的配件:</label>
                             <input id="pairSearchInput" type="text" placeholder="輸入 EAM、S/N、Type 或 Ward 篩選..."
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs mb-2 focus:outline-none focus:border-indigo-500">
                             <div id="pairCandidateList" class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50"></div>
@@ -733,7 +744,7 @@
                     </div>
 
                     <div class="flex gap-2 mt-5">
-                        <button type="button" id="btnSavePairUp" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 rounded-xl shadow cursor-pointer">儲存 Pair 設定</button>
+                        <button type="button" id="btnSavePairUp" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 rounded-xl shadow cursor-pointer">儲存主件配件</button>
                         <button type="button" id="btnCancelPairUp" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl cursor-pointer">取消</button>
                     </div>
                 </div>
@@ -776,7 +787,7 @@
                     pairEamsInput.value = '';
                     syncCheckboxesFromInput();
                     const listBox = document.getElementById('currentPairMembersList');
-                    if (listBox) listBox.innerHTML = '<p class="text-slate-400 italic">已清空依賴設備</p>';
+                    if (listBox) listBox.innerHTML = '<p class="text-slate-400 italic">已清空已配對配件</p>';
                 };
             }
 
@@ -796,7 +807,7 @@
                     .slice(0, 50);
 
                 if (candidates.length === 0) {
-                    candidateListEl.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-4">找不到符合的設備</p>';
+                    candidateListEl.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-4">找不到符合的配件</p>';
                     return;
                 }
 
@@ -1355,7 +1366,7 @@
                         } else {
                             const unpairedPeers = await unpairAssetOnStatusChange(asset);
                             const unpairMsg = unpairedPeers.length > 0
-                                ? `\n🔗 已自動解除與以下資產的 Pair 綁定：${unpairedPeers.map(p => p.eam).join(', ')}`
+                                ? `\n🔗 已自動解除與以下主件／配件的配對：${unpairedPeers.map(p => p.eam).join(', ')}`
                                 : '';
 
                             alert(
@@ -1472,12 +1483,12 @@
         function onWardChange() {
             const wardKey = document.getElementById('wardSelect').value;
             if (!wardKey) return;
-        
-            // 切換單位時，僅取消「挑選 Pair」與「掃描新增」狀態，保留「更改位置 (isRelocatingMode)」狀態
+
+            // 切換單位時保留「更改位置 (isRelocatingMode)」狀態，方便跨 Ward 點擊新位置
             isSelectingPairOnMap = false;
             pendingPairTargetAsset = null;
             pendingNewAssetEam = null;
-        
+
             if (!isRelocatingMode) {
                 const banner = document.getElementById('selectionBanner');
                 if (banner) banner.classList.add('hidden');
@@ -1489,7 +1500,7 @@
                     bannerText.innerText = `請在 [${wardKey}] 地圖點擊 [${isMovingAsset.eam}] 的新位置...`;
                 }
             }
-        
+
             loadFloorPlan(wardKey);
             currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardKey.trim().toLowerCase());
             window.currentLoadedAssets = currentFilteredAssets;
@@ -1688,7 +1699,7 @@
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
 
                 const linkBadgeHtml = isPaired
-                    ? `<span title="已綁定 Pair 關聯" class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center border border-white shadow-xs"><i class="fa-solid fa-link text-[7px]"></i></span>`
+                    ? `<span title="已設定主件／配件配對" class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center border border-white shadow-xs"><i class="fa-solid fa-link text-[7px]"></i></span>`
                     : '';
 
                 marker.innerHTML = `
@@ -1746,8 +1757,8 @@
 
                 const owners = getPairOwnerAssets(asset);
                 const remarkHtml = asset.remark ? `<p class="text-[11px] text-amber-600 mt-1 flex items-center gap-1"><i class="fa-solid fa-note-sticky"></i>備註: ${asset.remark}</p>` : '';
-                const pairHtml = asset.pair ? `<p class="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-link"></i>Pair: ${asset.pair}</p>` : '';
-                const ownerHtml = owners.length > 0 ? `<p class="text-[11px] text-purple-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-crown"></i>Owner: ${owners.map(o => o.eam).join(', ')}</p>` : '';
+                const pairHtml = asset.pair ? `<p class="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-link"></i>配件: ${asset.pair}</p>` : '';
+                const ownerHtml = owners.length > 0 ? `<p class="text-[11px] text-purple-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-crown"></i>所屬主件: ${owners.map(o => o.eam).join(', ')}</p>` : '';
 
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'flex items-center gap-3.5 flex-1 min-w-0';
@@ -1914,7 +1925,7 @@
             if (event) event.stopPropagation();
 
             if (isSelectingPairOnMap && pendingPairTargetAsset) {
-                alert(`目前處於「點選資產圖釘加入 Pair」模式，請直接點選地圖上的資產圖釘，或按右上方「取消」結束。`);
+                alert(`目前處於「主件挑選配件」模式，請直接點選地圖上的配件圖釘，或按右上方「取消」結束。`);
                 return;
             }
 
@@ -2303,13 +2314,13 @@
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">備註 (Remark):</label>
-                            <input id="inputRemark" type="text" value="${assetData.remark || ''}" placeholder="請輸入備註 (選填)" 
+                            <label class="block text-slate-600 mb-1 font-semibold">配對配件 EAM (選填，逗號分隔):</label>
+                            <input id="inputPair" type="text" value="${assetData.pair || ''}" placeholder="例如：2034990, 2034991" 
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">Pair 依賴 EAM (選填，逗號分隔):</label>
-                            <input id="inputPair" type="text" value="${assetData.pair || ''}" placeholder="例如：2034990, 2034991" 
+                            <label class="block text-slate-600 mb-1 font-semibold">備註 (Remark):</label>
+                            <input id="inputRemark" type="text" value="${assetData.remark || ''}" placeholder="請輸入備註 (選填)" 
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
                         </div>
                     </div>
@@ -2440,11 +2451,11 @@
                             <span class="text-amber-700 font-medium text-right break-words">${remarkDisplay}</span>
                         </div>
                         <div class="flex items-start justify-between gap-2">
-                            <span class="font-bold text-slate-500 shrink-0 pt-0.5">Pair (依賴):</span>
+                            <span class="font-bold text-slate-500 shrink-0 pt-0.5">已配對配件:</span>
                             <div class="text-right">${pairDisplayHtml}</div>
                         </div>
                         <div class="flex items-start justify-between gap-2">
-                            <span class="font-bold text-slate-500 shrink-0 pt-0.5">Pair Owner:</span>
+                            <span class="font-bold text-slate-500 shrink-0 pt-0.5">所屬主件:</span>
                             <div class="text-right">${pairOwnerDisplayHtml}</div>
                         </div>
                     </div>
@@ -2460,7 +2471,7 @@
                         </button>`}
 
                         <button id="btnPairUp" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-link"></i> Pair Up 群組綁定
+                            <i class="fa-solid fa-link"></i> 主件配對配件
                         </button>
                         
                         <button id="btnCondemn" class="w-full bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
