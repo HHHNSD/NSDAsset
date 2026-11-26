@@ -3782,20 +3782,241 @@
             }
         }
 
+        function normalizeStocktakeHeader(val) {
+            if (val === undefined || val === null) return '';
+            let s = String(val).normalize('NFKC').replace(/\u00a0/g, ' ').toLowerCase().trim();
+            s = s.replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ');
+            return s.replace(/\s+/g, ' ').trim();
+        }
+
+        function cleanStocktakeCell(val) {
+            if (val === undefined || val === null) return '';
+            return String(val).normalize('NFKC').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        const STOCKTAKE_FIELD_RULES = {
+            eam: {
+                exact: new Set(['asset number', 'asset no', 'asset id', 'eam', 'eam no', 'eam number', 'assetnum', 'tag no', 'barcode']),
+                contains: ['asset number', 'asset no', 'eam', 'tag no', 'barcode'],
+                exclude: ['parent']
+            },
+            sn: {
+                exact: new Set(['serial no', 'serial number', 'serial', 's n', 'sn', 'ser no']),
+                contains: ['serial', 's n'],
+                exclude: []
+            },
+            description: {
+                exact: new Set(['asset description', 'description', 'desc', 'item description', 'asset desc']),
+                contains: ['description', 'desc'],
+                exclude: []
+            },
+            ward: {
+                exact: new Set(['ward', 'location', 'location code', 'stock take location code', 'ward key', 'dept', 'department', 'owning department']),
+                contains: ['location', 'ward', 'dept', 'department'],
+                exclude: ['remark']
+            },
+            block: {
+                exact: new Set(['block']),
+                contains: ['block'],
+                exclude: []
+            },
+            floor: {
+                exact: new Set(['floor']),
+                contains: ['floor'],
+                exclude: []
+            },
+            remark: {
+                exact: new Set(['remark', 'remarks', 'asset remark', 'location remark', 'note', 'notes', 'reason']),
+                contains: ['remark', 'note', 'reason'],
+                exclude: []
+            }
+        };
+
+        function scoreHeaderForField(normHeader, fieldKey) {
+            if (!normHeader) return 0;
+            const rule = STOCKTAKE_FIELD_RULES[fieldKey];
+            if (!rule) return 0;
+            if (rule.exclude.some(ex => normHeader.includes(ex))) return 0;
+            if (rule.exact.has(normHeader)) return 100;
+            if (rule.contains.some(kw => normHeader.includes(kw))) return 60;
+            return 0;
+        }
+
+        function detectWorksheetStocktakeTable(worksheet) {
+            if (!worksheet || !worksheet['!ref']) return null;
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            const maxScanRow = Math.min(range.e.r, range.s.r + 18);
+            const totalCols = range.e.c - range.s.c + 1;
+
+            let hasReportHint = false;
+            for (let r = range.s.r; r <= Math.min(range.e.r, range.s.r + 8); r++) {
+                let rowHintStr = '';
+                for (let c = range.s.c; c <= Math.min(range.e.c, range.s.c + 12); c++) {
+                    const cell = worksheet[XLSX.utils.encode_cell({ r, c })];
+                    if (cell && cell.v !== undefined && cell.v !== null) {
+                        rowHintStr += ' ' + normalizeStocktakeHeader(cell.v);
+                    }
+                }
+                if (rowHintStr.includes('discrepancies report') || rowHintStr.includes('stock take')) {
+                    hasReportHint = true;
+                    break;
+                }
+            }
+
+            let best = null;
+            const coreFields = ['eam', 'sn', 'description'];
+            const allFields = ['eam', 'sn', 'description', 'ward', 'block', 'floor', 'remark'];
+
+            for (let r = range.s.r; r <= maxScanRow; r++) {
+                const fieldCols = {};
+                const headerLabels = {};
+
+                for (let c = range.s.c; c <= range.e.c; c++) {
+                    const cell = worksheet[XLSX.utils.encode_cell({ r, c })];
+                    const rawVal = cell ? cell.v : '';
+                    const nh = normalizeStocktakeHeader(rawVal);
+                    if (!nh) continue;
+
+                    for (const fKey of allFields) {
+                        const s = scoreHeaderForField(nh, fKey);
+                        if (s > 0 && (!fieldCols[fKey] || s > fieldCols[fKey].score)) {
+                            fieldCols[fKey] = { colIndex: c, score: s, rawHeader: cleanStocktakeCell(rawVal) };
+                            headerLabels[fKey] = cleanStocktakeCell(rawVal);
+                        }
+                    }
+                }
+
+                const coreMatchedCount = coreFields.filter(k => Boolean(fieldCols[k])).length;
+                const totalMatchedCount = Object.keys(fieldCols).length;
+                if (totalMatchedCount === 0) continue;
+
+                let score = 0;
+                Object.values(fieldCols).forEach(info => {
+                    score += info.score;
+                });
+                score += coreMatchedCount * 90;
+                score += totalMatchedCount * 20;
+                if (hasReportHint) score += 50;
+                if (totalCols >= 8) score += 25;
+                if (totalCols <= 3) score -= 90;
+
+                if (!best || score > best.score) {
+                    best = {
+                        headerRowIndex: r,
+                        totalCols,
+                        coreMatchedCount,
+                        totalMatchedCount,
+                        score,
+                        fieldCols,
+                        headerLabels
+                    };
+                }
+            }
+
+            return best;
+        }
+
+        function extractRowsFromBestSheet(workbook) {
+            const sheetNames = workbook.SheetNames || [];
+            let chosenSheetName = null;
+            let chosenInfo = null;
+
+            for (const name of sheetNames) {
+                const ws = workbook.Sheets[name];
+                const info = detectWorksheetStocktakeTable(ws);
+                if (info && (!chosenInfo || info.score > chosenInfo.score)) {
+                    chosenSheetName = name;
+                    chosenInfo = info;
+                }
+            }
+
+            if (!chosenSheetName || !chosenInfo) {
+                const fallbackName = sheetNames[0];
+                const ws = workbook.Sheets[fallbackName];
+                const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                return {
+                    sheetName: fallbackName,
+                    rows: rawRows,
+                    detectedHeaders: {},
+                    autoDetected: false
+                };
+            }
+
+            const ws = workbook.Sheets[chosenSheetName];
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            const startRow = chosenInfo.headerRowIndex + 1;
+            const rows = [];
+
+            const getCellValue = (r, fieldKey) => {
+                const colInfo = chosenInfo.fieldCols[fieldKey];
+                if (!colInfo) return '';
+                const cell = ws[XLSX.utils.encode_cell({ r, c: colInfo.colIndex })];
+                return cell && cell.v !== undefined && cell.v !== null ? cleanStocktakeCell(cell.v) : '';
+            };
+
+            for (let r = startRow; r <= range.e.r; r++) {
+                let rowPreview = '';
+                for (let c = range.s.c; c <= Math.min(range.e.c, range.s.c + 6); c++) {
+                    const cell = ws[XLSX.utils.encode_cell({ r, c })];
+                    if (cell && cell.v !== undefined && cell.v !== null) {
+                        rowPreview += ' ' + normalizeStocktakeHeader(cell.v);
+                    }
+                }
+                const trimmedPreview = rowPreview.trim();
+                if (!trimmedPreview) continue;
+                if (
+                    trimmedPreview.includes('end of report') ||
+                    trimmedPreview.startsWith('總計') ||
+                    trimmedPreview === 'total'
+                ) {
+                    break;
+                }
+
+                const eamVal = getCellValue(r, 'eam');
+                const snVal = getCellValue(r, 'sn');
+                const descVal = getCellValue(r, 'description');
+                const wardVal = getCellValue(r, 'ward');
+                const blockVal = getCellValue(r, 'block');
+                const floorVal = getCellValue(r, 'floor');
+                const remarkVal = getCellValue(r, 'remark');
+
+                if (!eamVal && !snVal && !descVal) continue;
+
+                rows.push({
+                    EAM: eamVal,
+                    'S/N': snVal,
+                    Description: descVal,
+                    Ward: wardVal,
+                    Block: blockVal,
+                    Floor: floorVal,
+                    Remark: remarkVal
+                });
+            }
+
+            return {
+                sheetName: chosenSheetName,
+                rows,
+                detectedHeaders: chosenInfo.headerLabels,
+                autoDetected: true,
+                score: chosenInfo.score,
+                coreMatchedCount: chosenInfo.coreMatchedCount
+            };
+        }
+
         function normalizeLookupKey(val) {
-            return String(val || '').trim().replace(/^0+/, '').toLowerCase();
+            return String(val || '').normalize('NFKC').replace(/\u00a0/g, ' ').trim().replace(/^0+/, '').toLowerCase();
         }
 
         function pickRowField(row, candidates) {
             const keys = Object.keys(row || {});
             for (const cand of candidates) {
-                const target = cand.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const target = normalizeStocktakeHeader(cand);
                 for (const k of keys) {
-                    const normK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const normK = normalizeStocktakeHeader(k);
                     if (normK === target || normK.includes(target)) {
                         const v = row[k];
-                        if (v !== undefined && v !== null && String(v).trim() !== '') {
-                            return String(v).trim();
+                        if (v !== undefined && v !== null && cleanStocktakeCell(v) !== '') {
+                            return cleanStocktakeCell(v);
                         }
                     }
                 }
@@ -3822,13 +4043,13 @@
             const unmatched = [];
 
             (rows || []).forEach((row, idx) => {
-                const rawEam = pickRowField(row, ['eam', 'assetno', 'assetid', 'tagno', 'barcode', '編號']);
-                const rawSn = pickRowField(row, ['sn', 'serial', 'serialno', 'serialnumber', 's/n', '序號']);
-                const rawDesc = pickRowField(row, ['description', 'type', 'assettype', 'item', 'name', '類型', '名稱']) || ASSET_TYPES[0].label;
-                const rawWard = pickRowField(row, ['ward', 'location', 'wardkey', 'dept', 'department', '單位', '位置']);
+                const rawEam = pickRowField(row, ['eam', 'asset number', 'asset no', 'asset id', 'tag no', 'barcode', '編號']);
+                const rawSn = pickRowField(row, ['s/n', 'sn', 'serial no', 'serial number', 'serial', '序號']);
+                const rawDesc = pickRowField(row, ['asset description', 'description', 'type', 'asset type', 'item', 'name', '類型', '名稱']) || ASSET_TYPES[0].label;
+                const rawWard = pickRowField(row, ['ward', 'location', 'location code', 'stock take location code', 'ward key', 'dept', 'department', '單位', '位置']);
                 const rawBlock = pickRowField(row, ['block', '棟別']);
                 const rawFloor = pickRowField(row, ['floor', '樓層']);
-                const rawRemark = pickRowField(row, ['remark', 'remarks', 'note', 'notes', 'reason', '備註', '原因']);
+                const rawRemark = pickRowField(row, ['remark', 'remarks', 'asset remark', 'location remark', 'note', 'notes', 'reason', '備註', '原因']);
 
                 if (!rawEam && !rawSn && !rawDesc) return;
 
@@ -3948,8 +4169,7 @@
                     </div>
 
                     <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
-                        支援 <strong>.xlsx / .xls / .csv</strong>。系統會先用 <strong>EAM</strong> 比對現有 Asset；若 EAM 找不到，會自動改用 <strong>S/N (Serial)</strong> 比對。
-                        比對完成後會建立盤點工作階段，支援<strong>套用到地圖</strong>、<strong>匯出結果 Excel</strong>，並將找不到的項目放入 <strong>Pending</strong>。
+                        支援 <strong>.xlsx / .xls / .csv</strong>。系統會<strong>自動辨識包含明細的正確分頁</strong>、忽略空白／摘要／結尾列，並以正規化方式對應 <strong>EAM (Asset Number)</strong>、<strong>S/N (Serial No.)</strong> 與 <strong>Description (Asset Description)</strong>。
                     </p>
 
                     <div class="space-y-3 text-xs">
@@ -4000,12 +4220,12 @@
                 try {
                     const arrayBuffer = await file.arrayBuffer();
                     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                    const extracted = extractRowsFromBestSheet(workbook);
+                    const targetSheetName = extracted.sheetName;
+                    const jsonRows = extracted.rows;
 
                     if (!jsonRows || jsonRows.length === 0) {
-                        alert('Excel 檔案中沒有可讀取的資料列！');
+                        alert(`工作表「${targetSheetName}」中沒有可讀取的資產明細列！`);
                         return;
                     }
 
@@ -4015,7 +4235,8 @@
                     const newSession = {
                         id: `ST-${Date.now()}`,
                         fileName: file.name,
-                        sheetName: firstSheetName,
+                        sheetName: targetSheetName,
+                        detectedHeaders: extracted.detectedHeaders || {},
                         importedAt: nowStr,
                         totalInput: jsonRows.length,
                         matched,
@@ -4034,7 +4255,7 @@
                     if (previewEl) {
                         previewEl.classList.remove('hidden');
                         previewEl.innerHTML = `
-                            <div class="font-bold text-slate-800">✅ 比對完成（${file.name}）</div>
+                            <div class="font-bold text-slate-800">✅ 比對完成（${file.name}｜分頁：${targetSheetName}）</div>
                             <div class="text-emerald-700 font-semibold">• 已找到 Asset：${matched.length} 項</div>
                             <div class="text-rose-700 font-semibold">• 找不到（已放入 Pending）：${unmatched.length} 項</div>
                         `;
