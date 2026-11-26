@@ -44,7 +44,7 @@
                 </div>
                 <div>
                     <h1 class="text-base sm:text-xl font-black tracking-wide text-slate-800">NSD Asset Management System <span class="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-300 align-middle ml-1">Admin</span></h1>
-                    <p class="text-[10px] text-slate-400 font-medium"> NSD Asset Manage System</p>
+                    <p class="text-[10px] text-slate-400 font-medium"> NSD Asset Management System</p>
                 </div>
             </div>
         </div>
@@ -91,8 +91,8 @@
                     <div class="w-16 h-16 bg-blue-100/80 rounded-3xl flex items-center justify-center mb-4 text-blue-600 shadow-sm border border-blue-200">
                         <i class="fa-solid fa-map-location-dot text-3xl"></i>
                     </div>
-                    <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD 資產地圖管理系統</h3>
-                    <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或使用右側獨立欄位搜尋資產：</p>
+                    <h3 class="text-base sm:text-lg font-black text-slate-800 mb-1">歡迎使用 NSD Asset 地圖管理系統</h3>
+                    <p class="text-xs text-slate-500 mb-6 font-medium">請選擇右上角單位載入平面圖，或使用右側獨立欄位搜尋 Asset：</p>
                 </div>
                 
                 <div id="mapWrapper" class="relative w-full aspect-[12/9] bg-slate-50" onclick="handleMapClick(event)">
@@ -102,7 +102,7 @@
             </div>
         </div>
 
-        <!-- 右側：獨立欄位資產清單與搜尋面板 -->
+        <!-- 右側：獨立欄位Asset清單與搜尋面板 -->
         <aside class="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col h-full shadow-sm overflow-hidden min-h-0">
             <div class="pb-3 border-b border-slate-100 mb-3 space-y-2 shrink-0">
                 <div class="flex items-center justify-between">
@@ -132,7 +132,7 @@
                         <datalist id="serialDatalist"></datalist>
                     </div>
                     <div class="col-span-2">
-                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (現有資產類型)</label>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (現有 Asset 類型)</label>
                         <input id="searchTypeInput" list="typeDatalist" type="text" oninput="applyMultiFieldSearch()" onchange="applyMultiFieldSearch()" placeholder="輸入或選現有 Type..."
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
                         <datalist id="typeDatalist"></datalist>
@@ -203,7 +203,7 @@
             return (allAssets || []).find(a => String(a.eam || '').trim().toLowerCase() === target) || null;
         }
 
-        // 反查目前資產是哪些「主件」的「配件」
+        // 反查目前Asset是哪些「主件」的「配件」
         function getPairOwnerAssets(asset) {
             if (!asset || !asset.eam) return [];
             const targetEamLower = String(asset.eam).trim().toLowerCase();
@@ -222,7 +222,7 @@
             const cleanEam = String(eamCode || '').trim();
             const targetAsset = findAssetByEam(cleanEam);
             if (!targetAsset) {
-                alert(`找不到 EAM [${cleanEam}] 的資產資料。`);
+                alert(`找不到 EAM [${cleanEam}] 的Asset資料。`);
                 return;
             }
 
@@ -448,7 +448,7 @@
                         throw new Error(res.message || `更新 [${item.eam}] 失敗`);
                     }
                 }
-                alert(`✅ 已成功更新 ${assetsToUpdate.length} 項資產！`);
+                alert(`✅ 已成功更新 ${assetsToUpdate.length} 項Asset！`);
                 applyAssetListToLocalState(assetsToUpdate, focusEam || (assetsToUpdate[0] && assetsToUpdate[0].eam), false);
             } catch (err) {
                 alert("批次更新失敗: " + err);
@@ -1163,7 +1163,7 @@
             callWithSequentialWaits(
                 () => `${GAS_API_URL}?action=getAllAssets&_t=${Date.now()}`,
                 data => applyAllAssetsData(data, focusEam),
-                () => notifyNeedF5("抓取資產"),
+                () => notifyNeedF5("抓取 Asset"),
                 [5000, 30000, 60000]
             );
         }
@@ -1243,7 +1243,7 @@
                     <h3 class="text-xs font-bold mb-3 text-amber-600 text-center flex items-center justify-center gap-2">
                         <i class="fa-solid fa-right-left"></i> 報廢 / 盈餘 / 轉出 (Condemn / Surplus / Transfer)
                     </h3>
-                    <p class="text-[11px] text-slate-500 text-center mb-4">資產編號：<span class="font-bold text-slate-700">${asset.eam}</span></p>
+                    <p class="text-[11px] text-slate-500 text-center mb-4">EAM 編號：<span class="font-bold text-slate-700">${asset.eam}</span></p>
                     
                     <div class="space-y-3 text-xs">
                         <div>
@@ -1370,7 +1370,7 @@
                                 : '';
 
                             alert(
-                                `資產 [${asset.eam}] 之 ${type} 狀態已存檔！\n` +
+                                `Asset [${asset.eam}] 之 ${type} 狀態已存檔！\n` +
                                 `檔案已命名為：${standardizedFileName}\n` +
                                 `自動座標：(${autoCoords.x}, ${autoCoords.y})${unpairMsg}`
                             );
@@ -1397,7 +1397,7 @@
                 if (result && result.status === 'error') {
                     throw new Error(result.message || '更新失敗');
                 }
-                alert("資產更新成功！");
+                alert("Asset 更新成功！");
                 syncLocalAssetAfterUpdate(asset);
             })
             .catch(err => alert("更新失敗: " + err));
@@ -1414,7 +1414,7 @@
                 if (result && result.status === 'error') {
                     throw new Error(result.message || '刪除失敗');
                 }
-                alert("資產已刪除！");
+                alert("Asset 已刪除！");
                 const cleanEam = String(eam || '').trim().toLowerCase();
                 allAssets = allAssets.filter(a => String(a.eam || '').trim().toLowerCase() !== cleanEam);
                 window.allAssets = allAssets;
@@ -1445,7 +1445,7 @@
                 if (res && res.status === 'error') {
                     throw new Error(res.message || '新增失敗');
                 }
-                alert("新資產新增成功！");
+                alert("新 Asset 新增成功！");
                 applyAssetListToLocalState([newAsset], newAsset.eam, false);
             })
             .catch(err => alert("新增失敗: " + err));
@@ -1734,7 +1734,7 @@
             badge.innerText = `${assets.length} 項`;
 
             if (assets.length === 0) {
-                listContainer.innerHTML = `<p class="text-sm text-slate-400 text-center mt-12 py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">未找到符合條件的資產</p>`;
+                listContainer.innerHTML = `<p class="text-sm text-slate-400 text-center mt-12 py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">未找到符合條件的 Asset</p>`;
                 return;
             }
 
@@ -1910,7 +1910,7 @@
                     const bannerText = document.getElementById('bannerText');
                     if (banner && bannerText) {
                         banner.classList.remove('hidden');
-                        bannerText.innerText = `⚠️ 資產 [${asset.eam}] 尚未設定座標，請直接在地圖上點擊其擺放位置...`;
+                        bannerText.innerText = `⚠️ Asset [${asset.eam}] 尚未設定座標，請直接在地圖上點擊其擺放位置...`;
                     }
                 }
             }
@@ -1956,7 +1956,7 @@
 
             if (isRelocatingMode && isMovingAsset) {
                 if (isLockedStatusWard(isMovingAsset.ward)) {
-                    alert(`⚠️ 資產 [${isMovingAsset.eam}] 已處於 [${isMovingAsset.ward}] 狀態，不能更改位置。`);
+                    alert(`⚠️ Asset [${isMovingAsset.eam}] 已處於 [${isMovingAsset.ward}] 狀態，不能更改位置。`);
                     cancelRelocate();
                     return;
                 }
@@ -2059,7 +2059,7 @@
 
         function openSelectEamToMoveModal(targetX, targetY, targetBlock, targetFloor, targetWard) {
             if (isLockedStatusWard(targetWard)) {
-                alert(`⚠️ [${targetWard}] 狀態不可直接在地圖移動或新增資產。`);
+                alert(`⚠️ [${targetWard}] 狀態不可直接在地圖移動或新增 Asset。`);
                 return;
             }
 
@@ -2072,7 +2072,7 @@
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-md shadow-2xl text-slate-800 max-h-[90vh] overflow-y-auto">
                     <h3 class="text-xs font-bold mb-1 text-emerald-600 text-center flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-location-crosshairs"></i> 篩選並選擇要移動的資產
+                        <i class="fa-solid fa-location-crosshairs"></i> 篩選並選擇要移動的 Asset
                     </h3>
                     <p class="text-[11px] text-slate-500 text-center mb-3">
                         目標位置：<span class="font-bold text-slate-700">${targetWard}</span>
@@ -2093,7 +2093,7 @@
                                 <datalist id="moveSerialDatalist"></datalist>
                             </div>
                             <div class="col-span-2">
-                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (現有資產類型)</label>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Type (現有 Asset 類型)</label>
                                 <input id="moveFilterType" list="moveTypeDatalist" type="text" placeholder="輸入或選現有 Type..."
                                     class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs">
                                 <datalist id="moveTypeDatalist"></datalist>
@@ -2128,9 +2128,9 @@
 
                     <div id="moveConfirmStep" class="hidden space-y-3 text-xs">
                         <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2">
-                            <p class="font-bold text-amber-800">確定要移動此資產嗎？</p>
+                            <p class="font-bold text-amber-800">確定要移動此 Asset 嗎？</p>
                             <div class="text-slate-700 space-y-1 bg-white/90 p-2.5 rounded-lg border border-amber-100">
-                                <div><span class="font-bold">資產：</span><span id="confirmAssetSummary"></span></div>
+                                <div><span class="font-bold">Asset：</span><span id="confirmAssetSummary"></span></div>
                                 <div><span class="font-bold text-rose-700">原本位置：</span><span id="confirmFromWard"></span></div>
                                 <div><span class="font-bold text-emerald-700">新位置：</span><span id="confirmToWard"></span></div>
                             </div>
@@ -2206,9 +2206,9 @@
             let pendingAsset = null;
             document.getElementById('btnPrepareMoveConfirm').onclick = () => {
                 const chosenEam = selectEl.value;
-                if (!chosenEam) return alert('請先選擇一個資產 (EAM)！');
+                if (!chosenEam) return alert('請先選擇一個Asset (EAM)！');
                 const found = movableAssets.find(a => String(a.eam).trim() === String(chosenEam).trim());
-                if (!found || isLockedStatusWard(found.ward)) return alert('此資產已鎖定位置，不能移動！');
+                if (!found || isLockedStatusWard(found.ward)) return alert('此 Asset 已鎖定位置，不能移動！');
                 pendingAsset = found;
 
                 document.getElementById('confirmAssetSummary').innerText = `${found.eam} (${found.description || '無類型'})`;
@@ -2291,7 +2291,7 @@
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-slate-800">
                     <h3 class="text-xs font-bold mb-4 text-blue-600 text-center flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-shapes"></i> ${isEdit ? '編輯資產資訊' : '新增 / 移動資產'}
+                        <i class="fa-solid fa-shapes"></i> ${isEdit ? '編輯 Asset 資訊' : '新增 / 移動 Asset'}
                     </h3>
                     <div class="space-y-3 text-xs">
                         <div>
@@ -2305,7 +2305,7 @@
                                 class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-slate-600 mb-1 font-semibold">資產類型 (Type):</label>
+                            <label class="block text-slate-600 mb-1 font-semibold">Asset 類型 (Type):</label>
                             <select id="inputDesc" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500">${typeOptionsHtml}</select>
                         </div>
                         <div>
@@ -2367,7 +2367,7 @@
                     const existingAsset = allAssets.find(a => a.eam.toLowerCase() === eam.toLowerCase());
                     if (existingAsset) {
                         if (isLockedStatusWard(existingAsset.ward)) {
-                            alert(`⚠️ 資產 [${eam}] 已處於 [${existingAsset.ward}] 狀態，不可直接在地圖移動。`);
+                            alert(`⚠️ Asset [${eam}] 已處於 [${existingAsset.ward}] 狀態，不可直接在地圖移動。`);
                             return;
                         }
                         if (pairVal) existingAsset.pair = pairVal;
@@ -2478,7 +2478,7 @@
                             <i class="fa-solid fa-right-left"></i> Transfer / Condemn / Surplus
                         </button>
                         <button id="btnDelete" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-trash"></i> 刪除此資產
+                            <i class="fa-solid fa-trash"></i> 刪除此 Asset
                         </button>
                     </div>
         
@@ -2537,7 +2537,7 @@
         
             document.getElementById('btnDelete').onclick = () => {
                 modal.remove();
-                if (confirm(`確定要刪除資產 [${asset.eam}] 嗎？`)) {
+                if (confirm(`確定要刪除 Asset [${asset.eam}] 嗎？`)) {
                     deleteAssetFromSheet(asset.eam);
                 }
             };
@@ -2618,7 +2618,7 @@
                     return;
                 }
                 if (isLockedStatusWard(currentWard)) {
-                    alert(`⚠️ [${currentWard}] 狀態不可直接在地圖新增資產。`);
+                    alert(`⚠️ [${currentWard}] 狀態不可直接在地圖新增 Asset。`);
                     return;
                 }
 
@@ -2630,7 +2630,7 @@
                 const bannerText = document.getElementById('bannerText');
                 if (banner && bannerText) {
                     banner.classList.remove('hidden');
-                    bannerText.innerText = `請在地圖點擊新資產 [${cleanedEam}] 的擺放位置...`;
+                    bannerText.innerText = `請在地圖點擊新Asset [${cleanedEam}] 的擺放位置...`;
                 }
 
                 alert(`已成功識別新 EAM：${cleanedEam}\n請直接在地圖的目標位置點擊一下以完成新增！`);
