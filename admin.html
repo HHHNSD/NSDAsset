@@ -9,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- 引入 html5-qrcode 條碼掃描庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         @keyframes pairDashFlow {
             to {
@@ -50,7 +51,18 @@
         .kiosk-nav-btn:active {
             transform: scale(0.93);
         }
-    </style>
+    
+        .stocktake-matched-pin > div {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.7), 0 8px 18px rgba(16, 185, 129, 0.45);
+            transform: scale(1.25);
+            z-index: 40;
+        }
+        .stocktake-unmatched-pin > div {
+            box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.75), 0 8px 18px rgba(244, 63, 94, 0.45);
+            transform: scale(1.25);
+            z-index: 40;
+        }
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
 
@@ -88,6 +100,35 @@
                     <option value="">請選擇</option>
                 </select>
             </div>
+        </div>
+
+        <!-- Stocktake 盤點比對與 Pending 管理列 -->
+        <div id="stocktakeToolbar" class="flex flex-wrap items-center gap-1.5 w-full xl:w-auto bg-indigo-50/80 border border-indigo-200/80 px-2.5 py-2 rounded-2xl">
+            <button type="button" onclick="openStocktakeImportModal()"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Import Stocktake Excel</span>
+            </button>
+
+            <button type="button" id="btnToggleStocktakeOverlay" onclick="toggleStocktakeMapOverlay()"
+                class="bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all">
+                <i class="fa-solid fa-map-pin"></i>
+                <span id="stocktakeOverlayBtnText">套用到地圖：關</span>
+            </button>
+
+            <button type="button" onclick="openStocktakePendingModal()"
+                class="bg-amber-500 hover:bg-amber-400 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Pending 清單</span>
+                <span id="stocktakePendingBadge" class="bg-white/95 text-amber-700 text-[10px] font-black px-1.5 py-0.2 rounded-full">0</span>
+            </button>
+
+            <button type="button" onclick="openStocktakeHistoryModal()"
+                class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all">
+                <i class="fa-solid fa-history text-indigo-600"></i>
+                <span>匯入紀錄</span>
+                <span id="stocktakeHistoryBadge" class="bg-indigo-100 text-indigo-800 text-[10px] font-black px-1.5 py-0.2 rounded-full">0</span>
+            </button>
         </div>
     </header>
 
@@ -324,7 +365,7 @@
             if (!item) return '';
             const eam = String(item.eam || '').trim();
             if (isNonAssetItem(item)) {
-                return eam && !eam.toUpperCase().startsWith('NONASSET-') ? eam : 'Non-Asset';
+                return eam && !/^nonasset[-_]?\d+$/i.test(eam) && !eam.toUpperCase().startsWith('NONASSET-') ? eam : 'Non-Asset';
             }
             return eam || 'N/A';
         }
@@ -1885,13 +1926,23 @@
                 const eamLower = String(asset.eam || '').trim().toLowerCase();
                 const isPaired = hasPairRelationSet.has(eamLower) || parsePairedEamList(asset.pair).length > 0 || getPairOwnerAssets(asset).length > 0;
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
+                const stStatus = getStocktakeMapStatusForAsset(asset);
+                const stRingClass = stStatus === 'matched'
+                    ? 'stocktake-matched-pin'
+                    : (stStatus === 'unmatched' ? 'stocktake-unmatched-pin' : '');
+                const stBadgeHtml = stStatus === 'matched'
+                    ? `<span title="Stocktake 已比對 Asset（Supplies 盤點目標）" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center border border-white shadow-xs text-[8px] font-black"><i class="fa-solid fa-check"></i></span>`
+                    : (stStatus === 'unmatched'
+                        ? `<span title="Stocktake 找不到（已入 Pending）" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center border border-white shadow-xs text-[8px] font-black">!</span>`
+                        : '');
 
                 if (isNonAssetItem(asset)) {
                     marker.innerHTML = `
-                        <div title="${getItemDisplayTitle(asset)}" class="relative flex items-center justify-center w-7 h-7 rounded-lg bg-teal-500 border-2 border-teal-700 text-white shadow-md transition-transform hover:scale-110 ${
+                        <div title="${getItemDisplayTitle(asset)}" class="relative flex items-center justify-center w-7 h-7 rounded-lg bg-teal-500 border-2 border-teal-700 text-white shadow-md transition-transform hover:scale-110 ${stRingClass} ${
                             isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                         }">
                             <i class="fa-solid fa-tag text-xs text-white"></i>
+                            ${stBadgeHtml}
                         </div>
                     `;
                 } else {
@@ -1900,11 +1951,12 @@
                         : '';
 
                     marker.innerHTML = `
-                        <div class="relative flex items-center justify-center w-7 h-7 rounded-full border-2 shadow-md transition-transform hover:scale-110 ${typeConfig.bg} ${typeConfig.border} ${
+                        <div class="relative flex items-center justify-center w-7 h-7 rounded-full border-2 shadow-md transition-transform hover:scale-110 ${typeConfig.bg} ${typeConfig.border} ${stRingClass} ${
                             isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                         }">
                             <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
                             ${linkBadgeHtml}
+                            ${stBadgeHtml}
                         </div>
                     `;
                 }
@@ -2605,7 +2657,21 @@
                     };
                     updateAssetInSheet(updatedItem, updatedItem.eam);
                 } else {
-                    const generatedKey = itemData.eam || ('NONASSET-' + Date.now());
+                    function getNextNonAssetSequenceKey() {
+                        let maxSeq = 0;
+                        (allAssets || []).forEach(item => {
+                            const rawEam = String((item && item.eam) || '').trim();
+                            const match = rawEam.match(/^nonasset[-_]?(\d+)$/i);
+                            if (match) {
+                                const num = parseInt(match[1], 10);
+                                if (!Number.isNaN(num) && num > maxSeq) {
+                                    maxSeq = num;
+                                }
+                            }
+                        });
+                        return 'nonasset-' + (maxSeq + 1);
+                    }
+                    const generatedKey = itemData.eam || getNextNonAssetSequenceKey();
                     const newNonAsset = {
                         recordType: 'Non-Asset',
                         eam: generatedKey,
@@ -3599,7 +3665,805 @@
             }
 
             window.addEventListener('resize', () => { updateMarkersLayerSize(); applyJoystickTransform(); });
+            initStocktakeFeature();
         });
+
+        // ========== Stocktake 清單匯入、EAM -> S/N 比對、地圖套用與 Pending 一鍵放回 ==========
+        const STOCKTAKE_STORAGE_KEY = 'nsd_stocktake_sessions_v1';
+        let stocktakeSessions = [];
+        let activeStocktakeSessionId = null;
+        let stocktakeMapOverlayEnabled = false;
+
+        function loadStocktakeSessionsFromStorage() {
+            try {
+                const raw = localStorage.getItem(STOCKTAKE_STORAGE_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                stocktakeSessions = Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                stocktakeSessions = [];
+            }
+            if (!activeStocktakeSessionId && stocktakeSessions.length > 0) {
+                activeStocktakeSessionId = stocktakeSessions[0].id;
+            }
+            updateStocktakeBadges();
+        }
+
+        function saveStocktakeSessionsToStorage() {
+            try {
+                localStorage.setItem(STOCKTAKE_STORAGE_KEY, JSON.stringify(stocktakeSessions));
+            } catch (err) {
+                console.warn('無法儲存 Stocktake 紀錄至 localStorage:', err);
+            }
+            updateStocktakeBadges();
+        }
+
+        function getActiveStocktakeSession() {
+            if (!stocktakeSessions || stocktakeSessions.length === 0) return null;
+            return stocktakeSessions.find(s => s.id === activeStocktakeSessionId) || stocktakeSessions[0];
+        }
+
+        function updateStocktakeBadges() {
+            const histBadge = document.getElementById('stocktakeHistoryBadge');
+            const pendBadge = document.getElementById('stocktakePendingBadge');
+            const overlayBtnText = document.getElementById('stocktakeOverlayBtnText');
+            const overlayBtn = document.getElementById('btnToggleStocktakeOverlay');
+
+            if (histBadge) histBadge.innerText = String(stocktakeSessions.length);
+
+            const active = getActiveStocktakeSession();
+            const pendingCount = active
+                ? (active.unmatched || []).filter(u => !u.restoredToSystem).length
+                : 0;
+            if (pendBadge) pendBadge.innerText = String(pendingCount);
+
+            if (overlayBtnText) {
+                overlayBtnText.innerText = stocktakeMapOverlayEnabled ? '套用到地圖：開' : '套用到地圖：關';
+            }
+            if (overlayBtn) {
+                if (stocktakeMapOverlayEnabled) {
+                    overlayBtn.classList.remove('bg-white', 'text-emerald-700', 'border-emerald-300');
+                    overlayBtn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-600');
+                } else {
+                    overlayBtn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-600');
+                    overlayBtn.classList.add('bg-white', 'text-emerald-700', 'border-emerald-300');
+                }
+            }
+        }
+
+        function getStocktakeMapStatusForAsset(asset) {
+            if (!stocktakeMapOverlayEnabled || !asset) return null;
+            const active = getActiveStocktakeSession();
+            if (!active) return null;
+
+            const assetEam = String(asset.eam || '').trim().toLowerCase();
+            const assetSn = String(asset.serial || '').trim().toLowerCase();
+
+            const isMatched = (active.matched || []).some(m => {
+                const mEam = String(m.matchedEam || m.eam || '').trim().toLowerCase();
+                const mSn = String(m.matchedSerial || m.serial || '').trim().toLowerCase();
+                return (assetEam && mEam && assetEam === mEam) || (assetSn && mSn && assetSn === mSn);
+            });
+            if (isMatched) return 'matched';
+
+            const isUnmatched = (active.unmatched || []).some(u => {
+                if (u.restoredToSystem) return false;
+                const uEam = String(u.eam || '').trim().toLowerCase();
+                const uSn = String(u.serial || '').trim().toLowerCase();
+                return (assetEam && uEam && assetEam === uEam) || (assetSn && uSn && assetSn === uSn);
+            });
+            return isUnmatched ? 'unmatched' : null;
+        }
+
+        function toggleStocktakeMapOverlay() {
+            const active = getActiveStocktakeSession();
+            if (!active) {
+                alert('目前尚未匯入任何 Stocktake Excel 清單，請先按「Import Stocktake Excel」。');
+                return;
+            }
+            stocktakeMapOverlayEnabled = !stocktakeMapOverlayEnabled;
+            updateStocktakeBadges();
+
+            const banner = document.getElementById('selectionBanner');
+            const bannerText = document.getElementById('bannerText');
+            if (stocktakeMapOverlayEnabled) {
+                const mCount = (active.matched || []).length;
+                const uCount = (active.unmatched || []).filter(u => !u.restoredToSystem).length;
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `📋 Stocktake 地圖套用已開啟（${active.fileName}）：已找到 ${mCount} 項（綠勾）｜Pending 未找到 ${uCount} 項（紅驚嘆號）`;
+                }
+            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && banner) {
+                banner.classList.add('hidden');
+            }
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+        }
+
+        function normalizeLookupKey(val) {
+            return String(val || '').trim().replace(/^0+/, '').toLowerCase();
+        }
+
+        function pickRowField(row, candidates) {
+            const keys = Object.keys(row || {});
+            for (const cand of candidates) {
+                const target = cand.toLowerCase().replace(/[^a-z0-9]/g, '');
+                for (const k of keys) {
+                    const normK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (normK === target || normK.includes(target)) {
+                        const v = row[k];
+                        if (v !== undefined && v !== null && String(v).trim() !== '') {
+                            return String(v).trim();
+                        }
+                    }
+                }
+            }
+            return '';
+        }
+
+        // 依 EAM 優先比對；若 EAM 找不到，改用 S/N (Serial) 比對
+        function runStocktakeMatching(rows) {
+            const assetsList = Array.isArray(allAssets) ? allAssets : [];
+
+            const eamMap = new Map();
+            const snMap = new Map();
+
+            assetsList.forEach(a => {
+                const nkEam = normalizeLookupKey(a.eam);
+                if (nkEam && !eamMap.has(nkEam)) eamMap.set(nkEam, a);
+
+                const nkSn = normalizeLookupKey(a.serial);
+                if (nkSn && !snMap.has(nkSn)) snMap.set(nkSn, a);
+            });
+
+            const matched = [];
+            const unmatched = [];
+
+            (rows || []).forEach((row, idx) => {
+                const rawEam = pickRowField(row, ['eam', 'assetno', 'assetid', 'tagno', 'barcode', '編號']);
+                const rawSn = pickRowField(row, ['sn', 'serial', 'serialno', 'serialnumber', 's/n', '序號']);
+                const rawDesc = pickRowField(row, ['description', 'type', 'assettype', 'item', 'name', '類型', '名稱']) || ASSET_TYPES[0].label;
+                const rawWard = pickRowField(row, ['ward', 'location', 'wardkey', 'dept', 'department', '單位', '位置']);
+                const rawBlock = pickRowField(row, ['block', '棟別']);
+                const rawFloor = pickRowField(row, ['floor', '樓層']);
+                const rawRemark = pickRowField(row, ['remark', 'remarks', 'note', 'notes', 'reason', '備註', '原因']);
+
+                if (!rawEam && !rawSn && !rawDesc) return;
+
+                let foundAsset = null;
+                let matchMethod = '未找到';
+
+                const keyEam = normalizeLookupKey(rawEam);
+                const keySn = normalizeLookupKey(rawSn);
+
+                if (keyEam && eamMap.has(keyEam)) {
+                    foundAsset = eamMap.get(keyEam);
+                    matchMethod = 'EAM 命中';
+                } else if (keySn && snMap.has(keySn)) {
+                    foundAsset = snMap.get(keySn);
+                    matchMethod = 'S/N 備援命中';
+                }
+
+                if (foundAsset) {
+                    matched.push({
+                        rowIndex: idx + 1,
+                        inputEam: rawEam,
+                        inputSerial: rawSn,
+                        inputDescription: rawDesc,
+                        inputWard: rawWard,
+                        inputRemark: rawRemark,
+                        matchMethod,
+                        matchedEam: foundAsset.eam || '',
+                        matchedSerial: foundAsset.serial || '',
+                        matchedDescription: foundAsset.description || '',
+                        matchedBlock: foundAsset.block || '',
+                        matchedFloor: foundAsset.floor || '',
+                        matchedWard: foundAsset.ward || '',
+                        matchedX: foundAsset.x,
+                        matchedY: foundAsset.y
+                    });
+                } else {
+                    unmatched.push({
+                        id: `PEND-${Date.now()}-${idx + 1}`,
+                        rowIndex: idx + 1,
+                        eam: rawEam,
+                        serial: rawSn,
+                        description: rawDesc,
+                        block: rawBlock,
+                        floor: rawFloor,
+                        ward: rawWard,
+                        remark: rawRemark || 'Stocktake 盤點找不到（待確認／補登）',
+                        restoredToSystem: false,
+                        restoredAt: ''
+                    });
+                }
+            });
+
+            return { matched, unmatched };
+        }
+
+        function exportStocktakeResultWorkbook(session) {
+            if (!session || typeof XLSX === 'undefined') {
+                alert('無法匯出 Excel（缺少 SheetJS 或盤點資料）。');
+                return;
+            }
+
+            const matchedRows = (session.matched || []).map((m, i) => ({
+                '序號': i + 1,
+                '比對方式': m.matchMethod,
+                '輸入 EAM': m.inputEam,
+                '輸入 S/N': m.inputSerial,
+                '系統 EAM': m.matchedEam,
+                '系統 S/N': m.matchedSerial,
+                'Asset 類型': m.matchedDescription || m.inputDescription,
+                '系統 Block': m.matchedBlock,
+                '系統 Floor': m.matchedFloor,
+                '系統 Ward_Key': m.matchedWard,
+                '座標 X': m.matchedX ?? '',
+                '座標 Y': m.matchedY ?? '',
+                '匯入時間': session.importedAt
+            }));
+
+            const unmatchedRows = (session.unmatched || []).map((u, i) => ({
+                '序號': i + 1,
+                '狀態': u.restoredToSystem ? '已放回系統' : 'Pending',
+                'EAM': u.eam,
+                'S/N': u.serial,
+                'Description / Type': u.description,
+                'Block': u.block,
+                'Floor': u.floor,
+                'Ward_Key': u.ward,
+                'Remarks': u.remark,
+                '放回時間': u.restoredAt || '',
+                '匯入時間': session.importedAt
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const wsMatched = XLSX.utils.json_to_sheet(matchedRows.length > 0 ? matchedRows : [{ '說明': '無已找到的 Asset' }]);
+            const wsUnmatched = XLSX.utils.json_to_sheet(unmatchedRows.length > 0 ? unmatchedRows : [{ '說明': '無找不到的 Pending Asset' }]);
+
+            XLSX.utils.book_append_sheet(wb, wsMatched, 'Matched_Assets');
+            XLSX.utils.book_append_sheet(wb, wsUnmatched, 'Pending_Unmatched');
+
+            const safeName = String(session.fileName || 'Stocktake').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+            XLSX.writeFile(wb, `${safeName}_Stocktake_Result.xlsx`);
+        }
+
+        function openStocktakeImportModal() {
+            const existing = document.getElementById('stocktakeImportModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'stocktakeImportModal';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl text-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
+                            <i class="fa-solid fa-file-excel"></i> 匯入 Stocktake Excel 並比對 (EAM → S/N)
+                        </h3>
+                        <button type="button" id="btnCloseStocktakeImport" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                    </div>
+
+                    <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                        支援 <strong>.xlsx / .xls / .csv</strong>。系統會先用 <strong>EAM</strong> 比對現有 Asset；若 EAM 找不到，會自動改用 <strong>S/N (Serial)</strong> 比對。
+                        比對完成後會建立盤點工作階段，支援<strong>套用到地圖</strong>、<strong>匯出結果 Excel</strong>，並將找不到的項目放入 <strong>Pending</strong>。
+                    </p>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">選擇 Stocktake 檔案：</label>
+                            <input id="stocktakeFileInput" type="file" accept=".xlsx,.xls,.csv"
+                                class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-xl p-1.5 cursor-pointer">
+                        </div>
+
+                        <label class="flex items-center gap-2 bg-emerald-50/80 border border-emerald-200 rounded-xl p-2.5 cursor-pointer text-[11px] font-bold text-emerald-800">
+                            <input id="stocktakeAutoOverlayCb" type="checkbox" checked class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
+                            <span>匯入後自動開啟「套用到地圖」標記已比對 Asset</span>
+                        </label>
+
+                        <div id="stocktakeImportPreview" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] space-y-1"></div>
+                    </div>
+
+                    <div class="flex gap-2 mt-5">
+                        <button type="button" id="btnRunStocktakeImport" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-xl shadow cursor-pointer">
+                            開始比對並建立清單
+                        </button>
+                        <button type="button" id="btnCancelStocktakeImport" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl cursor-pointer">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnCloseStocktakeImport').onclick = () => modal.remove();
+            document.getElementById('btnCancelStocktakeImport').onclick = () => modal.remove();
+
+            document.getElementById('btnRunStocktakeImport').onclick = async () => {
+                const fileEl = document.getElementById('stocktakeFileInput');
+                const autoOverlay = document.getElementById('stocktakeAutoOverlayCb')?.checked;
+                const previewEl = document.getElementById('stocktakeImportPreview');
+
+                if (!fileEl || !fileEl.files || fileEl.files.length === 0) {
+                    alert('請先選擇要匯入的 Stocktake Excel / CSV 檔案！');
+                    return;
+                }
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel 解析套件尚未載入，請檢查網路後再試。');
+                    return;
+                }
+
+                const file = fileEl.files[0];
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                    if (!jsonRows || jsonRows.length === 0) {
+                        alert('Excel 檔案中沒有可讀取的資料列！');
+                        return;
+                    }
+
+                    const { matched, unmatched } = runStocktakeMatching(jsonRows);
+                    const nowStr = new Date().toLocaleString('zh-HK', { hour12: false });
+
+                    const newSession = {
+                        id: `ST-${Date.now()}`,
+                        fileName: file.name,
+                        sheetName: firstSheetName,
+                        importedAt: nowStr,
+                        totalInput: jsonRows.length,
+                        matched,
+                        unmatched
+                    };
+
+                    stocktakeSessions.unshift(newSession);
+                    activeStocktakeSessionId = newSession.id;
+                    saveStocktakeSessionsToStorage();
+
+                    if (autoOverlay) {
+                        stocktakeMapOverlayEnabled = true;
+                        updateStocktakeBadges();
+                    }
+
+                    if (previewEl) {
+                        previewEl.classList.remove('hidden');
+                        previewEl.innerHTML = `
+                            <div class="font-bold text-slate-800">✅ 比對完成（${file.name}）</div>
+                            <div class="text-emerald-700 font-semibold">• 已找到 Asset：${matched.length} 項</div>
+                            <div class="text-rose-700 font-semibold">• 找不到（已放入 Pending）：${unmatched.length} 項</div>
+                        `;
+                    }
+
+                    const wardVal = document.getElementById('wardSelect')?.value || '';
+                    if (wardVal) {
+                        renderAssetMarkers(currentFilteredAssets);
+                    }
+
+                    modal.remove();
+                    openStocktakeResultModal(newSession.id);
+                } catch (err) {
+                    alert('讀取或比對 Excel 失敗：' + err);
+                }
+            };
+        }
+
+        function openStocktakeResultModal(sessionId = null) {
+            const session = sessionId
+                ? stocktakeSessions.find(s => s.id === sessionId)
+                : getActiveStocktakeSession();
+            if (!session) {
+                alert('找不到盤點紀錄。');
+                return;
+            }
+
+            const existing = document.getElementById('stocktakeResultModal');
+            if (existing) existing.remove();
+
+            const matched = session.matched || [];
+            const unmatched = (session.unmatched || []).filter(u => !u.restoredToSystem);
+
+            const modal = document.createElement('div');
+            modal.id = 'stocktakeResultModal';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-2xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
+                    <div class="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
+                                <i class="fa-solid fa-clipboard-check"></i> Stocktake 比對結果 — ${session.fileName}
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                匯入時間：<strong>${session.importedAt}</strong>｜總列數：${session.totalInput}｜已找到：<strong>${matched.length}</strong>｜Pending 未找到：<strong>${unmatched.length}</strong>
+                            </p>
+                        </div>
+                        <button type="button" id="btnCloseStocktakeResult" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 my-3">
+                        <button type="button" id="btnExportSessionExcel" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-download"></i> 匯出比對結果 Excel（含 Pending）
+                        </button>
+                        <button type="button" id="btnOverlayFromResult" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-map-pin"></i> 套用到地圖並關閉
+                        </button>
+                        <button type="button" id="btnOpenPendingFromResult" class="bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-clock-rotate-left"></i> 前往 Pending 一鍵放回 (${unmatched.length})
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-1 pr-1 text-xs">
+                        <div class="border border-emerald-200 rounded-xl p-3 bg-emerald-50/40">
+                            <h4 class="font-bold text-emerald-800 mb-2">已找到的 Asset (${matched.length} 項) — 點擊可定位地圖</h4>
+                            <div class="space-y-1.5 max-h-64 overflow-y-auto">
+                                ${matched.length === 0
+                                    ? '<p class="text-[11px] text-slate-400 italic">無已找到項目</p>'
+                                    : matched.map(m => `
+                                        <button type="button" data-locate-eam="${String(m.matchedEam || '').replace(/"/g, '&quot;')}"
+                                            class="st-locate-btn w-full text-left bg-white hover:bg-emerald-100/70 border border-emerald-200/80 rounded-lg p-2 cursor-pointer transition-all">
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="font-bold text-emerald-800">${m.matchedEam || m.inputEam}</span>
+                                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">${m.matchMethod}</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-700 truncate">${m.matchedDescription || m.inputDescription}</p>
+                                            <p class="text-[10px] text-slate-500">Ward: ${m.matchedWard || 'N/A'} | SN: ${m.matchedSerial || m.inputSerial || 'N/A'}</p>
+                                        </button>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+
+                        <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/40">
+                            <h4 class="font-bold text-rose-800 mb-2">找不到的 Asset — Pending (${unmatched.length} 項)</h4>
+                            <div class="space-y-1.5 max-h-64 overflow-y-auto">
+                                ${unmatched.length === 0
+                                    ? '<p class="text-[11px] text-slate-400 italic">無待處理 Pending 項目</p>'
+                                    : unmatched.map(u => `
+                                        <div class="bg-white border border-rose-200/80 rounded-lg p-2">
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="font-bold text-rose-700">${u.eam || '(無 EAM)'}</span>
+                                                <span class="text-[10px] text-slate-500">SN: ${u.serial || 'N/A'}</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-700 truncate">${u.description || '未命名項目'}</p>
+                                            <p class="text-[10px] text-slate-500">Ward: ${u.ward || '未指定'} | 備註: ${u.remark || '無'}</p>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnCloseStocktakeResult').onclick = () => modal.remove();
+            document.getElementById('btnExportSessionExcel').onclick = () => exportStocktakeResultWorkbook(session);
+            document.getElementById('btnOverlayFromResult').onclick = () => {
+                activeStocktakeSessionId = session.id;
+                stocktakeMapOverlayEnabled = true;
+                updateStocktakeBadges();
+                modal.remove();
+                const firstMatched = (session.matched || []).find(m => m.matchedEam);
+                if (firstMatched) {
+                    const targetAsset = findAssetByEam(firstMatched.matchedEam);
+                    if (targetAsset) locateAndHighlightAsset(targetAsset);
+                } else {
+                    const wardVal = document.getElementById('wardSelect')?.value || '';
+                    if (wardVal) renderAssetMarkers(currentFilteredAssets);
+                }
+            };
+            document.getElementById('btnOpenPendingFromResult').onclick = () => {
+                activeStocktakeSessionId = session.id;
+                modal.remove();
+                openStocktakePendingModal(session.id);
+            };
+
+            modal.querySelectorAll('.st-locate-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const code = btn.getAttribute('data-locate-eam');
+                    const found = findAssetByEam(code);
+                    if (found) {
+                        activeStocktakeSessionId = session.id;
+                        stocktakeMapOverlayEnabled = true;
+                        updateStocktakeBadges();
+                        modal.remove();
+                        locateAndHighlightAsset(found);
+                    }
+                };
+            });
+        }
+
+        function openStocktakeHistoryModal() {
+            const existing = document.getElementById('stocktakeHistoryModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'stocktakeHistoryModal';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-xl shadow-2xl text-slate-800 max-h-[88vh] flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
+                            <i class="fa-solid fa-history"></i> Stocktake 匯入紀錄（何時匯入過）
+                        </h3>
+                        <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                    </div>
+
+                    <div class="overflow-y-auto flex-1 my-3 space-y-2.5 pr-1 text-xs">
+                        ${stocktakeSessions.length === 0
+                            ? '<p class="text-center text-slate-400 py-10">尚無任何 Stocktake 匯入紀錄，請點選上方「Import Stocktake Excel」。</p>'
+                            : stocktakeSessions.map(s => {
+                                const isCurrent = s.id === (getActiveStocktakeSession()?.id);
+                                const pendLeft = (s.unmatched || []).filter(u => !u.restoredToSystem).length;
+                                return `
+                                    <div class="border ${isCurrent ? 'border-indigo-400 bg-indigo-50/40' : 'border-slate-200 bg-white'} rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-slate-800">${s.fileName}</span>
+                                                ${isCurrent ? '<span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">目前啟用</span>' : ''}
+                                            </div>
+                                            <p class="text-[11px] text-indigo-700 font-semibold mt-0.5">
+                                                <i class="fa-regular fa-clock mr-1"></i>匯入時間：${s.importedAt}
+                                            </p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                                總數 ${s.totalInput}｜找到 <strong class="text-emerald-700">${(s.matched || []).length}</strong>｜Pending 未放回 <strong class="text-rose-700">${pendLeft}</strong>
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+                                            <button type="button" data-view-id="${s.id}" class="st-hist-view bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">查看明細</button>
+                                            <button type="button" data-pend-id="${s.id}" class="st-hist-pend bg-amber-500 hover:bg-amber-400 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">Pending (${pendLeft})</button>
+                                            <button type="button" data-exp-id="${s.id}" class="st-hist-exp bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">匯出</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')
+                        }
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnCloseStocktakeHistory').onclick = () => modal.remove();
+
+            modal.querySelectorAll('.st-hist-view').forEach(btn => {
+                btn.onclick = () => {
+                    activeStocktakeSessionId = btn.getAttribute('data-view-id');
+                    saveStocktakeSessionsToStorage();
+                    modal.remove();
+                    openStocktakeResultModal(activeStocktakeSessionId);
+                };
+            });
+
+            modal.querySelectorAll('.st-hist-pend').forEach(btn => {
+                btn.onclick = () => {
+                    activeStocktakeSessionId = btn.getAttribute('data-pend-id');
+                    saveStocktakeSessionsToStorage();
+                    modal.remove();
+                    openStocktakePendingModal(activeStocktakeSessionId);
+                };
+            });
+
+            modal.querySelectorAll('.st-hist-exp').forEach(btn => {
+                btn.onclick = () => {
+                    const target = stocktakeSessions.find(x => x.id === btn.getAttribute('data-exp-id'));
+                    if (target) exportStocktakeResultWorkbook(target);
+                };
+            });
+        }
+
+        function resolveTargetWardForPendingItem(item) {
+            const currentDropdownWard = String(document.getElementById('wardSelect')?.value || '').trim();
+            const itemWard = String(item.ward || '').trim();
+
+            if (itemWard && !isLockedStatusWard(itemWard)) {
+                const hMatch = (floorHierarchyData || []).find(
+                    h => String(h.wardKey || '').trim().toLowerCase() === itemWard.toLowerCase()
+                );
+                if (hMatch) {
+                    return {
+                        block: hMatch.block,
+                        floor: hMatch.floor,
+                        ward: hMatch.wardKey
+                    };
+                }
+            }
+
+            if (currentDropdownWard && !isLockedStatusWard(currentDropdownWard)) {
+                return {
+                    block: String(document.getElementById('blockSelect')?.value || 'T Block').trim(),
+                    floor: String(document.getElementById('floorSelect')?.value || 'G/F').trim(),
+                    ward: currentDropdownWard
+                };
+            }
+
+            const firstValidH = (floorHierarchyData || []).find(h => h.wardKey && !isLockedStatusWard(h.wardKey));
+            if (firstValidH) {
+                return {
+                    block: firstValidH.block,
+                    floor: firstValidH.floor,
+                    ward: firstValidH.wardKey
+                };
+            }
+
+            return { block: 'T Block', floor: 'G/F', ward: 'NS' };
+        }
+
+        // 一鍵放回正式系統與地圖：若已存在則更新/補上位置，若為新 Asset（同事忘記入 app）則直接新增至系統並放在地圖上
+        async function restorePendingItemToSystem(sessionId, pendingId) {
+            const session = stocktakeSessions.find(s => s.id === sessionId);
+            if (!session) return;
+            const pendingItem = (session.unmatched || []).find(u => u.id === pendingId);
+            if (!pendingItem) return;
+
+            const loc = resolveTargetWardForPendingItem(pendingItem);
+            const autoCoords = computeNextAutoCoordinates(loc.ward);
+            const cleanEam = String(pendingItem.eam || '').trim() || ('PEND-' + Date.now());
+
+            const existing = findAssetByEam(cleanEam);
+            const payloadAsset = existing
+                ? {
+                    ...existing,
+                    serial: pendingItem.serial || existing.serial || 'SN',
+                    description: pendingItem.description || existing.description || ASSET_TYPES[0].label,
+                    block: loc.block,
+                    floor: loc.floor,
+                    ward: loc.ward,
+                    x: existing.x !== undefined && existing.x !== '' ? existing.x : autoCoords.x,
+                    y: existing.y !== undefined && existing.y !== '' ? existing.y : autoCoords.y,
+                    remark: [existing.remark, pendingItem.remark].filter(Boolean).join(' | '),
+                    dept: existing.dept || 'NSD'
+                }
+                : {
+                    eam: cleanEam,
+                    serial: pendingItem.serial || 'SN',
+                    dept: 'NSD',
+                    description: pendingItem.description || ASSET_TYPES[0].label,
+                    remark: pendingItem.remark || '由 Stocktake Pending 一鍵放回系統',
+                    pair: '',
+                    block: loc.block,
+                    floor: loc.floor,
+                    ward: loc.ward,
+                    x: autoCoords.x,
+                    y: autoCoords.y
+                };
+
+            try {
+                const actionName = existing ? 'updateAsset' : 'addAsset';
+                const res = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: actionName, asset: payloadAsset })
+                }).then(r => r.json());
+
+                if (res && res.status === 'error') {
+                    throw new Error(res.message || '寫入失敗');
+                }
+            } catch (err) {
+                console.warn('GAS 同步警告（已先更新本地畫面）：', err);
+            }
+
+            pendingItem.restoredToSystem = true;
+            pendingItem.restoredAt = new Date().toLocaleString('zh-HK', { hour12: false });
+            pendingItem.ward = loc.ward;
+            saveStocktakeSessionsToStorage();
+
+            applyAssetListToLocalState([payloadAsset], payloadAsset.eam, true);
+            openStocktakePendingModal(session.id);
+        }
+
+        function openStocktakePendingModal(sessionId = null) {
+            const session = sessionId
+                ? stocktakeSessions.find(s => s.id === sessionId)
+                : getActiveStocktakeSession();
+
+            const existing = document.getElementById('stocktakePendingModal');
+            if (existing) existing.remove();
+
+            const activeItems = session
+                ? (session.unmatched || []).filter(u => !u.restoredToSystem)
+                : [];
+            const restoredItems = session
+                ? (session.unmatched || []).filter(u => u.restoredToSystem)
+                : [];
+
+            const modal = document.createElement('div');
+            modal.id = 'stocktakePendingModal';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-2xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="text-sm font-black text-amber-700 flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Stocktake Pending 清單（找不到的 Asset — 一鍵放回系統）
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                ${session
+                                    ? `工作階段：<strong>${session.fileName}</strong>（匯入於 ${session.importedAt}）｜待放回：<strong>${activeItems.length}</strong> 項`
+                                    : '目前尚無 Stocktake 盤點工作階段'}
+                            </p>
+                        </div>
+                        <button type="button" id="btnCloseStocktakePending" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                    </div>
+
+                    <div class="overflow-y-auto flex-1 my-3 space-y-2.5 pr-1 text-xs">
+                        ${!session || activeItems.length === 0
+                            ? '<p class="text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">目前沒有待放回的 Pending Asset。</p>'
+                            : activeItems.map(u => {
+                                const targetLoc = resolveTargetWardForPendingItem(u);
+                                return `
+                                    <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-slate-900">EAM: ${u.eam || '(待補)'}</span>
+                                                <span class="text-[11px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600">S/N: ${u.serial || 'N/A'}</span>
+                                                <span class="text-[11px] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded text-blue-700 font-semibold">目標 Ward: ${targetLoc.ward}</span>
+                                            </div>
+                                            <p class="font-semibold text-slate-800 mt-1">${u.description || '未命名 Asset'}</p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">備註：${u.remark || '無'}</p>
+                                        </div>
+                                        <button type="button" data-restore-id="${u.id}"
+                                            class="st-oneclick-restore bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs shrink-0 flex items-center gap-1.5 cursor-pointer transition-all">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                            <span>一鍵放回系統</span>
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('')
+                        }
+
+                        ${restoredItems.length > 0 ? `
+                            <div class="pt-2 border-t border-slate-100">
+                                <p class="text-[11px] font-bold text-emerald-700 mb-1.5">已放回正式系統 (${restoredItems.length} 項)：</p>
+                                <div class="space-y-1.5">
+                                    ${restoredItems.map(r => `
+                                        <div class="bg-emerald-50/70 border border-emerald-200 rounded-lg px-3 py-2 flex items-center justify-between text-[11px]">
+                                            <span><strong>${r.eam || r.serial}</strong> — ${r.description} (${r.ward})</span>
+                                            <span class="text-emerald-700 font-semibold">已於 ${r.restoredAt || '近期'} 放回</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                        ${session
+                            ? `<button type="button" id="btnExportFromPending" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer">匯出完整 Excel（含 Pending）</button>`
+                            : '<span></span>'
+                        }
+                        <button type="button" id="btnDoneStocktakePending" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">完成</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnCloseStocktakePending').onclick = () => modal.remove();
+            document.getElementById('btnDoneStocktakePending').onclick = () => modal.remove();
+
+            const expBtn = document.getElementById('btnExportFromPending');
+            if (expBtn && session) {
+                expBtn.onclick = () => exportStocktakeResultWorkbook(session);
+            }
+
+            modal.querySelectorAll('.st-oneclick-restore').forEach(btn => {
+                btn.onclick = async () => {
+                    const pid = btn.getAttribute('data-restore-id');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 放回中...';
+                    await restorePendingItemToSystem(session.id, pid);
+                };
+            });
+        }
+
+        function initStocktakeFeature() {
+            loadStocktakeSessionsFromStorage();
+        }
+
     </script>
 </body>
 </html>
