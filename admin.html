@@ -1472,8 +1472,24 @@
         function onWardChange() {
             const wardKey = document.getElementById('wardSelect').value;
             if (!wardKey) return;
-            cancelRelocate();
+        
+            // 切換單位時，僅取消「挑選 Pair」與「掃描新增」狀態，保留「更改位置 (isRelocatingMode)」狀態
+            isSelectingPairOnMap = false;
+            pendingPairTargetAsset = null;
             pendingNewAssetEam = null;
+        
+            if (!isRelocatingMode) {
+                const banner = document.getElementById('selectionBanner');
+                if (banner) banner.classList.add('hidden');
+            } else if (isMovingAsset) {
+                const banner = document.getElementById('selectionBanner');
+                const bannerText = document.getElementById('bannerText');
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `請在 [${wardKey}] 地圖點擊 [${isMovingAsset.eam}] 的新位置...`;
+                }
+            }
+        
             loadFloorPlan(wardKey);
             currentFilteredAssets = allAssets.filter(a => a.ward && a.ward.trim().toLowerCase() === wardKey.trim().toLowerCase());
             window.currentLoadedAssets = currentFilteredAssets;
