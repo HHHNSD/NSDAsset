@@ -167,31 +167,31 @@
                                 <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/90 z-10"></div>
 
                                 <!-- 左上：T Block -->
-                                <button type="button" data-joy-block="T" data-joy-active-bg="bg-sky-600" data-joy-active-sub="text-sky-100" onclick="selectJoystickBlock('T')" title="T Block"
-                                    class="kiosk-quad-btn joy-block-quad bg-sky-50/95 hover:bg-sky-100 text-sky-900 flex flex-col items-center justify-center pt-1 pl-1 cursor-pointer">
-                                    <span class="text-[11px] sm:text-xs font-black leading-none">T</span>
-                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold text-sky-700/80 mt-0.5">Block</span>
+                                <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pl-1 cursor-pointer">
+                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
+                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
                                 </button>
 
                                 <!-- 右上：M Block -->
-                                <button type="button" data-joy-block="M" data-joy-active-bg="bg-indigo-600" data-joy-active-sub="text-indigo-100" onclick="selectJoystickBlock('M')" title="M Block"
-                                    class="kiosk-quad-btn joy-block-quad bg-indigo-50/95 hover:bg-indigo-100 text-indigo-900 flex flex-col items-center justify-center pt-1 pr-1 cursor-pointer">
-                                    <span class="text-[11px] sm:text-xs font-black leading-none">M</span>
-                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold text-indigo-700/80 mt-0.5">Block</span>
+                                <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pr-1 cursor-pointer">
+                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
+                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
                                 </button>
 
                                 <!-- 左下：Annex -->
-                                <button type="button" data-joy-block="ANNEX" data-joy-active-bg="bg-amber-600" data-joy-active-sub="text-amber-100" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
-                                    class="kiosk-quad-btn joy-block-quad bg-amber-50/95 hover:bg-amber-100 text-amber-900 flex flex-col items-center justify-center pb-1 pl-1 cursor-pointer">
-                                    <span class="text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
-                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold text-amber-700/80">Bldg</span>
+                                <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pl-1 cursor-pointer">
+                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
+                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
                                 </button>
 
                                 <!-- 右下：Sys -->
-                                <button type="button" data-joy-block="SYSTEM" data-joy-active-bg="bg-purple-600" data-joy-active-sub="text-purple-100" onclick="selectJoystickBlock('SYSTEM')" title="System"
-                                    class="kiosk-quad-btn joy-block-quad bg-purple-50/95 hover:bg-purple-100 text-purple-900 flex flex-col items-center justify-center pb-1 pr-1 cursor-pointer">
-                                    <span class="text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
-                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold text-purple-700/80">tem</span>
+                                <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pr-1 cursor-pointer">
+                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
+                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
                                 </button>
 
                                 <!-- 圓心徽章 -->
@@ -3082,19 +3082,67 @@
             if (upEl) upEl.innerText = floorVal ? `Floor ▲ (${floorVal})` : 'Floor ▲';
             if (downEl) downEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
 
+            const quadThemeMap = {
+                T: {
+                    idle: ['bg-sky-50/95', 'hover:bg-sky-100'],
+                    active: ['bg-sky-600', 'hover:bg-sky-600', 'ring-1', 'ring-inset', 'ring-sky-300'],
+                    mainIdle: ['text-sky-900'],
+                    mainActive: ['text-white'],
+                    subIdle: ['text-sky-700/85'],
+                    subActive: ['text-sky-100']
+                },
+                M: {
+                    idle: ['bg-indigo-50/95', 'hover:bg-indigo-100'],
+                    active: ['bg-indigo-600', 'hover:bg-indigo-600', 'ring-1', 'ring-inset', 'ring-indigo-300'],
+                    mainIdle: ['text-indigo-900'],
+                    mainActive: ['text-white'],
+                    subIdle: ['text-indigo-700/85'],
+                    subActive: ['text-indigo-100']
+                },
+                ANNEX: {
+                    idle: ['bg-amber-50/95', 'hover:bg-amber-100'],
+                    active: ['bg-amber-600', 'hover:bg-amber-600', 'ring-1', 'ring-inset', 'ring-amber-300'],
+                    mainIdle: ['text-amber-900'],
+                    mainActive: ['text-white'],
+                    subIdle: ['text-amber-700/85'],
+                    subActive: ['text-amber-100']
+                },
+                SYSTEM: {
+                    idle: ['bg-purple-50/95', 'hover:bg-purple-100'],
+                    active: ['bg-purple-600', 'hover:bg-purple-600', 'ring-1', 'ring-inset', 'ring-purple-300'],
+                    mainIdle: ['text-purple-900'],
+                    mainActive: ['text-white'],
+                    subIdle: ['text-purple-700/85'],
+                    subActive: ['text-purple-100']
+                }
+            };
+
             document.querySelectorAll('.joy-block-quad').forEach(btn => {
-                const quadKey = btn.getAttribute('data-joy-block');
-                const activeBg = btn.getAttribute('data-joy-active-bg') || 'bg-blue-600';
-                const activeSub = btn.getAttribute('data-joy-active-sub') || 'text-blue-100';
+                const quadKey = String(btn.getAttribute('data-joy-block') || '').toUpperCase();
+                const theme = quadThemeMap[quadKey] || quadThemeMap.T;
+                const allThemeClasses = [
+                    ...theme.idle, ...theme.active,
+                    ...theme.mainIdle, ...theme.mainActive,
+                    ...theme.subIdle, ...theme.subActive
+                ];
+                btn.classList.remove(...allThemeClasses);
+
+                const mainLabel = btn.querySelector('.joy-main-label');
                 const subLabel = btn.querySelector('.joy-sub-label');
+                if (mainLabel) mainLabel.classList.remove(...theme.mainIdle, ...theme.mainActive);
+                if (subLabel) subLabel.classList.remove(...theme.subIdle, ...theme.subActive);
+
                 const resolved = resolveMatchingBlockValue(quadKey);
                 const isActive = Boolean(resolved && blockVal && resolved.toLowerCase() === blockVal.toLowerCase());
 
-                btn.classList.toggle(activeBg, isActive);
-                btn.classList.toggle('text-white', isActive);
-                btn.classList.toggle('font-extrabold', isActive);
-                if (subLabel) {
-                    subLabel.classList.toggle(activeSub, isActive);
+                if (isActive) {
+                    btn.classList.add(...theme.active);
+                    if (mainLabel) mainLabel.classList.add(...theme.mainActive);
+                    if (subLabel) subLabel.classList.add(...theme.subActive);
+                } else {
+                    btn.classList.add(...theme.idle);
+                    if (mainLabel) mainLabel.classList.add(...theme.mainIdle);
+                    if (subLabel) subLabel.classList.add(...theme.subIdle);
                 }
             });
 
