@@ -269,6 +269,16 @@
                     </div>
                 </div>
 
+                <div>
+                    <label for="searchRecordTypeSelect" class="block text-[10px] font-bold text-slate-500 mb-0.5">RecordType 篩選</label>
+                    <select id="searchRecordTypeSelect" onchange="applyMultiFieldSearch()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all cursor-pointer">
+                        <option value="ALL">全部 (Asset + Non-Asset)</option>
+                        <option value="Asset">僅 Asset</option>
+                        <option value="Non-Asset">僅 Non-Asset</option>
+                    </select>
+                </div>
+
                 <div class="flex justify-end pt-0.5">
                     <button type="button" onclick="openScannerModal()" title="開啟條碼掃描器" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 shadow-sm transition-all cursor-pointer hover:shadow">
                         <i class="fa-solid fa-barcode text-sm"></i>
@@ -288,6 +298,36 @@
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz_z5U4DjeWY1k8dELIxaSxfMUW110kMnzutPXsqvCGQB3k5qJIwHRTJJmKha1eiNrBlQ/exec";
         const GITHUB_IMAGES_BASE_URL = "https://hhhnsd.github.io/NSDAsset/images/";
         const LOCKED_STATUS_WARDS = ['transfer', 'condemn', 'surplus', 'suplus'];
+
+        function normalizeRecordType(raw) {
+            const v = String(raw || '').trim().toLowerCase();
+            if (v === 'non-asset' || v === 'nonasset' || v === 'non asset') {
+                return 'Non-Asset';
+            }
+            return 'Asset';
+        }
+
+        function isNonAssetItem(item) {
+            return normalizeRecordType(item && item.recordType) === 'Non-Asset';
+        }
+
+        function getItemDisplayTitle(item) {
+            if (!item) return '';
+            const desc = String(item.description || '').trim();
+            if (isNonAssetItem(item)) {
+                return desc || '未命名 Non-Asset 項目';
+            }
+            return desc || '未命名 Asset';
+        }
+
+        function getItemDisplayCode(item) {
+            if (!item) return '';
+            const eam = String(item.eam || '').trim();
+            if (isNonAssetItem(item)) {
+                return eam && !eam.toUpperCase().startsWith('NONASSET-') ? eam : 'Non-Asset';
+            }
+            return eam || 'N/A';
+        }
 
         let allAssets = [];
         let floorHierarchyData = [];
@@ -1058,6 +1098,7 @@
 
         function getCurrentSearchCriteria() {
             return {
+                recordType: document.getElementById('searchRecordTypeSelect')?.value || 'ALL',
                 eam: document.getElementById('searchEamInput')?.value || '',
                 serial: document.getElementById('searchSerialInput')?.value || '',
                 type: document.getElementById('searchTypeInput')?.value || '',
@@ -1067,6 +1108,7 @@
         }
 
         function filterAssetsByCriteria(assets, criteria, excludeField = null) {
+            const recType = excludeField === 'recordType' ? 'ALL' : (criteria.recordType || 'ALL');
             const eamKw = excludeField === 'eam' ? '' : (criteria.eam || '').toLowerCase().trim();
             const serialKw = excludeField === 'serial' ? '' : (criteria.serial || '').toLowerCase().trim();
             const typeKw = excludeField === 'type' ? '' : (criteria.type || '').toLowerCase().trim();
@@ -1074,6 +1116,10 @@
             const locationKw = excludeField === 'location' ? '' : (criteria.location || '').toLowerCase().trim();
 
             return (assets || []).filter(asset => {
+                const itemType = normalizeRecordType(asset.recordType);
+                if (recType === 'Asset' && itemType !== 'Asset') return false;
+                if (recType === 'Non-Asset' && itemType !== 'Non-Asset') return false;
+
                 const eam = String(asset.eam || '').toLowerCase().trim();
                 const serial = String(asset.serial || '').toLowerCase().trim();
                 const description = String(asset.description || '').toLowerCase().trim();
@@ -1089,6 +1135,22 @@
             });
         }
 
+        function syncRecordTypeFilterDropdown(criteria) {
+            const sel = document.getElementById('searchRecordTypeSelect');
+            if (!sel) return;
+            const currentVal = sel.value || 'ALL';
+            const poolForType = filterAssetsByCriteria(allAssets, criteria, 'recordType');
+            const totalCount = poolForType.length;
+            const assetCount = poolForType.filter(a => normalizeRecordType(a.recordType) === 'Asset').length;
+            const nonAssetCount = poolForType.filter(a => normalizeRecordType(a.recordType) === 'Non-Asset').length;
+
+            sel.innerHTML = `
+                <option value="ALL" ${currentVal === 'ALL' ? 'selected' : ''}>全部 (${totalCount} 項可選)</option>
+                <option value="Asset" ${currentVal === 'Asset' ? 'selected' : ''} ${assetCount === 0 && currentVal !== 'Asset' ? 'disabled' : ''}>僅 Asset (${assetCount} 項可選)</option>
+                <option value="Non-Asset" ${currentVal === 'Non-Asset' ? 'selected' : ''} ${nonAssetCount === 0 && currentVal !== 'Non-Asset' ? 'disabled' : ''}>僅 Non-Asset (${nonAssetCount} 項可選)</option>
+            `;
+        }
+
         function setDatalistValues(datalistId, values) {
             const dl = document.getElementById(datalistId);
             if (!dl) return;
@@ -1102,11 +1164,13 @@
         }
 
         function syncLinkedSearchDatalists(criteria) {
-            setDatalistValues('eamDatalist', filterAssetsByCriteria(allAssets, criteria, 'eam').map(a => a.eam));
-            setDatalistValues('serialDatalist', filterAssetsByCriteria(allAssets, criteria, 'serial').map(a => a.serial));
-            setDatalistValues('typeDatalist', filterAssetsByCriteria(allAssets, criteria, 'type').map(a => a.description));
-            setDatalistValues('remarkDatalist', filterAssetsByCriteria(allAssets, criteria, 'remark').map(a => a.remark));
-            setDatalistValues('locationDatalist', filterAssetsByCriteria(allAssets, criteria, 'location').map(a => a.ward));
+            syncRecordTypeFilterDropdown(criteria);
+            const filteredForFields = filterAssetsByCriteria(allAssets, criteria, null);
+            setDatalistValues('eamDatalist', filteredForFields.filter(a => !isNonAssetItem(a)).map(a => a.eam));
+            setDatalistValues('serialDatalist', filteredForFields.filter(a => !isNonAssetItem(a)).map(a => a.serial));
+            setDatalistValues('typeDatalist', filteredForFields.map(a => a.description));
+            setDatalistValues('remarkDatalist', filteredForFields.map(a => a.remark));
+            setDatalistValues('locationDatalist', filteredForFields.map(a => a.ward));
         }
 
         function populateSearchDatalists() {
@@ -1116,6 +1180,7 @@
         function hasActiveMultiSearch() {
             const c = getCurrentSearchCriteria();
             return Boolean(
+                (c.recordType && c.recordType !== 'ALL') ||
                 c.eam.trim() ||
                 c.serial.trim() ||
                 c.type.trim() ||
@@ -1164,6 +1229,8 @@
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
+            const recSel = document.getElementById('searchRecordTypeSelect');
+            if (recSel) recSel.value = 'ALL';
             applyMultiFieldSearch();
         }
 
@@ -1819,18 +1886,28 @@
                 const isPaired = hasPairRelationSet.has(eamLower) || parsePairedEamList(asset.pair).length > 0 || getPairOwnerAssets(asset).length > 0;
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
 
-                const linkBadgeHtml = isPaired
-                    ? `<span title="已設定主件／配件配對" class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center border border-white shadow-xs"><i class="fa-solid fa-link text-[7px]"></i></span>`
-                    : '';
+                if (isNonAssetItem(asset)) {
+                    marker.innerHTML = `
+                        <div title="${getItemDisplayTitle(asset)}" class="relative flex items-center justify-center w-7 h-7 rounded-lg bg-teal-500 border-2 border-teal-700 text-white shadow-md transition-transform hover:scale-110 ${
+                            isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
+                        }">
+                            <i class="fa-solid fa-tag text-xs text-white"></i>
+                        </div>
+                    `;
+                } else {
+                    const linkBadgeHtml = isPaired
+                        ? `<span title="已設定主件／配件配對" class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-indigo-600 text-white flex items-center justify-center border border-white shadow-xs"><i class="fa-solid fa-link text-[7px]"></i></span>`
+                        : '';
 
-                marker.innerHTML = `
-                    <div class="relative flex items-center justify-center w-7 h-7 rounded-full border-2 shadow-md transition-transform hover:scale-110 ${typeConfig.bg} ${typeConfig.border} ${
-                        isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
-                    }">
-                        <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
-                        ${linkBadgeHtml}
-                    </div>
-                `;
+                    marker.innerHTML = `
+                        <div class="relative flex items-center justify-center w-7 h-7 rounded-full border-2 shadow-md transition-transform hover:scale-110 ${typeConfig.bg} ${typeConfig.border} ${
+                            isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
+                        }">
+                            <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
+                            ${linkBadgeHtml}
+                        </div>
+                    `;
+                }
 
                 marker.onmouseenter = () => highlightPairGroupOnMap(asset.eam);
                 marker.onmouseleave = () => clearPairGroupHighlightOnMap();
@@ -1860,48 +1937,70 @@
             }
 
             assets.forEach(asset => {
+                const nonAsset = isNonAssetItem(asset);
                 const typeConfig = getAssetTypeConfig(asset.description);
                 const card = document.createElement('div');
                 card.className = 'bg-gradient-to-br from-white to-slate-50/80 border border-slate-200/80 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 rounded-2xl p-3.5 cursor-pointer transition-all shadow-xs hover:shadow-md flex items-center justify-between gap-3';
                 card.setAttribute('data-eam', asset.eam);
 
-                card.onmouseenter = () => highlightPairGroupOnMap(asset.eam);
-                card.onmouseleave = () => clearPairGroupHighlightOnMap();
-
-                const isTransferred = String(asset.ward || '').trim().toLowerCase() === 'transfer' || (asset.dept && asset.dept !== 'NSD');
-                const badgeText = isTransferred
-                    ? `Transfer → ${asset.dept || '外部門'}`
-                    : (asset.ward || 'NSD');
-                const badgeStyle = isTransferred
-                    ? 'bg-purple-50 text-purple-700 border-purple-200'
-                    : 'bg-blue-50 text-blue-600 border-blue-100';
-
-                const owners = getPairOwnerAssets(asset);
-                const remarkHtml = asset.remark ? `<p class="text-[11px] text-amber-600 mt-1 flex items-center gap-1"><i class="fa-solid fa-note-sticky"></i>備註: ${asset.remark}</p>` : '';
-                const pairHtml = asset.pair ? `<p class="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-link"></i>配件: ${asset.pair}</p>` : '';
-                const ownerHtml = owners.length > 0 ? `<p class="text-[11px] text-purple-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-crown"></i>所屬主件: ${owners.map(o => o.eam).join(', ')}</p>` : '';
+                if (!nonAsset) {
+                    card.onmouseenter = () => highlightPairGroupOnMap(asset.eam);
+                    card.onmouseleave = () => clearPairGroupHighlightOnMap();
+                }
 
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'flex items-center gap-3.5 flex-1 min-w-0';
-                infoDiv.innerHTML = `
-                    <div class="w-10 h-10 rounded-xl bg-blue-50/80 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-xs ${typeConfig.color}">
-                        <i class="fa-solid ${typeConfig.icon} text-base"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center mb-1 gap-1">
-                            <span class="text-sm font-bold text-blue-700 tracking-wide truncate">${asset.eam}</span>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-md border shrink-0 ${badgeStyle}">${badgeText}</span>
+
+                if (nonAsset) {
+                    const wardKeyText = (asset.ward || '').trim() || '未設定';
+                    const remarkText = (asset.remark || '').trim() || '無';
+                    infoDiv.innerHTML = `
+                        <div class="w-10 h-10 rounded-lg bg-teal-500 flex items-center justify-center shrink-0 border border-teal-700 shadow-xs text-white">
+                            <i class="fa-solid fa-tag text-base"></i>
                         </div>
-                        <p class="text-sm font-semibold text-slate-800 truncate">${asset.description}</p>
-                        ${remarkHtml}
-                        ${pairHtml}
-                        ${ownerHtml}
-                        <div class="flex justify-between items-center mt-1.5 text-xs text-slate-500 font-medium">
-                            <span>SN: <span class="text-slate-700">${asset.serial || 'N/A'}</span></span>
-                            <span class="text-blue-600 font-bold bg-blue-50/50 px-1.5 py-0.5 rounded">${asset.block} | ${asset.floor}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">Non-Asset</span>
+                                <span class="text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-2 py-0.5 rounded-md truncate">Ward_Key: ${wardKeyText}</span>
+                            </div>
+                            <p class="text-sm font-bold text-slate-800 truncate">${getItemDisplayTitle(asset)}</p>
+                            <p class="text-[11px] text-amber-700 mt-1 flex items-center gap-1 break-words"><i class="fa-solid fa-note-sticky shrink-0"></i><span>Remarks: ${remarkText}</span></p>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    const isTransferred = String(asset.ward || '').trim().toLowerCase() === 'transfer' || (asset.dept && asset.dept !== 'NSD');
+                    const badgeText = isTransferred
+                        ? `Transfer → ${asset.dept || '外部門'}`
+                        : (asset.ward || 'NSD');
+                    const badgeStyle = isTransferred
+                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                        : 'bg-blue-50 text-blue-600 border-blue-100';
+
+                    const owners = getPairOwnerAssets(asset);
+                    const remarkHtml = asset.remark ? `<p class="text-[11px] text-amber-600 mt-1 flex items-center gap-1"><i class="fa-solid fa-note-sticky"></i>備註: ${asset.remark}</p>` : '';
+                    const pairHtml = asset.pair ? `<p class="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-link"></i>配件: ${asset.pair}</p>` : '';
+                    const ownerHtml = owners.length > 0 ? `<p class="text-[11px] text-purple-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-crown"></i>所屬主件: ${owners.map(o => o.eam).join(', ')}</p>` : '';
+
+                    infoDiv.innerHTML = `
+                        <div class="w-10 h-10 rounded-xl bg-blue-50/80 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-xs ${typeConfig.color}">
+                            <i class="fa-solid ${typeConfig.icon} text-base"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center mb-1 gap-1">
+                                <span class="text-sm font-bold text-blue-700 tracking-wide truncate">${asset.eam}</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-md border shrink-0 ${badgeStyle}">${badgeText}</span>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-800 truncate">${asset.description}</p>
+                            ${remarkHtml}
+                            ${pairHtml}
+                            ${ownerHtml}
+                            <div class="flex justify-between items-center mt-1.5 text-xs text-slate-500 font-medium">
+                                <span>SN: <span class="text-slate-700">${asset.serial || 'N/A'}</span></span>
+                                <span class="text-blue-600 font-bold bg-blue-50/50 px-1.5 py-0.5 rounded">${asset.block} | ${asset.floor}</span>
+                            </div>
+                        </div>
+                    `;
+                }
                 infoDiv.onclick = () => locateAndHighlightAsset(asset);
 
                 const actionBtn = document.createElement('button');
@@ -2153,21 +2252,11 @@
             `;
             document.body.appendChild(modal);
 
-            document.getElementById('btnAddAssetAtPin').onclick = () => {
+            const btnAddAssetEl = document.getElementById('btnAddAssetAtPin');
+            btnAddAssetEl.innerHTML = `<i class="fa-solid fa-plus-circle"></i> 在此新增項目`;
+            btnAddAssetEl.onclick = () => {
                 modal.remove();
-                openAssetFormModal({
-                    eam: "",
-                    serial: "SN",
-                    dept: "NSD",
-                    description: ASSET_TYPES[0].label,
-                    remark: "",
-                    pair: "",
-                    block: targetBlock,
-                    floor: targetFloor,
-                    ward: targetWard,
-                    x: targetX,
-                    y: targetY
-                }, false);
+                openRecordTypeChoiceModal(targetX, targetY, targetBlock, targetFloor, targetWard);
             };
 
             document.getElementById('btnMoveAssetToPin').onclick = () => {
@@ -2388,7 +2477,161 @@
             }
         }
 
+        function openRecordTypeChoiceModal(targetX, targetY, targetBlock, targetFloor, targetWard) {
+            const existingModal = document.getElementById('recordTypeChoiceModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'recordTypeChoiceModal';
+            modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-xs shadow-2xl text-slate-800 text-center">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 text-indigo-600">
+                        <i class="fa-solid fa-layer-group text-base"></i>
+                    </div>
+                    <h3 class="text-xs font-bold mb-1 text-slate-800">請選擇新增項目類別</h3>
+                    <p class="text-[11px] text-slate-500 mb-4">
+                        位置：<span class="font-bold text-blue-700">${targetWard}</span> (${targetX}, ${targetY})
+                    </p>
+
+                    <div class="space-y-2.5">
+                        <button type="button" id="btnChooseAsset" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-circle-dot"></i> Asset（完整資產表單）
+                        </button>
+                        <button type="button" id="btnChooseNonAsset" class="w-full bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-tag"></i> Non-Asset（精簡項目表單）
+                        </button>
+                    </div>
+
+                    <button type="button" id="btnCancelRecordTypeChoice" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-2 rounded-xl transition-all cursor-pointer">取消</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnChooseAsset').onclick = () => {
+                modal.remove();
+                openAssetFormModal({
+                    recordType: 'Asset',
+                    eam: "",
+                    serial: "SN",
+                    dept: "NSD",
+                    description: ASSET_TYPES[0].label,
+                    remark: "",
+                    pair: "",
+                    block: targetBlock,
+                    floor: targetFloor,
+                    ward: targetWard,
+                    x: targetX,
+                    y: targetY
+                }, false);
+            };
+
+            document.getElementById('btnChooseNonAsset').onclick = () => {
+                modal.remove();
+                openNonAssetFormModal({
+                    recordType: 'Non-Asset',
+                    eam: "",
+                    serial: "",
+                    dept: "NSD",
+                    description: "",
+                    remark: "",
+                    pair: "",
+                    block: targetBlock,
+                    floor: targetFloor,
+                    ward: targetWard,
+                    x: targetX,
+                    y: targetY
+                }, false);
+            };
+
+            document.getElementById('btnCancelRecordTypeChoice').onclick = () => modal.remove();
+        }
+
+        function openNonAssetFormModal(itemData, isEdit = false) {
+            const existingModal = document.getElementById('customFormModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'customFormModal';
+            modal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-slate-800">
+                    <div class="flex items-center justify-center gap-2 mb-4">
+                        <span class="w-7 h-7 rounded-lg bg-teal-500 text-white flex items-center justify-center shadow-xs">
+                            <i class="fa-solid fa-tag text-xs"></i>
+                        </span>
+                        <h3 class="text-xs font-bold text-teal-700">${isEdit ? '編輯 Non-Asset 項目' : '新增 Non-Asset 項目'}</h3>
+                    </div>
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">Description <span class="text-rose-500">*</span>:</label>
+                            <input id="inputNonAssetDesc" type="text" value="${String(itemData.description || '').replace(/"/g, '&quot;')}" placeholder="請輸入項目描述 (Description)"
+                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 mb-1 font-semibold">Remarks:</label>
+                            <textarea id="inputNonAssetRemark" rows="2" placeholder="請輸入備註 (選填)"
+                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-teal-500">${itemData.remark || ''}</textarea>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-5">
+                        <button type="button" id="btnSaveNonAssetForm" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-md cursor-pointer">確認儲存</button>
+                        <button type="button" id="btnCloseNonAssetForm" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2.5 rounded-xl transition-all cursor-pointer">取消</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnSaveNonAssetForm').onclick = () => {
+                const descVal = (document.getElementById('inputNonAssetDesc')?.value || '').trim();
+                const remarkVal = (document.getElementById('inputNonAssetRemark')?.value || '').trim();
+                if (!descVal) {
+                    alert("請輸入 Description！");
+                    return;
+                }
+
+                const targetWard = itemData.ward || document.getElementById('wardSelect').value;
+                modal.remove();
+
+                if (isEdit) {
+                    const updatedItem = {
+                        ...itemData,
+                        recordType: 'Non-Asset',
+                        serial: '',
+                        pair: '',
+                        description: descVal,
+                        remark: remarkVal,
+                        ward: targetWard
+                    };
+                    updateAssetInSheet(updatedItem, updatedItem.eam);
+                } else {
+                    const generatedKey = itemData.eam || ('NONASSET-' + Date.now());
+                    const newNonAsset = {
+                        recordType: 'Non-Asset',
+                        eam: generatedKey,
+                        serial: '',
+                        dept: itemData.dept || 'NSD',
+                        description: descVal,
+                        remark: remarkVal,
+                        pair: '',
+                        block: itemData.block,
+                        floor: itemData.floor,
+                        ward: targetWard,
+                        x: itemData.x,
+                        y: itemData.y
+                    };
+                    addNewAssetApi(newNonAsset);
+                }
+            };
+
+            document.getElementById('btnCloseNonAssetForm').onclick = () => modal.remove();
+        }
+
         function openAssetFormModal(assetData, isEdit = false) {
+            if (isNonAssetItem(assetData)) {
+                openNonAssetFormModal(assetData, isEdit);
+                return;
+            }
             const existingModal = document.getElementById('customFormModal');
             if (existingModal) existingModal.remove();
 
@@ -2526,6 +2769,82 @@
         function openActionModal(asset) {
             const existingModal = document.getElementById('customActionModal');
             if (existingModal) existingModal.remove();
+
+            if (isNonAssetItem(asset)) {
+                const rawWard = (asset.ward || '').trim() || '未設定';
+                const remarkDisplay = (asset.remark || '').trim() || '無';
+                const descDisplay = getItemDisplayTitle(asset);
+
+                const nonAssetModal = document.createElement('div');
+                nonAssetModal.id = 'customActionModal';
+                nonAssetModal.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+                nonAssetModal.innerHTML = `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-xs shadow-2xl text-slate-800 text-center">
+                        <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-teal-500 flex items-center justify-center border border-teal-700 text-white shadow-xs">
+                            <i class="fa-solid fa-tag text-base"></i>
+                        </div>
+                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 mb-1">Non-Asset</span>
+                        <h3 class="text-sm font-bold mb-3 text-slate-800 break-words">${descDisplay}</h3>
+
+                        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 mb-4 text-left space-y-2 text-[11px]">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-bold text-slate-500 shrink-0">Current Ward_Key:</span>
+                                <span class="font-bold text-teal-800 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md truncate">${rawWard}</span>
+                            </div>
+                            <div class="flex items-start justify-between gap-2">
+                                <span class="font-bold text-slate-500 shrink-0">Remarks:</span>
+                                <span class="text-amber-700 font-medium text-right break-words">${remarkDisplay}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <button type="button" id="btnNonAssetEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-pen-to-square"></i> 更改資料
+                            </button>
+                            <button type="button" id="btnNonAssetMove" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-location-crosshairs"></i> 更改位置
+                            </button>
+                            <button type="button" id="btnNonAssetDelete" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-trash"></i> 刪除此項目
+                            </button>
+                        </div>
+
+                        <button type="button" id="btnCloseNonAssetActionModal" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-2 rounded-xl transition-all cursor-pointer">取消</button>
+                    </div>
+                `;
+                document.body.appendChild(nonAssetModal);
+
+                document.getElementById('btnNonAssetEdit').onclick = () => {
+                    nonAssetModal.remove();
+                    openNonAssetFormModal(asset, true);
+                };
+
+                document.getElementById('btnNonAssetMove').onclick = () => {
+                    nonAssetModal.remove();
+                    isMovingAsset = asset;
+                    isRelocatingMode = true;
+                    const banner = document.getElementById('selectionBanner');
+                    const bannerText = document.getElementById('bannerText');
+                    if (banner && bannerText) {
+                        banner.classList.remove('hidden');
+                        bannerText.innerText = `請在地圖點擊 [${descDisplay}] 的新位置...`;
+                    }
+                    const mapContainer = document.getElementById('mapContainer');
+                    if (mapContainer) {
+                        mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+
+                document.getElementById('btnNonAssetDelete').onclick = () => {
+                    nonAssetModal.remove();
+                    if (confirm(`確定要刪除 Non-Asset 項目 [${descDisplay}] 嗎？`)) {
+                        deleteAssetFromSheet(asset.eam);
+                    }
+                };
+
+                document.getElementById('btnCloseNonAssetActionModal').onclick = () => nonAssetModal.remove();
+                return;
+            }
         
             const lockedPos = isLockedStatusWard(asset.ward);
             const typeConfig = getAssetTypeConfig(asset.description);
