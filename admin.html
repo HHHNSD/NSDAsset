@@ -4501,10 +4501,15 @@
                             <input type="checkbox" id="cbOverlayFromResult" ${isCheckedOnMap ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
                             <span>套用地圖顯示未掃描Asset</span>
                         </label>
-
-                        <button type="button" id="btnOpenUnidentifiedFromResult" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${unidentifiedList.length})
-                        </button>
+                    
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button type="button" id="btnAddCheckedUnmatchedToPending" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs">
+                                <i class="fa-solid fa-folder-plus"></i> 加入勾選未登記到 Pending
+                            </button>
+                            <button type="button" id="btnOpenUnidentifiedFromResult" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${unidentifiedList.length})
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 overflow-y-auto flex-1 pr-1 text-xs">
@@ -4549,19 +4554,29 @@
                         </div>
 
                         <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/40 flex flex-col">
-                            <h4 class="font-bold text-amber-800 mb-2">未登記Asset (${unmatchedList.length})</h4>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <h4 class="font-bold text-amber-800">未登記Asset (${unmatchedList.length})</h4>
+                                ${unmatchedList.length > 0 ? `
+                                    <button type="button" id="btnToggleSelectAllUnmatched" class="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-bold cursor-pointer">
+                                        全選
+                                    </button>
+                                ` : ''}
+                            </div>
                             <div class="space-y-1.5 max-h-80 overflow-y-auto flex-1">
                                 ${unmatchedList.length === 0
                                     ? '<p class="text-[11px] text-slate-400 italic">無未登記Asset</p>'
-                                    : unmatchedList.map(u => `
-                                        <div class="bg-white border border-amber-200/80 rounded-lg p-2">
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="font-bold text-amber-800">${u.eam || '(無 EAM)'}</span>
-                                                <span class="text-[10px] text-slate-600 font-semibold">S/N: ${normalizeSerialValue(u.serial)}</span>
+                                    : unmatchedList.map((u, idx) => `
+                                        <label class="flex items-start justify-between gap-2 bg-white hover:bg-amber-50/70 border border-amber-200/80 rounded-lg p-2 cursor-pointer">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center justify-between gap-1">
+                                                    <span class="font-bold text-amber-800">${u.eam || '(無 EAM)'}</span>
+                                                    <span class="text-[10px] text-slate-600 font-semibold">S/N: ${normalizeSerialValue(u.serial)}</span>
+                                                </div>
+                                                <p class="text-[11px] text-slate-700 truncate">${u.description || '未命名項目'}</p>
+                                                <p class="text-[10px] text-slate-500">位置: System / System / Pending</p>
                                             </div>
-                                            <p class="text-[11px] text-slate-700 truncate">${u.description || '未命名項目'}</p>
-                                            <p class="text-[10px] text-slate-500">位置: System / System / Pending</p>
-                                        </div>
+                                            <input type="checkbox" data-unmatched-idx="${idx}" class="st-unmatched-cb w-4 h-4 mt-1 rounded text-amber-600 shrink-0 cursor-pointer">
+                                        </label>
                                     `).join('')
                                 }
                             </div>
@@ -4594,6 +4609,83 @@
                     }
                 };
             });
+            const btnToggleAll = document.getElementById('btnToggleSelectAllUnmatched');
+            if (btnToggleAll) {
+                btnToggleAll.onclick = () => {
+                    const boxes = Array.from(modal.querySelectorAll('.st-unmatched-cb'));
+                    const allChecked = boxes.length > 0 && boxes.every(b => b.checked);
+                    boxes.forEach(b => { b.checked = !allChecked; });
+                    btnToggleAll.innerText = !allChecked ? '取消全選' : '全選';
+                };
+            }
+            
+            const btnAddChecked = document.getElementById('btnAddCheckedUnmatchedToPending');
+            if (btnAddChecked) {
+                btnAddChecked.onclick = async () => {
+                    const checkedIndices = Array.from(modal.querySelectorAll('.st-unmatched-cb:checked'))
+                        .map(cb => Number(cb.getAttribute('data-unmatched-idx')))
+                        .filter(i => !Number.isNaN(i) && unmatchedList[i]);
+            
+                    if (checkedIndices.length === 0) {
+                        alert('請先在右側勾選至少一項「未登記Asset」！');
+                        return;
+                    }
+            
+                    btnAddChecked.disabled = true;
+                    btnAddChecked.innerText = '加入中...';
+            
+                    const addedAssets = [];
+                    for (const idx of checkedIndices) {
+                        const u = unmatchedList[idx];
+                        const coords = computeNextAutoCoordinates('Pending');
+                        const newAsset = {
+                            recordType: 'Asset',
+                            eam: String(u.eam || '').trim(),
+                            serial: normalizeSerialValue(u.serial),
+                            dept: 'NSD',
+                            description: u.description || ASSET_TYPES[0].label,
+                            remark: u.remark || '由 Stocktake 未登記 Asset 加入 Pending',
+                            pair: '',
+                            block: 'System',
+                            floor: 'System',
+                            ward: 'Pending',
+                            x: coords.x,
+                            y: coords.y
+                        };
+            
+                        try {
+                            const res = await fetch(GAS_API_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify({ action: 'addAsset', asset: newAsset })
+                            }).then(r => r.json());
+            
+                            if (res && res.status === 'error') {
+                                throw new Error(res.message || '新增失敗');
+                            }
+                        } catch (err) {
+                            console.warn('寫入後端 Pending 失敗，先更新本地狀態:', err);
+                        }
+            
+                        u.restoredToSystem = true;
+                        u.restoredAt = formatShortDateTime(new Date());
+                        addedAssets.push(newAsset);
+                    }
+            
+                    if (addedAssets.length > 0) {
+                        applyAssetListToLocalState(addedAssets, addedAssets[0].eam, false);
+                    }
+                    try {
+                        await saveStocktakeSessionToSheet(session);
+                    } catch (err) {
+                        console.warn('更新 Stocktake session 狀態失敗:', err);
+                    }
+            
+                    alert(`✅ 已將 ${addedAssets.length} 項勾選的未登記 Asset 加入 System / System / Pending！`);
+                    modal.remove();
+                    openStocktakeResultModal(session.id);
+                };
+            }
         }
 
         // 非所屬Asset：1 頁簡潔顯示 EAM + Asset Owner
