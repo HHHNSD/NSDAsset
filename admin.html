@@ -3698,9 +3698,21 @@
             if (!Array.isArray(session.successful)) session.successful = [];
             if (!Array.isArray(session.unidentified)) session.unidentified = [];
             if (!Array.isArray(session.unmatched)) session.unmatched = [];
-            // 向後相容舊資料若只有 matched 但無 unscanned / successful
-            if (session.unscanned.length === 0 && session.successful.length === 0 && Array.isArray(session.matched) && session.matched.length > 0) {
-                session.unscanned = [...session.matched];
+        
+            if (
+                session.unscanned.length === 0 &&
+                session.successful.length === 0 &&
+                Array.isArray(session.matched) &&
+                session.matched.length > 0
+            ) {
+                session.matched.forEach(item => {
+                    const resText = String(item?.stockTakenResult || '').trim().toLowerCase();
+                    if (resText.includes('已掃描') || resText.includes('successful') || resText.includes('success')) {
+                        session.successful.push(item);
+                    } else {
+                        session.unscanned.push(item);
+                    }
+                });
             }
             return session;
         }
