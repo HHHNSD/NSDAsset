@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -5189,12 +5190,12 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function openStocktakeHistoryModal() {
+        function openStocktakeHistoryModal(viewMode = 'list') {
             const existing = document.getElementById('stocktakeHistoryModal');
             if (existing) existing.remove();
 
             const activeSession = getActiveStocktakeSession();
-            const checkedCount = getCheckedStocktakeSessions().length;
+            const checkedSessions = getCheckedStocktakeSessions();
 
             const modal = document.createElement('div');
             modal.id = 'stocktakeHistoryModal';
@@ -5202,88 +5203,126 @@
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-4xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
                     <div class="flex items-center justify-between pb-3 border-b border-slate-200 shrink-0">
-                        <div>
-                            <h3 class="text-sm font-black text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-clipboard-list text-indigo-600"></i> Stocktake 記錄管理（多報表勾選 Highlight）
-                            </h3>
-                            <p class="text-[11px] text-slate-500 mt-0.5">
-                                勾選多份報表可同時套用；若同一件 Asset 在任一份報表為未掃描，即維持 Highlight
-                            </p>
-                        </div>
-                        <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 text-base font-bold px-2 py-1 cursor-pointer">✕</button>
+                        <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-list"></i> Stocktake 記錄與操作
+                        </h3>
+                        <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2 py-0.5 cursor-pointer">✕</button>
                     </div>
 
-                    <div class="my-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl flex flex-wrap items-center justify-between gap-2 shrink-0">
+                    <!-- 原版頂部操作列：匯入 Stocktake + 地圖套用狀態 pill + 重新同步 -->
+                    <div class="my-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
                         <div class="flex flex-wrap items-center gap-2">
                             <label class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-all">
-                                <i class="fa-solid fa-file-excel"></i>
-                                <span>上傳 Stocktake Excel (.xlsx / .xls / .csv)</span>
+                                <i class="fa-solid fa-file-import"></i>
+                                <span>匯入 Stocktake</span>
                                 <input id="stocktakeFileInputModal" type="file" accept=".xlsx,.xls,.csv" class="hidden">
                             </label>
                             <button type="button" id="btnToggleOverlayInModal"
-                                class="${stocktakeMapOverlayEnabled ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all">
-                                <i class="fa-solid ${stocktakeMapOverlayEnabled ? 'fa-eye-slash' : 'fa-map-location-dot'}"></i>
-                                <span>${stocktakeMapOverlayEnabled ? '關閉 Highlight' : '套用勾選報表到地圖'}</span>
+                                class="${stocktakeMapOverlayEnabled ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'} text-xs font-bold px-3.5 py-2 rounded-full shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <span>地圖套用：${stocktakeMapOverlayEnabled ? '已開啟（僅顯示未掃描）' : '未開啟'}（已勾選 ${checkedSessions.length} 份）</span>
                             </button>
                         </div>
-                        <div class="text-[11px] font-bold text-indigo-800">
-                            已勾選 <span id="checkedSessionsCountLabel">${checkedCount}</span> / ${stocktakeSessions.length} 份報表
-                        </div>
+                        <button type="button" id="btnRefreshStocktakeSessions"
+                            class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>重新同步</span>
+                        </button>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-4 min-h-0">
-                        <div class="md:col-span-5 space-y-2 overflow-y-auto pr-1">
-                            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                已匯入記錄 (${stocktakeSessions.length}) — 勾選參與地圖 Highlight
+                    <!-- 卡片清單區（原版卡片樣式，右側將「套用到地圖」改為 1 個描述 highlight + 1 個 checkbox 可 tick / 不 tick） -->
+                    <div class="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
+                        ${viewMode === 'detail' && activeSession ? `
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+                                    <button type="button" id="btnBackToStocktakeList"
+                                        class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                                        <i class="fa-solid fa-arrow-left"></i>
+                                        <span>返回記錄清單</span>
+                                    </button>
+                                    <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none bg-white px-3 py-1.5 rounded-xl border border-slate-200">
+                                        <span>highlight</span>
+                                        <input type="checkbox" ${activeSession.selectedForMap ? 'checked' : ''}
+                                            onchange="toggleSessionMapSelection('${activeSession.id}', this.checked)"
+                                            class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
+                                    </label>
+                                </div>
+                                ${renderStocktakeSessionDetailHtml(activeSession)}
                             </div>
-                            ${stocktakeSessions.length === 0
-                                ? '<div class="text-xs text-slate-400 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">尚無匯入記錄，請點擊上方按鈕上傳 Stocktake Excel</div>'
+                        ` : (
+                            stocktakeSessions.length === 0
+                                ? '<div class="text-xs text-slate-400 text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">尚無匯入記錄，請點擊上方「匯入 Stocktake」上傳 Excel 檔案</div>'
                                 : stocktakeSessions.map(s => {
                                     const ens = ensureSessionBuckets(s);
-                                    const isSelectedDetail = activeSession && ens.id === activeSession.id;
-                                    const isCheckedMap = Boolean(ens.selectedForMap);
+                                    const isCurrentUsing = activeSession && ens.id === activeSession.id;
+                                    const isChecked = Boolean(ens.selectedForMap);
+                                    const cardBorderClass = isCurrentUsing
+                                        ? 'border-indigo-500 ring-1 ring-indigo-200 bg-white'
+                                        : 'border-slate-200 hover:border-slate-300 bg-white';
+
                                     return `
-                                        <div onclick="selectStocktakeSessionForDetail('${ens.id}')"
-                                            class="p-3 rounded-xl border cursor-pointer transition-all ${isSelectedDetail ? 'bg-indigo-50/90 border-indigo-400 shadow-xs' : 'bg-white border-slate-200 hover:border-indigo-300'}">
-                                            <div class="flex items-start justify-between gap-2">
-                                                <label onclick="event.stopPropagation()" class="flex items-center gap-1.5 pt-0.5 cursor-pointer shrink-0" title="勾選此報表參與地圖 Highlight">
-                                                    <input type="checkbox" ${isCheckedMap ? 'checked' : ''} onchange="toggleSessionMapSelection('${ens.id}', this.checked)"
-                                                        class="w-4 h-4 rounded text-indigo-600 cursor-pointer">
-                                                </label>
+                                        <div class="rounded-2xl border p-4 transition-all shadow-2xs ${cardBorderClass}">
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                                 <div class="min-w-0 flex-1">
-                                                    <p class="text-xs font-bold text-slate-800 truncate">${ens.fileName}</p>
-                                                    <p class="text-[10px] text-slate-400 mt-0.5">${ens.uploadedAt}</p>
+                                                    <div class="flex items-center gap-2 flex-wrap">
+                                                        <span class="text-xs sm:text-sm font-black text-slate-800 break-all">${ens.fileName}</span>
+                                                        ${isCurrentUsing ? '<span class="bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0">目前使用中</span>' : ''}
+                                                    </div>
+                                                    <p class="text-[11px] text-slate-500 mt-1">
+                                                        匯入時間：${ens.uploadedAt} <span class="mx-1.5 text-slate-300">|</span> 讀入：<strong class="text-slate-700">${ens.totalCount}</strong>
+                                                    </p>
+                                                    <div class="flex flex-wrap gap-1.5 mt-2.5 text-[11px] font-bold">
+                                                        <span class="bg-rose-50 text-rose-600 border border-rose-200 px-2.5 py-0.5 rounded-md">未掃描Asset: ${ens.unscanned.length}</span>
+                                                        <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-md">已掃描Asset: ${ens.successful.length}</span>
+                                                        <span class="bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-md">非所屬Asset: 0</span>
+                                                        <span class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-md">Unidentified Asset: ${ens.unidentified.length}</span>
+                                                    </div>
                                                 </div>
-                                                <button type="button" onclick="event.stopPropagation(); deleteStocktakeSession('${ens.id}')" title="刪除此記錄"
-                                                    class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-0.5 rounded cursor-pointer">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </div>
-                                            <div class="flex flex-wrap gap-1 mt-2 text-[10px] font-bold">
-                                                <span class="bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded">未掃描 ${ens.unscanned.length}</span>
-                                                <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded">Successful ${ens.successful.length}</span>
-                                                <span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded">Unidentified ${ens.unidentified.length}</span>
+
+                                                <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                                    <!-- 1 個描述 highlight + 1 個 tick選（可 tick / 不 tick） -->
+                                                    <label onclick="event.stopPropagation()"
+                                                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border ${isChecked ? 'bg-emerald-50 border-emerald-400 text-emerald-900' : 'bg-slate-50 border-slate-300 text-slate-700'} text-xs font-extrabold cursor-pointer select-none transition-all">
+                                                        <span>highlight</span>
+                                                        <input type="checkbox" ${isChecked ? 'checked' : ''}
+                                                            onchange="toggleSessionMapSelection('${ens.id}', this.checked)"
+                                                            class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                                                    </label>
+
+                                                    <button type="button" onclick="selectStocktakeSessionForDetail('${ens.id}')"
+                                                        class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer transition-all">
+                                                        查看明細
+                                                    </button>
+
+                                                    <button type="button" onclick="deleteStocktakeSession('${ens.id}')"
+                                                        class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer transition-all">
+                                                        刪除
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     `;
                                 }).join('')
-                            }
-                        </div>
-
-                        <div id="stocktakeSessionDetailPane" class="md:col-span-7 bg-slate-50 border border-slate-200 rounded-xl p-3.5 overflow-y-auto">
-                            ${renderStocktakeSessionDetailHtml(activeSession)}
-                        </div>
+                        )}
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
 
             document.getElementById('btnCloseStocktakeHistory').onclick = () => modal.remove();
+            document.getElementById('btnRefreshStocktakeSessions').onclick = async () => {
+                await fetchStocktakeSessionsFromSheet();
+                openStocktakeHistoryModal(viewMode);
+            };
             document.getElementById('btnToggleOverlayInModal').onclick = () => {
                 toggleStocktakeMapOverlay();
-                modal.remove();
-                openStocktakeHistoryModal();
+                openStocktakeHistoryModal(viewMode);
             };
+
+            const backBtn = document.getElementById('btnBackToStocktakeList');
+            if (backBtn) {
+                backBtn.onclick = () => openStocktakeHistoryModal('list');
+            }
 
             const fileInp = document.getElementById('stocktakeFileInputModal');
             if (fileInp) {
@@ -5303,29 +5342,53 @@
             ensureSessionBuckets(s);
             s.selectedForMap = Boolean(checked);
 
-            const countLabel = document.getElementById('checkedSessionsCountLabel');
-            if (countLabel) {
-                countLabel.innerText = String(getCheckedStocktakeSessions().length);
+            if (checked) {
+                activeStocktakeSessionId = sessionId;
+                stocktakeMapOverlayEnabled = true;
+            } else {
+                const remainingChecked = getCheckedStocktakeSessions();
+                if (remainingChecked.length === 0) {
+                    stocktakeMapOverlayEnabled = false;
+                } else if (activeStocktakeSessionId === sessionId) {
+                    activeStocktakeSessionId = remainingChecked[0].id;
+                }
             }
 
             updateStocktakeBadges();
+            renderSidebarWithPriority();
+
+            const banner = document.getElementById('selectionBanner');
+            const bannerText = document.getElementById('bannerText');
             if (stocktakeMapOverlayEnabled) {
-                renderSidebarWithPriority();
-                const wardVal = document.getElementById('wardSelect')?.value || '';
-                if (wardVal) {
-                    renderAssetMarkers(currentFilteredAssets);
+                const checkedList = getCheckedStocktakeSessions();
+                const names = checkedList.map(c => c.fileName).join('、');
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `📋 地圖套用：已開啟（僅顯示未掃描）｜已勾選 ${checkedList.length} 份報表（${names}）`;
                 }
+            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && !highlightCondemnSurplusEnabled && !highlightTransferEnabled && banner) {
+                banner.classList.add('hidden');
+            }
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+
+            if (document.getElementById('stocktakeHistoryModal')) {
+                const isDetailView = Boolean(document.getElementById('btnBackToStocktakeList'));
+                openStocktakeHistoryModal(isDetailView ? 'detail' : 'list');
             }
         }
 
         function selectStocktakeSessionForDetail(sessionId) {
             activeStocktakeSessionId = sessionId;
-            openStocktakeHistoryModal();
+            openStocktakeHistoryModal('detail');
         }
 
         function renderStocktakeSessionDetailHtml(session) {
             if (!session) {
-                return '<p class="text-xs text-slate-400 text-center py-12">請選擇左側一筆匯入記錄查看三類分流明細</p>';
+                return '<p class="text-xs text-slate-400 text-center py-12">找不到此筆匯入記錄的明細</p>';
             }
 
             const ens = ensureSessionBuckets(session);
@@ -5335,10 +5398,8 @@
                     return `<p class="text-[11px] text-slate-400 py-3 text-center">${emptyText}</p>`;
                 }
                 return list.map(item => {
-                    const safeEam = String(item.matchedEam || item.eam || '').replace(/'/g, "\\'");
-                    const safeSn = String(item.matchedSerial || item.serial || 'N/A').replace(/'/g, "\\'");
-                    const safeDesc = String(item.matchedDescription || item.description || '').replace(/'/g, "\\'");
-                    const safeWard = String(item.matchedWard || item.ward || '').replace(/'/g, "\\'");
+                    const safeEam = String(item.matchedEam || item.eam || '').replace(/'/g, "\'");
+                    const safeSn = String(item.matchedSerial || item.serial || 'N/A').replace(/'/g, "\'");
                     const canLocateOnMap = bucketType !== 'UNIDENTIFIED' && Boolean(item.matchedEam || item.eam);
 
                     return `
@@ -5387,10 +5448,10 @@
 
                     <div>
                         <h5 class="text-xs font-extrabold text-emerald-700 mb-1.5 flex items-center gap-1.5">
-                            <i class="fa-solid fa-circle-check"></i> 2. Successful Asset (${ens.successful.length}) — 僅列於記錄，不 Highlight
+                            <i class="fa-solid fa-circle-check"></i> 2. 已掃描Asset (${ens.successful.length}) — 僅列於記錄，不 Highlight
                         </h5>
                         <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                            ${renderRows(ens.successful, '無 Successful Asset', 'SUCCESSFUL')}
+                            ${renderRows(ens.successful, '無已掃描Asset', 'SUCCESSFUL')}
                         </div>
                     </div>
 
