@@ -51,53 +51,12 @@
         .kiosk-nav-btn:active {
             transform: scale(0.93);
         }
-
-        /* Joystick 中央四象限圓形平滑等分修復 */
-        .kiosk-quad-circle {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            border-radius: 50%;
-            overflow: hidden;
-            -webkit-mask-image: -webkit-radial-gradient(white, black);
-            clip-path: circle(50% at 50% 50%);
-        }
-        .kiosk-quad-circle > .joy-block-quad {
-            width: 100%;
-            height: 100%;
-            min-width: 0;
-            min-height: 0;
-            border-radius: 0;
-        }
     
         /* 只有 Unscanned Asset 在地圖上 highlight */
         .stocktake-unscanned-pin > div {
             box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.8), 0 8px 18px rgba(244, 63, 94, 0.48);
             transform: scale(1.26);
             z-index: 40;
-        }
-
-        /* 待處理清單 (Condemn / Transfer) 紅色呼吸燈特效與無關設備淡化 */
-        @keyframes pendingActionPulse {
-            0%, 100% {
-                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.85), 0 0 16px rgba(239, 68, 68, 0.7);
-                transform: scale(1.28);
-            }
-            50% {
-                box-shadow: 0 0 0 9px rgba(239, 68, 68, 0.25), 0 0 26px rgba(239, 68, 68, 0.95);
-                transform: scale(1.38);
-            }
-        }
-        .pending-action-highlight-pin {
-            z-index: 45 !important;
-        }
-        .pending-action-highlight-pin > div {
-            animation: pendingActionPulse 1.4s ease-in-out infinite;
-            border-color: #dc2626 !important;
-        }
-        .asset-pin-dimmed {
-            opacity: 0.24 !important;
-            filter: grayscale(65%);
         }
 </style>
 </head>
@@ -209,41 +168,39 @@
                                 <span class="text-[8px] font-extrabold leading-none">單位</span>
                             </button>
 
-                            <!-- 中央圓形 4 格：平滑 1fr 1fr 圓形等分 -->
-                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-slate-200 border-2 border-slate-300 shadow-inner box-border">
-                                <div class="kiosk-quad-circle relative w-full h-full">
-                                    <!-- 十字分隔線 -->
-                                    <div class="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/95 z-10"></div>
-                                    <div class="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/95 z-10"></div>
+                            <!-- 中央圓形 4 格：左上 T Block / 右上 M Block / 左下 Annex / 右下 Sys -->
+                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden">
+                                <!-- 十字分隔線 -->
+                                <div class="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/90 z-10"></div>
+                                <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/90 z-10"></div>
 
-                                    <!-- 左上：T Block -->
-                                    <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
-                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1.5 pl-1.5 cursor-pointer">
-                                        <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
-                                        <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
-                                    </button>
+                                <!-- 左上：T Block -->
+                                <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pl-1 cursor-pointer">
+                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
+                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
+                                </button>
 
-                                    <!-- 右上：M Block -->
-                                    <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
-                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1.5 pr-1.5 cursor-pointer">
-                                        <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
-                                        <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
-                                    </button>
+                                <!-- 右上：M Block -->
+                                <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pr-1 cursor-pointer">
+                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
+                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
+                                </button>
 
-                                    <!-- 左下：Annex -->
-                                    <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
-                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1.5 pl-1.5 cursor-pointer">
-                                        <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
-                                        <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
-                                    </button>
+                                <!-- 左下：Annex -->
+                                <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pl-1 cursor-pointer">
+                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
+                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
+                                </button>
 
-                                    <!-- 右下：Sys -->
-                                    <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
-                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1.5 pr-1.5 cursor-pointer">
-                                        <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
-                                        <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
-                                    </button>
-                                </div>
+                                <!-- 右下：Sys -->
+                                <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
+                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pr-1 cursor-pointer">
+                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
+                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
+                                </button>
 
                                 <!-- 圓心徽章 -->
                                 <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-slate-200 shadow-md flex items-center justify-center z-20">
@@ -271,10 +228,10 @@
             </div>
         </div>
 
-        <!-- 右側：Stocktake 操作列 + 待處理清單 (Condemn / Transfer) + 獨立欄位Asset清單與搜尋面板 -->
+        <!-- 右側：Stocktake 操作列 + 獨立欄位Asset清單與搜尋面板 -->
         <aside class="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col h-full shadow-sm overflow-hidden min-h-0">
-            <!-- 收合為單一「Stocktake 記錄」按鈕 + 待處理清單 (Condemn / Transfer) -->
-            <div id="stocktakeToolbar" class="mb-3 pb-3 border-b border-slate-100 shrink-0 space-y-2">
+            <!-- 收合為單一「Stocktake 記錄」按鈕，節省空間 -->
+            <div id="stocktakeToolbar" class="mb-3 pb-3 border-b border-slate-100 shrink-0">
                 <button type="button" onclick="openStocktakeHistoryModal()"
                     class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xs flex items-center justify-between cursor-pointer transition-all">
                     <span class="flex items-center gap-2">
@@ -286,42 +243,6 @@
                         <span id="stocktakeHistoryBadge" class="bg-white text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full">0</span>
                     </span>
                 </button>
-
-                <!-- 待處理清單 (Condemn / Transfer) 群組功能 -->
-                <div class="bg-rose-50/75 border border-rose-200/90 rounded-xl p-2 space-y-2">
-                    <div class="flex items-center justify-between gap-1.5">
-                        <button type="button" onclick="togglePendingActionPanel()"
-                            class="flex-1 text-left flex items-center gap-1.5 text-xs font-extrabold text-rose-800 hover:text-rose-950 cursor-pointer py-0.5 min-w-0">
-                            <i id="pendingActionChevron" class="fa-solid fa-chevron-right text-[10px] transition-transform shrink-0"></i>
-                            <i class="fa-solid fa-folder-minus text-rose-600 shrink-0"></i>
-                            <span class="truncate">待處理清單 (Condemn / Transfer)</span>
-                            <span id="pendingActionCountBadge" class="bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shrink-0">0</span>
-                        </button>
-                        <button type="button" id="btnPendingActionMapHighlight" onclick="togglePendingActionMapHighlight()"
-                            class="bg-white hover:bg-rose-100 text-rose-700 border border-rose-300 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer transition-all">
-                            <i class="fa-solid fa-bullseye"></i>
-                            <span>地圖高亮</span>
-                        </button>
-                    </div>
-
-                    <!-- 可展開的待處理清單明細面板 -->
-                    <div id="pendingActionPanelBody" class="hidden pt-1.5 border-t border-rose-200/70 space-y-2">
-                        <div id="pendingActionItemsContainer" class="max-h-44 overflow-y-auto space-y-1.5 pr-0.5 text-xs">
-                            <p class="text-[11px] text-slate-400 text-center py-3">尚未標記任何設備，可在下方清單點擊「標記」加入</p>
-                        </div>
-                        <div class="flex items-center gap-1.5 pt-1">
-                            <button type="button" onclick="exportPendingActionCsv()"
-                                class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-all">
-                                <i class="fa-solid fa-file-csv"></i>
-                                <span>匯出 CSV</span>
-                            </button>
-                            <button type="button" onclick="clearAllPendingActionItems()"
-                                class="bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg cursor-pointer transition-all">
-                                清空
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="pb-3 border-b border-slate-100 mb-3 space-y-2 shrink-0">
@@ -443,14 +364,6 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
-        // 全域目前選取單位狀態（供右側清單點擊與 Joystick 標題雙向同步）
-        window.currentSelectedUnit = {
-            block: '',
-            floor: '',
-            wardKey: '',
-            wardName: ''
-        };
-
         // 簡化時間格式：只顯示 DD/MM/YYYY HH:mm，不顯示 GMT 與時區長串
         function formatShortDateTime(input) {
             if (!input) return '--/--/---- --:--';
@@ -516,7 +429,7 @@
             const currentModal = document.getElementById('customActionModal');
             if (currentModal) currentModal.remove();
 
-            onSelectAssetFromList(targetAsset);
+            locateAndHighlightAsset(targetAsset);
             setTimeout(() => {
                 openActionModal(targetAsset);
             }, 120);
@@ -666,14 +579,13 @@
 
             window.allAssets = allAssets;
             populateSearchDatalists();
-            renderPendingActionUI();
 
             const targetFocus = focusEam
                 ? allAssets.find(a => String(a.eam || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase())
                 : list[0];
 
             if (jumpToTargetPage && targetFocus) {
-                onSelectAssetFromList(targetFocus);
+                locateAndHighlightAsset(targetFocus);
                 return;
             }
 
@@ -681,7 +593,7 @@
             const selectedWard = wardSelect ? String(wardSelect.value || '').trim().toLowerCase() : '';
 
             if (targetFocus && targetFocus.ward && String(targetFocus.ward).trim().toLowerCase() !== selectedWard) {
-                onSelectAssetFromList(targetFocus);
+                locateAndHighlightAsset(targetFocus);
                 return;
             }
 
@@ -1323,13 +1235,14 @@
         }
 
         function getUnscannedEamSetForMode() {
-            if (!stocktakeMapOverlayEnabled) return null;
-            const active = getActiveStocktakeSession();
-            if (!active) return null;
+            const selectedSessions = getSelectedStocktakeSessions();
+            if (!selectedSessions || selectedSessions.length === 0) return null;
             const set = new Set();
-            (active.unscanned || []).forEach(u => {
-                const k = normalizeLookupKey(u.matchedEam || u.eam);
-                if (k) set.add(k);
+            selectedSessions.forEach(session => {
+                (session.unscanned || []).forEach(u => {
+                    const k = normalizeLookupKey(u.matchedEam || u.eam);
+                    if (k) set.add(k);
+                });
             });
             return set;
         }
@@ -1475,12 +1388,11 @@
             allAssets = data || [];
             window.allAssets = allAssets;
             populateSearchDatalists();
-            renderPendingActionUI();
 
             if (focusEam) {
                 const updatedAsset = allAssets.find(a => String(a.eam || '').trim() === String(focusEam).trim());
                 if (updatedAsset) {
-                    onSelectAssetFromList(updatedAsset);
+                    locateAndHighlightAsset(updatedAsset);
                     return;
                 }
             }
@@ -1511,13 +1423,6 @@
                     rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
                     populateSearchDatalists();
-                    if (window.currentSelectedUnit && window.currentSelectedUnit.wardKey) {
-                        syncCurrentSelectedUnitAndJoystick(
-                            window.currentSelectedUnit.block,
-                            window.currentSelectedUnit.floor,
-                            window.currentSelectedUnit.wardKey
-                        );
-                    }
                 },
                 () => notifyNeedF5("抓取選單階層"),
                 [5000, 30000, 60000]
@@ -1805,13 +1710,10 @@
             const wardSelect = document.getElementById('wardSelect');
             floorSelect.innerHTML = '<option value="">請選擇樓層</option>';
             wardSelect.innerHTML = '<option value="">請先選擇樓層</option>';
-            if (!block) {
-                syncCurrentSelectedUnitAndJoystick('', '', '');
-                return;
-            }
+            if (!block) return;
             const floors = [...new Set(floorHierarchyData.filter(h => h.block === block).map(h => h.floor))];
             floorSelect.innerHTML += floors.map(f => `<option value="${f}">${f}</option>`).join('');
-            syncCurrentSelectedUnitAndJoystick(block, '', '');
+            updateJoystickUI();
         }
 
         function onFloorChange() {
@@ -1819,13 +1721,10 @@
             const floor = document.getElementById('floorSelect').value;
             const wardSelect = document.getElementById('wardSelect');
             wardSelect.innerHTML = '<option value="">請選擇單位</option>';
-            if (!floor) {
-                syncCurrentSelectedUnitAndJoystick(block, '', '');
-                return;
-            }
+            if (!floor) return;
             const wards = floorHierarchyData.filter(h => h.block === block && h.floor === floor);
             wardSelect.innerHTML += wards.map(w => `<option value="${w.wardKey}">${w.wardName} (${w.wardKey})</option>`).join('');
-            syncCurrentSelectedUnitAndJoystick(block, floor, '');
+            updateJoystickUI();
         }
 
         function onWardChange() {
@@ -1853,11 +1752,7 @@
             window.currentLoadedAssets = currentFilteredAssets;
             renderAssetMarkers(currentFilteredAssets);
             renderSidebarWithPriority(currentFilteredAssets);
-            syncCurrentSelectedUnitAndJoystick(
-                document.getElementById('blockSelect')?.value || '',
-                document.getElementById('floorSelect')?.value || '',
-                wardKey
-            );
+            updateJoystickUI();
         }
 
         function getAssetTypeConfig(description) {
@@ -2052,24 +1947,9 @@
 
                 // 只有 Unscanned Asset 才 highlight；Successful 不 highlight；Unidentified 不在地圖顯示
                 const isUnscannedHighlight = isStocktakeUnscannedAsset(asset);
-                const pendingActionEntry = getPendingActionItem(asset.eam);
-                const isPendingGroupMarked = Boolean(pendingActionEntry);
-                const isPendingMapHighlightActive = Boolean(pendingActionMapHighlightEnabled && pendingActionList.length > 0);
-
-                if (isPendingMapHighlightActive) {
-                    if (isPendingGroupMarked) {
-                        marker.classList.add('pending-action-highlight-pin');
-                    } else if (!isHighlighted) {
-                        marker.classList.add('asset-pin-dimmed');
-                    }
-                }
-
                 const stRingClass = isUnscannedHighlight ? 'stocktake-unscanned-pin' : '';
                 const stBadgeHtml = isUnscannedHighlight
                     ? `<span title="Unscanned Asset（待尋找 Highlight）" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center border border-white shadow-xs text-[8px] font-black">!</span>`
-                    : '';
-                const pendingBadgeHtml = isPendingGroupMarked
-                    ? `<span title="已加入待處理清單 (${pendingActionEntry.actionType})" class="absolute -top-1.5 -left-1.5 px-1 h-4 rounded-full ${pendingActionEntry.actionType === 'Transfer' ? 'bg-amber-600' : 'bg-rose-600'} text-white flex items-center justify-center border border-white shadow-xs text-[7px] font-black">${pendingActionEntry.actionType === 'Transfer' ? 'TR' : 'CD'}</span>`
                     : '';
 
                 if (isNonAssetItem(asset)) {
@@ -2078,7 +1958,6 @@
                             isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                         }">
                             <i class="fa-solid fa-tag text-xs text-white"></i>
-                            ${pendingBadgeHtml}
                             ${stBadgeHtml}
                         </div>
                     `;
@@ -2092,7 +1971,6 @@
                             isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                         }">
                             <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
-                            ${pendingBadgeHtml}
                             ${linkBadgeHtml}
                             ${stBadgeHtml}
                         </div>
@@ -2133,7 +2011,7 @@
                 const nonAsset = isNonAssetItem(asset);
                 const typeConfig = getAssetTypeConfig(asset.description);
                 const card = document.createElement('div');
-                card.className = 'bg-gradient-to-br from-white to-slate-50/80 border border-slate-200/80 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 rounded-2xl p-3.5 cursor-pointer transition-all shadow-xs hover:shadow-md flex items-center justify-between gap-2.5';
+                card.className = 'bg-gradient-to-br from-white to-slate-50/80 border border-slate-200/80 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 rounded-2xl p-3.5 cursor-pointer transition-all shadow-xs hover:shadow-md flex items-center justify-between gap-3';
                 card.setAttribute('data-eam', asset.eam);
 
                 if (!nonAsset) {
@@ -2194,115 +2072,20 @@
                         </div>
                     `;
                 }
-                infoDiv.onclick = () => onSelectAssetFromList(asset);
-
-                const rightBtnsWrap = document.createElement('div');
-                rightBtnsWrap.className = 'flex items-center gap-1 shrink-0';
-
-                if (!nonAsset && asset.eam) {
-                    const markedEntry = getPendingActionItem(asset.eam);
-                    const isMarked = Boolean(markedEntry);
-                    const markBtn = document.createElement('button');
-                    markBtn.type = 'button';
-                    markBtn.title = isMarked
-                        ? `已標記 (${markedEntry.actionType}) — 點擊移出待處理清單`
-                        : '標記加入待處理清單 (Condemn / Transfer)';
-                    markBtn.className = isMarked
-                        ? 'px-2 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1'
-                        : 'px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-300 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1';
-                    markBtn.innerHTML = isMarked
-                        ? `<i class="fa-solid fa-bookmark text-[10px]"></i><span>已標記</span>`
-                        : `<i class="fa-regular fa-bookmark text-[10px]"></i><span>標記</span>`;
-                    markBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        togglePendingActionAsset(asset);
-                    };
-                    rightBtnsWrap.appendChild(markBtn);
-                }
+                infoDiv.onclick = () => locateAndHighlightAsset(asset);
 
                 const actionBtn = document.createElement('button');
-                actionBtn.type = 'button';
-                actionBtn.className = 'p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shrink-0 border border-transparent hover:border-blue-100 cursor-pointer';
+                actionBtn.className = 'p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shrink-0 border border-transparent hover:border-blue-100';
                 actionBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical text-sm"></i>`;
                 actionBtn.onclick = (e) => {
                     e.stopPropagation();
                     openActionModal(asset);
                 };
-                rightBtnsWrap.appendChild(actionBtn);
 
                 card.appendChild(infoDiv);
-                card.appendChild(rightBtnsWrap);
+                card.appendChild(actionBtn);
                 listContainer.appendChild(card);
             });
-        }
-
-        function resolveWardDisplayName(wardKey) {
-            const cleanKey = String(wardKey || '').trim();
-            if (!cleanKey) return '';
-            const matchedH = (floorHierarchyData || []).find(
-                h => String(h.wardKey || '').trim().toLowerCase() === cleanKey.toLowerCase()
-            );
-            if (matchedH && matchedH.wardName) {
-                return String(matchedH.wardName).trim();
-            }
-            const wardSelect = document.getElementById('wardSelect');
-            if (wardSelect) {
-                const matchedOpt = Array.from(wardSelect.options).find(
-                    o => String(o.value || '').trim().toLowerCase() === cleanKey.toLowerCase()
-                );
-                if (matchedOpt) {
-                    const cleaned = String(matchedOpt.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
-                    if (cleaned) return cleaned;
-                }
-            }
-            return cleanKey;
-        }
-
-        function syncCurrentSelectedUnitAndJoystick(blockVal = '', floorVal = '', wardKeyVal = '') {
-            const cleanBlock = String(blockVal || document.getElementById('blockSelect')?.value || '').trim();
-            const cleanFloor = String(floorVal || document.getElementById('floorSelect')?.value || '').trim();
-            const cleanWardKey = String(wardKeyVal || document.getElementById('wardSelect')?.value || '').trim();
-            const resolvedName = resolveWardDisplayName(cleanWardKey);
-
-            window.currentSelectedUnit = {
-                block: cleanBlock,
-                floor: cleanFloor,
-                wardKey: cleanWardKey,
-                wardName: resolvedName
-            };
-
-            updateJoystickUI();
-
-            const statusEl = document.getElementById('joystickStatusLabel');
-            if (statusEl && cleanWardKey) {
-                const titleLabel = resolvedName || cleanWardKey;
-                statusEl.innerHTML = `<i class="fa-solid fa-grip-dots-vertical text-indigo-500 mr-1 text-[10px]"></i>${titleLabel}`;
-                statusEl.title = `${titleLabel} (${cleanWardKey})`;
-            }
-        }
-
-        function onSelectAssetFromList(asset) {
-            if (!asset) return;
-            let targetBlock = String(asset.block || '').trim();
-            let targetFloor = String(asset.floor || '').trim();
-            let targetWard = String(asset.ward || '').trim();
-
-            const matchedH = (floorHierarchyData || []).find(
-                h => String(h.wardKey || '').trim().toLowerCase() === targetWard.toLowerCase()
-            );
-            if (matchedH) {
-                targetBlock = String(matchedH.block || targetBlock).trim();
-                targetFloor = String(matchedH.floor || targetFloor).trim();
-                targetWard = String(matchedH.wardKey || targetWard).trim();
-            } else if (['pending', 'condemn', 'surplus', 'suplus', 'transfer'].includes(targetWard.toLowerCase())) {
-                targetBlock = 'System';
-                targetFloor = 'System';
-                const lowerW = targetWard.toLowerCase();
-                targetWard = lowerW === 'suplus' ? 'Surplus' : (lowerW.charAt(0).toUpperCase() + lowerW.slice(1));
-            }
-
-            locateAndHighlightAsset(asset);
-            syncCurrentSelectedUnitAndJoystick(targetBlock, targetFloor, targetWard);
         }
 
         function locateAndHighlightAsset(asset) {
@@ -2360,8 +2143,6 @@
             if (targetWard) {
                 loadFloorPlan(targetWard);
             }
-
-            syncCurrentSelectedUnitAndJoystick(targetBlock, targetFloor, targetWard);
 
             let highlightedDone = false;
             let waitTicks = 0;
@@ -3171,9 +2952,6 @@
                 pairOwnerEams,
                 'text-purple-700 hover:bg-purple-100 bg-purple-50/90 border-purple-200'
             );
-
-            const markedEntry = getPendingActionItem(asset.eam);
-            const isMarked = Boolean(markedEntry);
         
             const modal = document.createElement('div');
             modal.id = 'customActionModal';
@@ -3206,10 +2984,6 @@
                     </div>
                     
                     <div class="space-y-2">
-                        <button id="btnToggleMarkPending" class="w-full ${isMarked ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300'} text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer">
-                            <i class="${isMarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i> ${isMarked ? `移出待處理清單 (${markedEntry.actionType})` : '加入待處理清單 (Condemn / Transfer)'}
-                        </button>
-
                         <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-pen-to-square"></i> 更改資料
                         </button>
@@ -3243,11 +3017,6 @@
                     jumpToAndOpenAssetModal(jumpCode);
                 };
             });
-
-            document.getElementById('btnToggleMarkPending').onclick = () => {
-                modal.remove();
-                togglePendingActionAsset(asset);
-            };
         
             document.getElementById('btnEdit').onclick = () => {
                 modal.remove();
@@ -3363,7 +3132,7 @@
             const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
 
             if (targetAsset) {
-                onSelectAssetFromList(targetAsset);
+                locateAndHighlightAsset(targetAsset);
                 openActionModal(targetAsset);
             } else {
                 const currentWard = document.getElementById('wardSelect').value;
@@ -3628,11 +3397,7 @@
                 onWardChange();
             }
 
-            syncCurrentSelectedUnitAndJoystick(
-                blockSelect.value || '',
-                floorSelect.value || '',
-                wardSelect.value || ''
-            );
+            updateJoystickUI();
         }
 
         function resolveMatchingBlockValue(quadKey) {
@@ -3666,27 +3431,27 @@
 
         function getCurrentWardNameOnly() {
             const wardSelect = document.getElementById('wardSelect');
-            const wardVal = (wardSelect && wardSelect.value)
-                || (window.currentSelectedUnit && window.currentSelectedUnit.wardKey)
-                || '';
+            const wardVal = wardSelect?.value || '';
             if (!wardVal) return '';
 
-            const resolved = resolveWardDisplayName(wardVal);
-            if (resolved) return resolved;
+            const matchedH = (floorHierarchyData || []).find(
+                h => String(h.wardKey || '').trim().toLowerCase() === String(wardVal).trim().toLowerCase()
+            );
+            if (matchedH && matchedH.wardName) {
+                return String(matchedH.wardName).trim();
+            }
 
-            if (window.currentSelectedUnit && window.currentSelectedUnit.wardName) {
-                return window.currentSelectedUnit.wardName;
+            if (wardSelect && wardSelect.selectedIndex >= 0) {
+                const rawOptText = String(wardSelect.options[wardSelect.selectedIndex]?.text || '').trim();
+                const cleaned = rawOptText.replace(/\s*\([^)]*\)\s*$/, '').trim();
+                if (cleaned) return cleaned;
             }
             return wardVal;
         }
 
         function updateJoystickUI() {
-            const blockVal = document.getElementById('blockSelect')?.value
-                || (window.currentSelectedUnit && window.currentSelectedUnit.block)
-                || '';
-            const floorVal = document.getElementById('floorSelect')?.value
-                || (window.currentSelectedUnit && window.currentSelectedUnit.floor)
-                || '';
+            const blockVal = document.getElementById('blockSelect')?.value || '';
+            const floorVal = document.getElementById('floorSelect')?.value || '';
             const wardNameOnly = getCurrentWardNameOnly();
 
             const statusEl = document.getElementById('joystickStatusLabel');
@@ -3894,263 +3659,7 @@
             applyNavigationSlot(slots[nextSlotIdx]);
         }
 
-        // ========== 待處理清單 (Condemn / Transfer) 群組功能 ==========
-        const PENDING_ACTION_STORAGE_KEY = 'nsd_asset_pending_action_group_v1';
-        let pendingActionList = [];
-        let pendingActionMapHighlightEnabled = false;
-        let isPendingActionPanelExpanded = false;
-
-        function loadPendingActionListFromStorage() {
-            try {
-                const raw = localStorage.getItem(PENDING_ACTION_STORAGE_KEY);
-                const parsed = raw ? JSON.parse(raw) : [];
-                pendingActionList = Array.isArray(parsed) ? parsed : [];
-            } catch (err) {
-                console.warn('讀取待處理清單 localStorage 失敗:', err);
-                pendingActionList = [];
-            }
-        }
-
-        function savePendingActionListToStorage() {
-            try {
-                localStorage.setItem(PENDING_ACTION_STORAGE_KEY, JSON.stringify(pendingActionList));
-            } catch (err) {
-                console.warn('儲存待處理清單 localStorage 失敗:', err);
-            }
-        }
-
-        function getPendingActionItem(eam) {
-            const clean = String(eam || '').trim().toLowerCase();
-            if (!clean) return null;
-            return pendingActionList.find(item => String(item.eam || '').trim().toLowerCase() === clean) || null;
-        }
-
-        function togglePendingActionAsset(asset) {
-            if (!asset || !asset.eam) return;
-            const cleanEam = String(asset.eam).trim();
-            const existingIdx = pendingActionList.findIndex(
-                item => String(item.eam || '').trim().toLowerCase() === cleanEam.toLowerCase()
-            );
-
-            if (existingIdx > -1) {
-                pendingActionList.splice(existingIdx, 1);
-            } else {
-                pendingActionList.unshift({
-                    eam: cleanEam,
-                    serial: normalizeSerialValue(asset.serial),
-                    description: String(asset.description || '').trim(),
-                    ward: String(asset.ward || '').trim(),
-                    block: String(asset.block || '').trim(),
-                    floor: String(asset.floor || '').trim(),
-                    actionType: 'Condemn',
-                    addedAt: formatShortDateTime(new Date())
-                });
-            }
-
-            if (pendingActionList.length === 0 && pendingActionMapHighlightEnabled) {
-                pendingActionMapHighlightEnabled = false;
-            }
-
-            savePendingActionListToStorage();
-            renderPendingActionUI();
-            renderSidebarWithPriority();
-
-            const wardVal = document.getElementById('wardSelect')?.value || '';
-            if (wardVal) {
-                renderAssetMarkers(currentFilteredAssets);
-            }
-        }
-
-        function updatePendingActionItemType(eam, newType) {
-            const item = getPendingActionItem(eam);
-            if (!item) return;
-            item.actionType = newType === 'Transfer' ? 'Transfer' : 'Condemn';
-            savePendingActionListToStorage();
-            renderPendingActionUI();
-
-            const wardVal = document.getElementById('wardSelect')?.value || '';
-            if (wardVal) {
-                renderAssetMarkers(currentFilteredAssets);
-            }
-        }
-
-        function removePendingActionItem(eam) {
-            const clean = String(eam || '').trim().toLowerCase();
-            pendingActionList = pendingActionList.filter(
-                item => String(item.eam || '').trim().toLowerCase() !== clean
-            );
-            if (pendingActionList.length === 0 && pendingActionMapHighlightEnabled) {
-                pendingActionMapHighlightEnabled = false;
-            }
-            savePendingActionListToStorage();
-            renderPendingActionUI();
-            renderSidebarWithPriority();
-
-            const wardVal = document.getElementById('wardSelect')?.value || '';
-            if (wardVal) {
-                renderAssetMarkers(currentFilteredAssets);
-            }
-        }
-
-        function clearAllPendingActionItems() {
-            if (pendingActionList.length === 0) return;
-            if (!confirm(`確定要清空全部 ${pendingActionList.length} 項待處理清單嗎？`)) return;
-            pendingActionList = [];
-            pendingActionMapHighlightEnabled = false;
-            savePendingActionListToStorage();
-            renderPendingActionUI();
-            renderSidebarWithPriority();
-
-            const wardVal = document.getElementById('wardSelect')?.value || '';
-            if (wardVal) {
-                renderAssetMarkers(currentFilteredAssets);
-            }
-        }
-
-        function togglePendingActionPanel() {
-            isPendingActionPanelExpanded = !isPendingActionPanelExpanded;
-            const body = document.getElementById('pendingActionPanelBody');
-            const chevron = document.getElementById('pendingActionChevron');
-            if (body) {
-                body.classList.toggle('hidden', !isPendingActionPanelExpanded);
-            }
-            if (chevron) {
-                chevron.classList.toggle('rotate-90', isPendingActionPanelExpanded);
-            }
-        }
-
-        function togglePendingActionMapHighlight() {
-            if (!pendingActionMapHighlightEnabled && pendingActionList.length === 0) {
-                alert('待處理清單目前為空，請先在右側 Asset 卡片點擊「標記」加入設備。');
-                return;
-            }
-            pendingActionMapHighlightEnabled = !pendingActionMapHighlightEnabled;
-            renderPendingActionUI();
-
-            const banner = document.getElementById('selectionBanner');
-            const bannerText = document.getElementById('bannerText');
-            if (pendingActionMapHighlightEnabled) {
-                if (banner && bannerText) {
-                    banner.classList.remove('hidden');
-                    bannerText.innerText = `🚨 待處理清單地圖高亮模式（共 ${pendingActionList.length} 項）：已淡化其他設備並以紅色呼吸燈標示`;
-                }
-            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && !stocktakeMapOverlayEnabled && banner) {
-                banner.classList.add('hidden');
-            }
-
-            const wardVal = document.getElementById('wardSelect')?.value || '';
-            if (wardVal) {
-                renderAssetMarkers(currentFilteredAssets);
-            }
-        }
-
-        function renderPendingActionUI() {
-            const countBadge = document.getElementById('pendingActionCountBadge');
-            const highlightBtn = document.getElementById('btnPendingActionMapHighlight');
-            const itemsContainer = document.getElementById('pendingActionItemsContainer');
-
-            if (countBadge) {
-                countBadge.innerText = String(pendingActionList.length);
-            }
-
-            if (highlightBtn) {
-                if (pendingActionMapHighlightEnabled) {
-                    highlightBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white border border-rose-700 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-xs flex items-center gap-1 shrink-0 cursor-pointer transition-all ring-2 ring-rose-300';
-                    highlightBtn.innerHTML = `<i class="fa-solid fa-bullseye animate-pulse"></i><span>高亮中</span>`;
-                } else {
-                    highlightBtn.className = 'bg-white hover:bg-rose-100 text-rose-700 border border-rose-300 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer transition-all';
-                    highlightBtn.innerHTML = `<i class="fa-solid fa-bullseye"></i><span>地圖高亮</span>`;
-                }
-            }
-
-            if (!itemsContainer) return;
-
-            if (pendingActionList.length === 0) {
-                itemsContainer.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-3">尚未標記任何設備，可在下方清單點擊「標記」加入</p>`;
-                return;
-            }
-
-            itemsContainer.innerHTML = pendingActionList.map(item => {
-                const live = findAssetByEam(item.eam);
-                const desc = (live && live.description) || item.description || '無類型';
-                const ward = (live && live.ward) || item.ward || 'N/A';
-                const safeEam = String(item.eam || '').replace(/"/g, '&quot;');
-                const safeEamJs = String(item.eam || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                return `
-                    <div class="bg-white border border-rose-200/80 rounded-lg p-2 flex items-center justify-between gap-2 shadow-2xs">
-                        <div class="min-w-0 flex-1 cursor-pointer" onclick="const a = findAssetByEam('${safeEamJs}'); if (a) onSelectAssetFromList(a);">
-                            <div class="flex items-center gap-1.5">
-                                <span class="font-bold text-rose-700 text-[11px]">${safeEam}</span>
-                                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-semibold">${ward}</span>
-                            </div>
-                            <p class="text-[11px] text-slate-700 truncate">${desc}</p>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            <select onchange="updatePendingActionItemType('${safeEamJs}', this.value)"
-                                class="bg-slate-50 border border-slate-300 rounded-md px-1.5 py-1 text-[11px] font-bold ${item.actionType === 'Transfer' ? 'text-amber-700' : 'text-rose-700'} cursor-pointer focus:outline-none">
-                                <option value="Condemn" ${item.actionType === 'Condemn' ? 'selected' : ''}>Condemn</option>
-                                <option value="Transfer" ${item.actionType === 'Transfer' ? 'selected' : ''}>Transfer</option>
-                            </select>
-                            <button type="button" onclick="removePendingActionItem('${safeEamJs}')" title="移出清單"
-                                class="w-6 h-6 rounded-md bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700 flex items-center justify-center text-[10px] cursor-pointer">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function exportPendingActionCsv() {
-            if (pendingActionList.length === 0) {
-                alert('目前待處理清單沒有資料可匯出！');
-                return;
-            }
-
-            const escapeCsvCell = (val) => {
-                const str = String(val ?? '');
-                if (/[",\r\n]/.test(str)) {
-                    return `"${str.replace(/"/g, '""')}"`;
-                }
-                return str;
-            };
-
-            const headers = ['Action Type', 'EAM Number', 'Serial Number', 'Description', 'Location'];
-            const rows = pendingActionList.map(item => {
-                const live = findAssetByEam(item.eam);
-                const actionType = item.actionType === 'Transfer' ? 'Transfer' : 'Condemn';
-                const eamNum = String((live && live.eam) || item.eam || '').trim();
-                const serialNum = normalizeSerialValue((live && live.serial) || item.serial);
-                const desc = String((live && live.description) || item.description || '').trim();
-                const loc = String((live && live.ward) || item.ward || '').trim();
-                return [actionType, eamNum, serialNum, desc, loc].map(escapeCsvCell).join(',');
-            });
-
-            const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-
-            const now = new Date();
-            const pad = (n) => String(n).padStart(2, '0');
-            const dateTag = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-            const fileName = `NSD_Pending_Condemn_Transfer_${dateTag}.csv`;
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function initPendingActionFeature() {
-            loadPendingActionListFromStorage();
-            renderPendingActionUI();
-        }
-
         document.addEventListener("DOMContentLoaded", () => {
-            initPendingActionFeature();
             fetchHierarchy();
             fetchAllAssets();
             initJoystickInteractions();
@@ -4171,9 +3680,10 @@
             initStocktakeFeature();
         });
 
-        // ========== Stocktake 盤點分流（Unscanned Highlight / Successful 不 Highlight / Unidentified 僅清單不上地圖 / 系統找不到入 Pending / 完整保留 Serial） ==========
+        // ========== Stocktake 盤點分流（多筆 Tick 套用地圖 / 單介面三類同框 / 非所屬單頁 EAM + Owner） ==========
         let stocktakeSessions = [];
         let activeStocktakeSessionId = null;
+        let activeStocktakeSessionIds = [];
         let stocktakeMapOverlayEnabled = false;
 
         function ensureSessionBuckets(session) {
@@ -4189,15 +3699,53 @@
             return session;
         }
 
+        function syncSelectedStocktakeSessions() {
+            const validIds = new Set(stocktakeSessions.map(s => String(s.id)));
+            activeStocktakeSessionIds = (activeStocktakeSessionIds || [])
+                .map(id => String(id))
+                .filter(id => validIds.has(id));
+
+            if (activeStocktakeSessionIds.length === 0) {
+                stocktakeMapOverlayEnabled = false;
+                if (!activeStocktakeSessionId && stocktakeSessions.length > 0) {
+                    activeStocktakeSessionId = stocktakeSessions[0].id;
+                }
+            } else {
+                stocktakeMapOverlayEnabled = true;
+                if (!activeStocktakeSessionId || !activeStocktakeSessionIds.includes(String(activeStocktakeSessionId))) {
+                    activeStocktakeSessionId = activeStocktakeSessionIds[0];
+                }
+            }
+        }
+
+        function getSelectedStocktakeSessions() {
+            syncSelectedStocktakeSessions();
+            if (!stocktakeMapOverlayEnabled || activeStocktakeSessionIds.length === 0) return [];
+            const selectedSet = new Set(activeStocktakeSessionIds.map(String));
+            return stocktakeSessions
+                .filter(s => selectedSet.has(String(s.id)))
+                .map(ensureSessionBuckets);
+        }
+
+        function getTotalSelectedUnscannedCount() {
+            const sessions = getSelectedStocktakeSessions();
+            const seen = new Set();
+            sessions.forEach(s => {
+                (s.unscanned || []).forEach(u => {
+                    const key = normalizeLookupKey(u.matchedEam || u.eam) || `sn:${normalizeLookupKey(u.matchedSerial || u.serial)}`;
+                    if (key) seen.add(key);
+                });
+            });
+            return seen.size;
+        }
+
         async function fetchStocktakeSessionsFromSheet() {
             try {
                 const res = await fetch(`${GAS_API_URL}?action=getStocktakeSessions&_t=${Date.now()}`);
                 const data = await res.json();
                 if (Array.isArray(data)) {
                     stocktakeSessions = data.map(ensureSessionBuckets);
-                    if (!activeStocktakeSessionId || !stocktakeSessions.some(s => s.id === activeStocktakeSessionId)) {
-                        activeStocktakeSessionId = stocktakeSessions.length > 0 ? stocktakeSessions[0].id : null;
-                    }
+                    syncSelectedStocktakeSessions();
                     updateStocktakeBadges();
                     renderSidebarWithPriority();
                     const wardVal = document.getElementById('wardSelect')?.value || '';
@@ -4235,10 +3783,12 @@
                     throw new Error(res.message || '刪除失敗');
                 }
 
-                stocktakeSessions = stocktakeSessions.filter(s => s.id !== sessionId);
-                if (activeStocktakeSessionId === sessionId) {
+                stocktakeSessions = stocktakeSessions.filter(s => String(s.id) !== String(sessionId));
+                activeStocktakeSessionIds = activeStocktakeSessionIds.filter(id => String(id) !== String(sessionId));
+                if (String(activeStocktakeSessionId) === String(sessionId)) {
                     activeStocktakeSessionId = stocktakeSessions.length > 0 ? stocktakeSessions[0].id : null;
                 }
+                syncSelectedStocktakeSessions();
                 updateStocktakeBadges();
                 renderSidebarWithPriority();
 
@@ -4253,17 +3803,18 @@
 
         function getActiveStocktakeSession() {
             if (!stocktakeSessions || stocktakeSessions.length === 0) return null;
-            const found = stocktakeSessions.find(s => s.id === activeStocktakeSessionId) || stocktakeSessions[0];
+            const found = stocktakeSessions.find(s => String(s.id) === String(activeStocktakeSessionId)) || stocktakeSessions[0];
             return ensureSessionBuckets(found);
         }
 
         function updateStocktakeBadges() {
+            syncSelectedStocktakeSessions();
             const histBadge = document.getElementById('stocktakeHistoryBadge');
             const overlayPill = document.getElementById('stocktakeOverlayStatusPill');
 
             if (histBadge) histBadge.innerText = String(stocktakeSessions.length);
             if (overlayPill) {
-                if (stocktakeMapOverlayEnabled) {
+                if (stocktakeMapOverlayEnabled && activeStocktakeSessionIds.length > 0) {
                     overlayPill.classList.remove('hidden');
                 } else {
                     overlayPill.classList.add('hidden');
@@ -4272,7 +3823,7 @@
 
             const panelHeading = document.getElementById('rightPanelListHeading');
             if (panelHeading) {
-                if (stocktakeMapOverlayEnabled) {
+                if (stocktakeMapOverlayEnabled && activeStocktakeSessionIds.length > 0) {
                     panelHeading.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> 未掃描Asset 清單與篩選`;
                 } else {
                     panelHeading.innerHTML = `<i class="fa-solid fa-boxes-stacked text-blue-600"></i> 獨立欄位搜尋與清單`;
@@ -4283,40 +3834,100 @@
             }
         }
 
-        // 只有 未掃描Asset 才在地圖上 highlight
+        // 支援多份勾選的 Stocktake 紀錄同時高亮未掃描 Asset
         function isStocktakeUnscannedAsset(asset) {
             if (!stocktakeMapOverlayEnabled || !asset) return false;
-            const active = getActiveStocktakeSession();
-            if (!active) return false;
+            const selectedSessions = getSelectedStocktakeSessions();
+            if (selectedSessions.length === 0) return false;
 
             const assetEam = normalizeLookupKey(asset.eam);
             const assetSn = normalizeLookupKey(asset.serial);
 
-            return (active.unscanned || []).some(u => {
-                const uEam = normalizeLookupKey(u.matchedEam || u.eam);
-                const uSn = normalizeLookupKey(u.matchedSerial || u.serial);
-                return (assetEam && uEam && assetEam === uEam) || (assetSn && uSn && assetSn === uSn);
-            });
+            return selectedSessions.some(session =>
+                (session.unscanned || []).some(u => {
+                    const uEam = normalizeLookupKey(u.matchedEam || u.eam);
+                    const uSn = normalizeLookupKey(u.matchedSerial || u.serial);
+                    return (assetEam && uEam && assetEam === uEam) || (assetSn && uSn && assetSn === uSn);
+                })
+            );
         }
 
-        function toggleStocktakeMapOverlay() {
-            const active = getActiveStocktakeSession();
-            if (!active) {
-                alert('目前尚未匯入任何 Stocktake Excel 清單，請先在「Stocktake 記錄」上傳檔案。');
-                return;
+        function setStocktakeSessionChecked(sessionId, checked, autoLocateFirst = false) {
+            const target = stocktakeSessions.find(s => String(s.id) === String(sessionId));
+            if (!target) return;
+
+            const idStr = String(target.id);
+            const currentSet = new Set(activeStocktakeSessionIds.map(String));
+
+            if (checked) {
+                currentSet.add(idStr);
+                activeStocktakeSessionId = target.id;
+            } else {
+                currentSet.delete(idStr);
+                if (String(activeStocktakeSessionId) === idStr) {
+                    const remaining = Array.from(currentSet);
+                    activeStocktakeSessionId = remaining.length > 0 ? remaining[0] : activeStocktakeSessionId;
+                }
             }
-            stocktakeMapOverlayEnabled = !stocktakeMapOverlayEnabled;
+
+            activeStocktakeSessionIds = Array.from(currentSet);
+            stocktakeMapOverlayEnabled = activeStocktakeSessionIds.length > 0;
             updateStocktakeBadges();
 
             const banner = document.getElementById('selectionBanner');
             const bannerText = document.getElementById('bannerText');
             if (stocktakeMapOverlayEnabled) {
-                const unscannedCount = (active.unscanned || []).length;
+                const selectedSessions = getSelectedStocktakeSessions();
+                const unscannedCount = getTotalSelectedUnscannedCount();
                 if (banner && bannerText) {
                     banner.classList.remove('hidden');
-                    bannerText.innerText = `📋 地圖套用已開啟（${active.fileName}）：地圖標記 ${unscannedCount} 項未掃描Asset`;
+                    bannerText.innerText = `📋 已勾選 ${selectedSessions.length} 份 Stocktake 套用地圖：共標記 ${unscannedCount} 項未掃描Asset`;
                 }
-            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && !pendingActionMapHighlightEnabled && banner) {
+            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && banner) {
+                banner.classList.add('hidden');
+            }
+
+            renderSidebarWithPriority();
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+
+            if (checked && autoLocateFirst) {
+                const first = (target.unscanned || []).find(m => m.matchedEam || m.eam);
+                if (first) {
+                    const found = findAssetByEam(first.matchedEam || first.eam);
+                    if (found) locateAndHighlightAsset(found);
+                }
+            }
+        }
+
+        function toggleStocktakeMapOverlay() {
+            if (!stocktakeSessions || stocktakeSessions.length === 0) {
+                alert('目前尚未匯入任何 Stocktake Excel 清單，請先在「Stocktake 記錄」上傳檔案。');
+                return;
+            }
+            if (stocktakeMapOverlayEnabled && activeStocktakeSessionIds.length > 0) {
+                activeStocktakeSessionIds = [];
+                stocktakeMapOverlayEnabled = false;
+            } else {
+                const fallbackId = activeStocktakeSessionId || stocktakeSessions[0].id;
+                activeStocktakeSessionId = fallbackId;
+                activeStocktakeSessionIds = [String(fallbackId)];
+                stocktakeMapOverlayEnabled = true;
+            }
+            updateStocktakeBadges();
+
+            const banner = document.getElementById('selectionBanner');
+            const bannerText = document.getElementById('bannerText');
+            if (stocktakeMapOverlayEnabled) {
+                const selectedSessions = getSelectedStocktakeSessions();
+                const unscannedCount = getTotalSelectedUnscannedCount();
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `📋 已勾選 ${selectedSessions.length} 份 Stocktake 套用地圖：共標記 ${unscannedCount} 項未掃描Asset`;
+                }
+            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && banner) {
                 banner.classList.add('hidden');
             }
 
@@ -4329,14 +3940,14 @@
 
         function normalizeStocktakeHeader(val) {
             if (val === undefined || val === null) return '';
-            let s = String(val).normalize('NFKC').replace(/ /g, ' ').toLowerCase().trim();
+            let s = String(val).normalize('NFKC').replace(/\u00a0/g, ' ').toLowerCase().trim();
             s = s.replace(/[^a-z0-9一-鿿]+/g, ' ');
             return s.replace(/\s+/g, ' ').trim();
         }
 
         function cleanStocktakeCell(val) {
             if (val === undefined || val === null) return '';
-            return String(val).normalize('NFKC').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+            return String(val).normalize('NFKC').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
         const STOCKTAKE_FIELD_RULES = {
@@ -4563,7 +4174,7 @@
         }
 
         function normalizeLookupKey(val) {
-            return String(val || '').normalize('NFKC').replace(/ /g, ' ').trim().replace(/^0+/, '').toLowerCase();
+            return String(val || '').normalize('NFKC').replace(/\u00a0/g, ' ').trim().replace(/^0+/, '').toLowerCase();
         }
 
         function pickRowField(row, candidates) {
@@ -4733,7 +4344,7 @@
                     </div>
 
                     <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
-                        支援 <strong>.xlsx / .xls / .csv</strong>。自動分類為：<strong>未掃描Asset</strong>、<strong>已掃描Asset</strong>、<strong>非所屬Asset</strong> 與 <strong>未登記Asset</strong>。
+                        支援 <strong>.xlsx / .xls / .csv</strong>。自動分類為：<strong>未掃描Asset</strong>、<strong>已掃描Asset</strong>、<strong>未登記Asset</strong> 與 <strong>非所屬Asset</strong>。
                     </p>
 
                     <div class="space-y-3 text-xs">
@@ -4745,7 +4356,7 @@
 
                         <label class="flex items-center gap-2 bg-emerald-50/80 border border-emerald-200 rounded-xl p-2.5 cursor-pointer text-[11px] font-bold text-emerald-800">
                             <input id="stocktakeAutoOverlayCb" type="checkbox" checked class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
-                            <span>上傳後自動開啟「套用到地圖」標記未掃描Asset</span>
+                            <span>上傳後自動勾選「套用地圖」標記未掃描Asset</span>
                         </label>
                     </div>
 
@@ -4818,6 +4429,9 @@
                     activeStocktakeSessionId = newSession.id;
 
                     if (autoOverlay) {
+                        if (!activeStocktakeSessionIds.includes(String(newSession.id))) {
+                            activeStocktakeSessionIds.push(String(newSession.id));
+                        }
                         stocktakeMapOverlayEnabled = true;
                     }
                     updateStocktakeBadges();
@@ -4838,9 +4452,10 @@
             };
         }
 
+        // 單一介面同時呈現：未掃描Asset、已掃描Asset、未登記Asset
         function openStocktakeResultModal(sessionId = null) {
             const rawSession = sessionId
-                ? stocktakeSessions.find(s => s.id === sessionId)
+                ? stocktakeSessions.find(s => String(s.id) === String(sessionId))
                 : getActiveStocktakeSession();
             const session = ensureSessionBuckets(rawSession);
             if (!session) {
@@ -4855,311 +4470,244 @@
             const successfulList = (session.successful || []).map(hydrateMatchedItem);
             const unidentifiedList = session.unidentified || [];
             const unmatchedList = (session.unmatched || []).filter(u => !u.restoredToSystem);
+            const isCheckedOnMap = activeStocktakeSessionIds.includes(String(session.id));
 
             const modal = document.createElement('div');
             modal.id = 'stocktakeResultModal';
-            modal.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-4xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
                     <div class="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
                         <div>
                             <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
-                                <i class="fa-solid fa-magnifying-glass-chart"></i> Stocktake 比對結果 — ${session.fileName}
+                                <i class="fa-solid fa-clipboard-check"></i> Stocktake 記錄 — ${session.fileName}
                             </h3>
                             <p class="text-[11px] text-slate-500 mt-0.5">
-                                工作表：<strong>${session.sheetName}</strong> ｜ 匯入時間：${formatShortDateTime(session.importedAt)} ｜ 總明細：${session.totalInput} 筆
+                                匯入時間：<strong>${formatShortDateTime(session.importedAt)}</strong>｜總數：${session.totalInput}｜未掃描Asset：<strong>${unscannedList.length}</strong>｜已掃描Asset：<strong>${successfulList.length}</strong>｜未登記Asset：<strong>${unmatchedList.length}</strong>｜非所屬Asset：<strong>${unidentifiedList.length}</strong>
                             </p>
                         </div>
-                        <button type="button" id="btnCloseStocktakeResult" class="text-slate-400 hover:text-slate-700 font-bold text-base px-2 cursor-pointer">✕</button>
+                        <button type="button" id="btnCloseStocktakeResult" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
                     </div>
 
-                    <!-- 4 類分流統計卡 -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 text-center">
-                        <div class="bg-rose-50 border border-rose-200 rounded-xl p-2.5">
-                            <div class="text-lg font-black text-rose-700">${unscannedList.length}</div>
-                            <div class="text-[10px] font-bold text-rose-800">未掃描Asset（地圖 Highlight）</div>
-                        </div>
-                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5">
-                            <div class="text-lg font-black text-emerald-700">${successfulList.length}</div>
-                            <div class="text-[10px] font-bold text-emerald-800">已掃描Asset（不 Highlight）</div>
-                        </div>
-                        <div class="bg-slate-100 border border-slate-300 rounded-xl p-2.5">
-                            <div class="text-lg font-black text-slate-700">${unidentifiedList.length}</div>
-                            <div class="text-[10px] font-bold text-slate-800">非所屬Asset（不上地圖）</div>
-                        </div>
-                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5">
-                            <div class="text-lg font-black text-amber-700">${unmatchedList.length}</div>
-                            <div class="text-[10px] font-bold text-amber-800">未登記Asset（System / Pending）</div>
-                        </div>
-                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 my-3">
+                        <label class="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer select-none">
+                            <input type="checkbox" id="cbOverlayFromResult" ${isCheckedOnMap ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 cursor-pointer">
+                            <span>套用地圖顯示未掃描Asset</span>
+                        </label>
 
-                    <!-- 分頁切換 -->
-                    <div class="flex flex-wrap gap-2 mb-3 border-b border-slate-100 pb-2 text-xs">
-                        <button type="button" id="tabStUnscanned" class="px-3 py-1.5 rounded-xl font-bold bg-rose-600 text-white cursor-pointer">
-                            未掃描Asset (${unscannedList.length})
-                        </button>
-                        <button type="button" id="tabStSuccessful" class="px-3 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                            已掃描Asset (${successfulList.length})
-                        </button>
-                        <button type="button" id="tabStUnidentified" class="px-3 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                            非所屬Asset (${unidentifiedList.length})
-                        </button>
-                        <button type="button" id="tabStUnmatched" class="px-3 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                            未登記Asset (${unmatchedList.length})
+                        <button type="button" id="btnOpenUnidentifiedFromResult" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${unidentifiedList.length})
                         </button>
                     </div>
 
-                    <div id="stocktakeResultBody" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs min-h-[220px]"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 overflow-y-auto flex-1 pr-1 text-xs">
+                        <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/40 flex flex-col">
+                            <h4 class="font-bold text-rose-800 mb-2">未掃描Asset (${unscannedList.length})</h4>
+                            <div class="space-y-1.5 max-h-80 overflow-y-auto flex-1">
+                                ${unscannedList.length === 0
+                                    ? '<p class="text-[11px] text-slate-400 italic">無未掃描Asset</p>'
+                                    : unscannedList.map(m => `
+                                        <button type="button" data-locate-eam="${String(m.matchedEam || '').replace(/"/g, '&quot;')}"
+                                            class="st-locate-btn w-full text-left bg-white hover:bg-rose-100/60 border border-rose-200/80 rounded-lg p-2 cursor-pointer transition-all">
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="font-bold text-rose-700">${m.matchedEam || m.inputEam}</span>
+                                                <span class="text-[10px] bg-rose-100 text-rose-800 px-1.5 py-0.2 rounded font-semibold">未掃描Asset</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-700 truncate">${m.matchedDescription || m.inputDescription || '系統資產'}</p>
+                                            <p class="text-[10px] text-slate-500">Ward: ${m.matchedWard || 'N/A'} | SN: ${normalizeSerialValue(m.matchedSerial || m.inputSerial)}</p>
+                                        </button>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
 
-                    <div class="flex flex-wrap justify-between items-center gap-2 pt-4 mt-3 border-t border-slate-100">
-                        <button type="button" id="btnApplyThisSessionToMap" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow cursor-pointer">
-                            <i class="fa-solid fa-map-pin mr-1"></i> 套用未掃描Asset至地圖
-                        </button>
-                        <button type="button" id="btnDoneStocktakeResult" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">
-                            關閉
-                        </button>
+                        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/60 flex flex-col">
+                            <h4 class="font-bold text-slate-700 mb-2">已掃描Asset (${successfulList.length})</h4>
+                            <div class="space-y-1.5 max-h-80 overflow-y-auto flex-1">
+                                ${successfulList.length === 0
+                                    ? '<p class="text-[11px] text-slate-400 italic">無已掃描Asset</p>'
+                                    : successfulList.map(m => `
+                                        <button type="button" data-locate-eam="${String(m.matchedEam || '').replace(/"/g, '&quot;')}"
+                                            class="st-locate-btn w-full text-left bg-white hover:bg-slate-100 border border-slate-200 rounded-lg p-2 cursor-pointer transition-all">
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="font-bold text-slate-800">${m.matchedEam || m.inputEam}</span>
+                                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">已掃描Asset</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-700 truncate">${m.matchedDescription || m.inputDescription || '系統資產'}</p>
+                                            <p class="text-[10px] text-slate-500">Ward: ${m.matchedWard || 'N/A'} | SN: ${normalizeSerialValue(m.matchedSerial || m.inputSerial)}</p>
+                                        </button>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+
+                        <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/40 flex flex-col">
+                            <h4 class="font-bold text-amber-800 mb-2">未登記Asset (${unmatchedList.length})</h4>
+                            <div class="space-y-1.5 max-h-80 overflow-y-auto flex-1">
+                                ${unmatchedList.length === 0
+                                    ? '<p class="text-[11px] text-slate-400 italic">無未登記Asset</p>'
+                                    : unmatchedList.map(u => `
+                                        <div class="bg-white border border-amber-200/80 rounded-lg p-2">
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="font-bold text-amber-800">${u.eam || '(無 EAM)'}</span>
+                                                <span class="text-[10px] text-slate-600 font-semibold">S/N: ${normalizeSerialValue(u.serial)}</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-700 truncate">${u.description || '未命名項目'}</p>
+                                            <p class="text-[10px] text-slate-500">位置: System / System / Pending</p>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
 
-            const bodyEl = document.getElementById('stocktakeResultBody');
-            const tabUnscanned = document.getElementById('tabStUnscanned');
-            const tabSuccessful = document.getElementById('tabStSuccessful');
-            const tabUnidentified = document.getElementById('tabStUnidentified');
-            const tabUnmatched = document.getElementById('tabStUnmatched');
-
-            function setTabStyle(activeBtn) {
-                [tabUnscanned, tabSuccessful, tabUnidentified, tabUnmatched].forEach(b => {
-                    b.className = 'px-3 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer';
-                });
-                activeBtn.className = 'px-3 py-1.5 rounded-xl font-bold bg-indigo-600 text-white cursor-pointer';
-            }
-
-            function renderMatchedTab(list, badgeLabel, badgeClass) {
-                if (list.length === 0) {
-                    bodyEl.innerHTML = `<p class="text-slate-400 text-center py-8">此分類目前沒有項目</p>`;
-                    return;
-                }
-                bodyEl.innerHTML = list.map(m => `
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-black text-blue-700">EAM: ${m.matchedEam || m.inputEam || 'N/A'}</span>
-                                <span class="font-bold text-slate-700">S/N: ${normalizeSerialValue(m.matchedSerial || m.inputSerial)}</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${badgeClass}">${badgeLabel}</span>
-                                <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold">${m.matchedWard || m.inputWard || '未設定'}</span>
-                            </div>
-                            <p class="text-slate-700 font-semibold mt-1 truncate">${m.matchedDescription || m.inputDescription || ''}</p>
-                        </div>
-                        <button type="button" data-locate-eam="${m.matchedEam || m.inputEam}" class="st-locate-btn bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shrink-0 cursor-pointer">
-                            定位
-                        </button>
-                    </div>
-                `).join('');
-
-                bodyEl.querySelectorAll('.st-locate-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        const eamVal = btn.getAttribute('data-locate-eam');
-                        const found = findAssetByEam(eamVal);
-                        if (!found) {
-                            alert(`找不到 Asset [${eamVal}]`);
-                            return;
-                        }
-                        modal.remove();
-                        onSelectAssetFromList(found);
-                    };
-                });
-            }
-
-            function renderUnidentifiedTab() {
-                if (unidentifiedList.length === 0) {
-                    bodyEl.innerHTML = `<p class="text-slate-400 text-center py-8">沒有非所屬Asset</p>`;
-                    return;
-                }
-                bodyEl.innerHTML = unidentifiedList.map(u => `
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-black text-slate-800">EAM: ${u.eam}</span>
-                                <span class="text-[10px] bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full font-bold">非所屬Asset（不上地圖）</span>
-                            </div>
-                            <p class="text-slate-600 font-semibold mt-1">Owner: <span class="text-indigo-700">${u.owner || '未標示'}</span></p>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            function renderUnmatchedTab() {
-                if (unmatchedList.length === 0) {
-                    bodyEl.innerHTML = `<p class="text-slate-400 text-center py-8">沒有未登記Asset</p>`;
-                    return;
-                }
-                bodyEl.innerHTML = unmatchedList.map(u => `
-                    <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-black text-amber-800">EAM: ${u.eam || '(無 EAM)'}</span>
-                                <span class="font-bold text-slate-700">S/N: ${normalizeSerialValue(u.serial)}</span>
-                                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">System / System / Pending</span>
-                            </div>
-                            <p class="text-slate-700 font-semibold mt-1 truncate">${u.description || ''}</p>
-                            ${u.remark ? `<p class="text-[11px] text-slate-500 mt-0.5">Remark: ${u.remark}</p>` : ''}
-                        </div>
-                        <button type="button" data-pending-id="${u.id}" class="st-confirm-pending-btn bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shrink-0 cursor-pointer">
-                            確認入 Pending
-                        </button>
-                    </div>
-                `).join('');
-
-                bodyEl.querySelectorAll('.st-confirm-pending-btn').forEach(btn => {
-                    btn.onclick = async () => {
-                        const pid = btn.getAttribute('data-pending-id');
-                        const targetItem = (session.unmatched || []).find(item => item.id === pid);
-                        if (!targetItem) return;
-
-                        btn.disabled = true;
-                        btn.innerText = '寫入中...';
-
-                        const newAssetObj = {
-                            eam: targetItem.eam || `PENDING-${Date.now()}`,
-                            serial: normalizeSerialValue(targetItem.serial),
-                            dept: 'NSD',
-                            description: targetItem.description || ASSET_TYPES[0].label,
-                            remark: targetItem.remark || `[Stocktake Pending] 來源檔案：${session.fileName}`,
-                            pair: '',
-                            block: 'System',
-                            floor: 'System',
-                            ward: 'Pending',
-                            x: '',
-                            y: ''
-                        };
-
-                        try {
-                            const res = await fetch(GAS_API_URL, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                body: JSON.stringify({ action: 'addAsset', asset: newAssetObj })
-                            }).then(r => r.json());
-
-                            if (res && res.status === 'error') {
-                                throw new Error(res.message || '寫入 System / Pending 失敗');
-                            }
-
-                            targetItem.restoredToSystem = true;
-                            targetItem.restoredAt = formatShortDateTime(new Date());
-                            await saveStocktakeSessionToSheet(session);
-
-                            applyAssetListToLocalState([newAssetObj], null, false);
-                            alert(`✅ 已將 [${newAssetObj.eam}] 寫入 Google Sheet（Block: System / Floor: System / Ward: Pending）！`);
-                            openStocktakeResultModal(session.id);
-                        } catch (err) {
-                            alert('❌ 寫入 System / Pending 失敗：' + err);
-                            btn.disabled = false;
-                            btn.innerText = '確認入 Pending';
-                        }
-                    };
-                });
-            }
-
-            tabUnscanned.onclick = () => {
-                setTabStyle(tabUnscanned);
-                renderMatchedTab(unscannedList, '未掃描Asset（地圖 Highlight）', 'bg-rose-100 text-rose-800');
-            };
-            tabSuccessful.onclick = () => {
-                setTabStyle(tabSuccessful);
-                renderMatchedTab(successfulList, '已掃描Asset（不 Highlight）', 'bg-emerald-100 text-emerald-800');
-            };
-            tabUnidentified.onclick = () => {
-                setTabStyle(tabUnidentified);
-                renderUnidentifiedTab();
-            };
-            tabUnmatched.onclick = () => {
-                setTabStyle(tabUnmatched);
-                renderUnmatchedTab();
-            };
-
-            renderMatchedTab(unscannedList, '未掃描Asset（地圖 Highlight）', 'bg-rose-100 text-rose-800');
-
-            document.getElementById('btnApplyThisSessionToMap').onclick = () => {
-                activeStocktakeSessionId = session.id;
-                stocktakeMapOverlayEnabled = true;
-                updateStocktakeBadges();
-                renderSidebarWithPriority();
-                const wardVal = document.getElementById('wardSelect')?.value || '';
-                if (wardVal) renderAssetMarkers(currentFilteredAssets);
-                modal.remove();
-                alert(`✅ 已將「${session.fileName}」的 ${unscannedList.length} 項未掃描Asset套用至地圖！`);
-            };
-
             document.getElementById('btnCloseStocktakeResult').onclick = () => modal.remove();
-            document.getElementById('btnDoneStocktakeResult').onclick = () => modal.remove();
+
+            document.getElementById('cbOverlayFromResult').onchange = (e) => {
+                setStocktakeSessionChecked(session.id, e.target.checked, e.target.checked);
+            };
+
+            document.getElementById('btnOpenUnidentifiedFromResult').onclick = () => {
+                activeStocktakeSessionId = session.id;
+                modal.remove();
+                openStocktakeUnidentifiedModal(session.id);
+            };
+
+            modal.querySelectorAll('.st-locate-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const code = btn.getAttribute('data-locate-eam');
+                    const found = findAssetByEam(code);
+                    if (found) {
+                        setStocktakeSessionChecked(session.id, true, false);
+                        modal.remove();
+                        locateAndHighlightAsset(found);
+                    }
+                };
+            });
         }
 
+        // 非所屬Asset：1 頁簡潔顯示 EAM + Asset Owner
+        function openStocktakeUnidentifiedModal(sessionId = null) {
+            const rawSession = sessionId
+                ? stocktakeSessions.find(s => String(s.id) === String(sessionId))
+                : getActiveStocktakeSession();
+            const session = ensureSessionBuckets(rawSession);
+
+            const existing = document.getElementById('stocktakeUnidentifiedModal');
+            if (existing) existing.remove();
+
+            const items = session ? (session.unidentified || []) : [];
+
+            const modal = document.createElement('div');
+            modal.id = 'stocktakeUnidentifiedModal';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-2xl shadow-2xl text-slate-800 max-h-[88vh] flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="text-sm font-black text-sky-700 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${items.length})
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                ${session
+                                    ? `檔案：<strong>${session.fileName}</strong>（${formatShortDateTime(session.importedAt)}）`
+                                    : '目前尚無 Stocktake 記錄'}
+                            </p>
+                        </div>
+                        <button type="button" id="btnCloseStocktakeUnidentified" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                    </div>
+
+                    <div class="overflow-y-auto flex-1 my-3 pr-1 text-xs">
+                        ${items.length === 0
+                            ? '<p class="text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">目前沒有非所屬Asset 項目。</p>'
+                            : `<div class="border border-sky-200 rounded-xl overflow-hidden bg-white">
+                                <div class="grid grid-cols-2 bg-sky-50/80 border-b border-sky-200 px-4 py-2 font-bold text-sky-900">
+                                    <span>EAM</span>
+                                    <span>Asset Owner</span>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    ${items.map(it => `
+                                        <div class="grid grid-cols-2 px-4 py-2.5 items-center hover:bg-sky-50/30">
+                                            <span class="font-bold text-slate-800">${it.eam || '(無 EAM)'}</span>
+                                            <span class="text-slate-700 font-semibold">${it.owner || it.ward || '未標示'}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>`
+                        }
+                    </div>
+
+                    <div class="flex justify-end pt-2 border-t border-slate-100">
+                        <button type="button" id="btnDoneStocktakeUnidentified" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">關閉</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('btnCloseStocktakeUnidentified').onclick = () => modal.remove();
+            document.getElementById('btnDoneStocktakeUnidentified').onclick = () => modal.remove();
+        }
+
+        // Stocktake 記錄管理：保留原有版面結構，將「套用地圖」改為可複選 Tick
         function openStocktakeHistoryModal() {
             const existing = document.getElementById('stocktakeHistoryModal');
             if (existing) existing.remove();
 
-            const activeSession = getActiveStocktakeSession();
+            syncSelectedStocktakeSessions();
+            const checkedIdSet = new Set(activeStocktakeSessionIds.map(String));
 
             const modal = document.createElement('div');
             modal.id = 'stocktakeHistoryModal';
-            modal.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4';
+            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
             modal.innerHTML = `
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-2xl shadow-2xl text-slate-800 max-h-[88vh] flex flex-col">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
                         <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
-                            <i class="fa-solid fa-clock-rotate-left"></i> Stocktake 記錄管理
+                            <i class="fa-solid fa-clipboard-list"></i> Stocktake 記錄
                         </h3>
-                        <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 font-bold text-base px-2 cursor-pointer">✕</button>
-                    </div>
-
-                    <div class="flex flex-wrap items-center justify-between gap-2 my-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" id="btnHistoryUploadNew" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-file-arrow-up"></i> 上傳 Stocktake
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btnUploadInsideHistory" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-file-arrow-up"></i> 上傳檔案
                             </button>
-                            <button type="button" id="btnHistoryToggleMap" class="${stocktakeMapOverlayEnabled ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300'} text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-map-pin"></i> ${stocktakeMapOverlayEnabled ? '取消套用地圖' : '套用到地圖'}
-                            </button>
+                            <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer px-1">✕</button>
                         </div>
-                        <span class="text-[11px] text-slate-500 font-semibold">共 ${stocktakeSessions.length} 筆記錄</span>
                     </div>
 
-                    <div id="stocktakeHistoryList" class="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs">
+                    <div class="overflow-y-auto flex-1 my-3 space-y-2.5 pr-1 text-xs">
                         ${stocktakeSessions.length === 0
-                            ? `<p class="text-slate-400 text-center py-10">目前尚無任何 Stocktake 匯入記錄，請點擊上方「上傳 Stocktake」。</p>`
+                            ? '<p class="text-center text-slate-400 py-10">尚無任何 Stocktake 記錄，請點擊右上方「上傳檔案」。</p>'
                             : stocktakeSessions.map(rawS => {
                                 const s = ensureSessionBuckets(rawS);
-                                const isCurrent = activeSession && activeSession.id === s.id;
-                                const pendingLeft = (s.unmatched || []).filter(u => !u.restoredToSystem).length;
+                                const isChecked = checkedIdSet.has(String(s.id));
+                                const pendLeft = (s.unmatched || []).filter(u => !u.restoredToSystem).length;
+                                const unidCnt = (s.unidentified || []).length;
+                                const unscannedCnt = (s.unscanned || []).length;
+                                const successfulCnt = (s.successful || []).length;
+                                const shortTime = formatShortDateTime(s.importedAt);
                                 return `
-                                    <div class="border ${isCurrent ? 'border-indigo-400 bg-indigo-50/40' : 'border-slate-200 bg-white'} rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="border ${isChecked ? 'border-emerald-400 bg-emerald-50/30' : 'border-slate-200 bg-white'} rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div class="min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="font-black text-slate-800">${s.fileName}</span>
-                                                ${isCurrent ? '<span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">目前選用</span>' : ''}
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-slate-800">${s.fileName}</span>
+                                                ${isChecked ? '<span class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">套用地圖中</span>' : ''}
                                             </div>
                                             <p class="text-[11px] text-slate-500 mt-0.5">
-                                                工作表：${s.sheetName || '-'} ｜ 時間：${formatShortDateTime(s.importedAt)}
+                                                <i class="fa-regular fa-clock mr-1"></i>匯入時間：${shortTime}
                                             </p>
-                                            <div class="flex flex-wrap gap-1.5 mt-1.5 text-[10px] font-bold">
-                                                <span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">未掃描Asset: ${(s.unscanned || []).length}</span>
-                                                <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">已掃描Asset: ${(s.successful || []).length}</span>
-                                                <span class="bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full">非所屬Asset: ${(s.unidentified || []).length}</span>
-                                                <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">未登記Asset: ${pendingLeft}</span>
-                                            </div>
+                                            <p class="text-[11px] text-slate-600 mt-0.5">
+                                                總數 ${s.totalInput}｜未掃描Asset <strong class="text-rose-700">${unscannedCnt}</strong>｜已掃描Asset <strong class="text-emerald-700">${successfulCnt}</strong>｜未登記Asset <strong class="text-amber-700">${pendLeft}</strong>｜非所屬Asset <strong class="text-sky-700">${unidCnt}</strong>
+                                            </p>
                                         </div>
-                                        <div class="flex items-center gap-1.5 shrink-0">
-                                            <button type="button" data-view-id="${s.id}" class="st-view-btn bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
-                                                查看詳情
-                                            </button>
-                                            <button type="button" data-apply-id="${s.id}" class="st-apply-btn bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
-                                                套用地圖
-                                            </button>
-                                            <button type="button" data-del-id="${s.id}" class="st-del-btn bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
-                                                刪除
-                                            </button>
+                                        <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                                            <label class="inline-flex items-center gap-1.5 ${isChecked ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'} border text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer select-none">
+                                                <input type="checkbox" data-apply-id="${s.id}" class="st-hist-apply w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" ${isChecked ? 'checked' : ''}>
+                                                <span>套用地圖</span>
+                                            </label>
+                                            <button type="button" data-view-id="${s.id}" class="st-hist-view bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">查看記錄</button>
+                                            <button type="button" data-del-id="${s.id}" class="st-hist-del bg-rose-100 hover:bg-rose-200 text-rose-700 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer" title="刪除"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
                                 `;
@@ -5171,41 +4719,31 @@
             document.body.appendChild(modal);
 
             document.getElementById('btnCloseStocktakeHistory').onclick = () => modal.remove();
-            document.getElementById('btnHistoryUploadNew').onclick = () => {
+            document.getElementById('btnUploadInsideHistory').onclick = () => {
                 modal.remove();
                 openStocktakeImportModal();
             };
-            document.getElementById('btnHistoryToggleMap').onclick = () => {
-                modal.remove();
-                toggleStocktakeMapOverlay();
-            };
 
-            modal.querySelectorAll('.st-view-btn').forEach(btn => {
+            modal.querySelectorAll('.st-hist-apply').forEach(cb => {
+                cb.onchange = () => {
+                    const targetId = cb.getAttribute('data-apply-id');
+                    setStocktakeSessionChecked(targetId, cb.checked, cb.checked);
+                    openStocktakeHistoryModal();
+                };
+            });
+
+            modal.querySelectorAll('.st-hist-view').forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.getAttribute('data-view-id');
-                    activeStocktakeSessionId = id;
-                    updateStocktakeBadges();
                     modal.remove();
                     openStocktakeResultModal(id);
                 };
             });
 
-            modal.querySelectorAll('.st-apply-btn').forEach(btn => {
-                btn.onclick = () => {
-                    const id = btn.getAttribute('data-apply-id');
-                    activeStocktakeSessionId = id;
-                    stocktakeMapOverlayEnabled = true;
-                    updateStocktakeBadges();
-                    renderSidebarWithPriority();
-                    const wardVal = document.getElementById('wardSelect')?.value || '';
-                    if (wardVal) renderAssetMarkers(currentFilteredAssets);
-                    modal.remove();
-                };
-            });
-
-            modal.querySelectorAll('.st-del-btn').forEach(btn => {
+            modal.querySelectorAll('.st-hist-del').forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.getAttribute('data-del-id');
+                    modal.remove();
                     deleteStocktakeSession(id);
                 };
             });
