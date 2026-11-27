@@ -1197,7 +1197,12 @@
         }
 
         function syncLinkedSearchDatalists(criteria) {
-            const basePool = filterAssetsForRightPanel(allAssets);
+            const wardSelect = document.getElementById('wardSelect');
+            const currentScopePool = (wardSelect && wardSelect.value)
+                ? currentFilteredAssets
+                : allAssets;
+        
+            const basePool = filterAssetsForRightPanel(currentScopePool);
             const recType = criteria.recordType || 'ALL';
             const poolForType = filterAssetsByCriteria(basePool, criteria, 'recordType');
             const sel = document.getElementById('searchRecordTypeSelect');
@@ -3931,7 +3936,8 @@
             } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && banner) {
                 banner.classList.add('hidden');
             }
-
+            
+            syncLinkedSearchDatalists(getCurrentSearchCriteria());
             renderSidebarWithPriority();
             const wardVal = document.getElementById('wardSelect')?.value || '';
             if (wardVal) {
@@ -4728,7 +4734,7 @@
             modal.querySelectorAll('.st-hist-apply').forEach(cb => {
                 cb.onchange = () => {
                     const targetId = cb.getAttribute('data-apply-id');
-                    setStocktakeSessionChecked(targetId, cb.checked, cb.checked);
+                    setStocktakeSessionChecked(targetId, cb.checked, false);
                     openStocktakeHistoryModal();
                 };
             });
