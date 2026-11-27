@@ -3543,67 +3543,46 @@
             if (upEl) upEl.innerText = floorVal ? `Floor ▲ (${floorVal})` : 'Floor ▲';
             if (downEl) downEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
 
-            const quadThemeMap = {
-                T: {
-                    idle: ['bg-sky-50/95', 'hover:bg-sky-100'],
-                    active: ['bg-sky-600', 'hover:bg-sky-600', 'ring-1', 'ring-inset', 'ring-sky-300'],
-                    mainIdle: ['text-sky-900'],
-                    mainActive: ['text-white'],
-                    subIdle: ['text-sky-700/85'],
-                    subActive: ['text-sky-100']
-                },
-                M: {
-                    idle: ['bg-indigo-50/95', 'hover:bg-indigo-100'],
-                    active: ['bg-indigo-600', 'hover:bg-indigo-600', 'ring-1', 'ring-inset', 'ring-indigo-300'],
-                    mainIdle: ['text-indigo-900'],
-                    mainActive: ['text-white'],
-                    subIdle: ['text-indigo-700/85'],
-                    subActive: ['text-indigo-100']
-                },
-                ANNEX: {
-                    idle: ['bg-amber-50/95', 'hover:bg-amber-100'],
-                    active: ['bg-amber-600', 'hover:bg-amber-600', 'ring-1', 'ring-inset', 'ring-amber-300'],
-                    mainIdle: ['text-amber-900'],
-                    mainActive: ['text-white'],
-                    subIdle: ['text-amber-700/85'],
-                    subActive: ['text-amber-100']
-                },
-                SYSTEM: {
-                    idle: ['bg-purple-50/95', 'hover:bg-purple-100'],
-                    active: ['bg-purple-600', 'hover:bg-purple-600', 'ring-1', 'ring-inset', 'ring-purple-300'],
-                    mainIdle: ['text-purple-900'],
-                    mainActive: ['text-white'],
-                    subIdle: ['text-purple-700/85'],
-                    subActive: ['text-purple-100']
-                }
+            // 精簡後：只針對選中的象限切換深色底與反白字，未選中保持透明以顯示平均四等分底色
+            const activeMap = {
+                T: 'bg-sky-600 text-white',
+                M: 'bg-indigo-600 text-white',
+                ANNEX: 'bg-amber-600 text-white',
+                SYSTEM: 'bg-purple-600 text-white'
             };
+            const idleTextMap = {
+                T: 'text-sky-900',
+                M: 'text-indigo-900',
+                ANNEX: 'text-amber-900',
+                SYSTEM: 'text-purple-900'
+            };
+            const allPossibleClasses = [
+                'bg-sky-600', 'bg-indigo-600', 'bg-amber-600', 'bg-purple-600',
+                'bg-sky-50/95', 'bg-indigo-50/95', 'bg-amber-50/95', 'bg-purple-50/95',
+                'hover:bg-sky-100', 'hover:bg-indigo-100', 'hover:bg-amber-100', 'hover:bg-purple-100',
+                'hover:bg-sky-600', 'hover:bg-indigo-600', 'hover:bg-amber-600', 'hover:bg-purple-600',
+                'ring-1', 'ring-inset', 'ring-sky-300', 'ring-indigo-300', 'ring-amber-300', 'ring-purple-300',
+                'text-white', 'text-sky-900', 'text-indigo-900', 'text-amber-900', 'text-purple-900',
+                'text-sky-700/85', 'text-indigo-700/85', 'text-amber-700/85', 'text-purple-700/85',
+                'text-sky-100', 'text-indigo-100', 'text-amber-100', 'text-purple-100'
+            ];
 
             document.querySelectorAll('.joy-block-quad').forEach(btn => {
                 const quadKey = String(btn.getAttribute('data-joy-block') || '').toUpperCase();
-                const theme = quadThemeMap[quadKey] || quadThemeMap.T;
-                const allThemeClasses = [
-                    ...theme.idle, ...theme.active,
-                    ...theme.mainIdle, ...theme.mainActive,
-                    ...theme.subIdle, ...theme.subActive
-                ];
-                btn.classList.remove(...allThemeClasses);
-
-                const mainLabel = btn.querySelector('.joy-main-label');
-                const subLabel = btn.querySelector('.joy-sub-label');
-                if (mainLabel) mainLabel.classList.remove(...theme.mainIdle, ...theme.mainActive);
-                if (subLabel) subLabel.classList.remove(...theme.subIdle, ...theme.subActive);
-
                 const resolved = resolveMatchingBlockValue(quadKey);
                 const isActive = Boolean(resolved && blockVal && resolved.toLowerCase() === blockVal.toLowerCase());
 
+                btn.classList.remove(...allPossibleClasses);
+                btn.querySelectorAll('.joy-main-label, .joy-sub-label').forEach(el => {
+                    el.classList.remove(...allPossibleClasses);
+                });
+
                 if (isActive) {
-                    btn.classList.add(...theme.active);
-                    if (mainLabel) mainLabel.classList.add(...theme.mainActive);
-                    if (subLabel) subLabel.classList.add(...theme.subActive);
+                    btn.classList.add(...(activeMap[quadKey] || 'bg-slate-700 text-white').split(' '));
+                    btn.querySelectorAll('.joy-main-label, .joy-sub-label').forEach(el => el.classList.add('text-white'));
                 } else {
-                    btn.classList.add(...theme.idle);
-                    if (mainLabel) mainLabel.classList.add(...theme.mainIdle);
-                    if (subLabel) subLabel.classList.add(...theme.subIdle);
+                    btn.classList.add('bg-transparent');
+                    btn.querySelectorAll('.joy-main-label, .joy-sub-label').forEach(el => el.classList.add(idleTextMap[quadKey] || 'text-slate-800'));
                 }
             });
 
