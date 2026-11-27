@@ -1197,12 +1197,13 @@
         }
 
         function syncLinkedSearchDatalists(criteria) {
+            const isOverlayActive = Boolean(stocktakeMapOverlayEnabled && getSelectedStocktakeSessions().length > 0);
             const wardSelect = document.getElementById('wardSelect');
-            const currentScopePool = (wardSelect && wardSelect.value)
-                ? currentFilteredAssets
-                : allAssets;
-        
-            const basePool = filterAssetsForRightPanel(currentScopePool);
+            const currentScopePool = isOverlayActive
+                ? getAllOverlayUnscannedAssets()
+                : ((wardSelect && wardSelect.value) ? currentFilteredAssets : allAssets);
+
+            const basePool = currentScopePool;
             const recType = criteria.recordType || 'ALL';
             const poolForType = filterAssetsByCriteria(basePool, criteria, 'recordType');
             const sel = document.getElementById('searchRecordTypeSelect');
@@ -1261,10 +1262,63 @@
                 return k && unscannedSet.has(k);
             });
         }
+        
+        function getAllOverlayUnscannedAssets() {
+            const selectedSessions = getSelectedStocktakeSessions();
+            if (!selectedSessions || selectedSessions.length === 0) return [];
 
+            const result = [];
+            const seenKeys = new Set();
+
+            selectedSessions.forEach(session => {
+                (session.unscanned || []).forEach(u => {
+                    const hydrated = hydrateMatchedItem(u);
+                    const eamKey = normalizeLookupKey(hydrated.matchedEam || hydrated.eam);
+                    const snKey = normalizeLookupKey(hydrated.matchedSerial || hydrated.serial);
+                    const uniqueKey = eamKey ? `eam:${eamKey}` : (snKey ? `sn:${snKey}` : `row:${hydrated.rowIndex || result.length}`);
+                    if (seenKeys.has(uniqueKey)) return;
+                    seenKeys.add(uniqueKey);
+
+                    const liveAsset = findAssetByEam(hydrated.matchedEam || hydrated.eam);
+                    if (liveAsset) {
+                        result.push(liveAsset);
+                    } else {
+                        result.push({
+                            recordType: 'Asset',
+                            eam: hydrated.matchedEam || hydrated.eam || '',
+                            serial: hydrated.matchedSerial || hydrated.serial || 'N/A',
+                            description: hydrated.matchedDescription || hydrated.description || '未命名 Asset',
+                            block: hydrated.matchedBlock || '',
+                            floor: hydrated.matchedFloor || '',
+                            ward: hydrated.matchedWard || hydrated.inputWard || '',
+                            remark: hydrated.inputRemark || '',
+                            x: hydrated.matchedX,
+                            y: hydrated.matchedY
+                        });
+                    }
+                });
+            });
+
+            return result;
+        }
+        
         function renderSidebarWithPriority(fallbackAssets = null) {
+            const isOverlayActive = Boolean(stocktakeMapOverlayEnabled && getSelectedStocktakeSessions().length > 0);
+            const hasFilter = hasActiveMultiSearch();
+
+            // 套用地圖開啟時：無視右上角單位，以已勾選 Stocktake 的全部未掃描 Asset 為底；
+            // 只有在篩選器有條件時才進一步篩選。
+            if (isOverlayActive) {
+                const overlayPool = getAllOverlayUnscannedAssets();
+                const finalList = hasFilter
+                    ? filterAssetsByCriteria(overlayPool, getCurrentSearchCriteria(), null)
+                    : overlayPool;
+                renderAssetSidebarList(finalList);
+                return;
+            }
+
             let baseList = [];
-            if (hasActiveMultiSearch()) {
+            if (hasFilter) {
                 baseList = filterAssetsByCriteria(allAssets, getCurrentSearchCriteria(), null);
             } else if (Array.isArray(fallbackAssets)) {
                 baseList = fallbackAssets;
@@ -1272,10 +1326,10 @@
                 const wardSelect = document.getElementById('wardSelect');
                 baseList = (wardSelect && wardSelect.value) ? currentFilteredAssets : allAssets;
             }
-            const finalList = filterAssetsForRightPanel(baseList);
-            renderAssetSidebarList(finalList);
-        }
 
+            renderAssetSidebarList(baseList);
+        }
+        
         function applyMultiFieldSearch() {
             const criteria = getCurrentSearchCriteria();
             syncLinkedSearchDatalists(criteria);
