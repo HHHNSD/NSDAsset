@@ -51,12 +51,53 @@
         .kiosk-nav-btn:active {
             transform: scale(0.93);
         }
+
+        /* Joystick 中央四象限圓形平滑等分修復 */
+        .kiosk-quad-circle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            border-radius: 50%;
+            overflow: hidden;
+            -webkit-mask-image: -webkit-radial-gradient(white, black);
+            clip-path: circle(50% at 50% 50%);
+        }
+        .kiosk-quad-circle > .joy-block-quad {
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            border-radius: 0;
+        }
     
         /* 只有 Unscanned Asset 在地圖上 highlight */
         .stocktake-unscanned-pin > div {
             box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.8), 0 8px 18px rgba(244, 63, 94, 0.48);
             transform: scale(1.26);
             z-index: 40;
+        }
+
+        /* 待處理清單 (Condemn / Transfer) 紅色呼吸燈特效與無關設備淡化 */
+        @keyframes pendingActionPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.85), 0 0 16px rgba(239, 68, 68, 0.7);
+                transform: scale(1.28);
+            }
+            50% {
+                box-shadow: 0 0 0 9px rgba(239, 68, 68, 0.25), 0 0 26px rgba(239, 68, 68, 0.95);
+                transform: scale(1.38);
+            }
+        }
+        .pending-action-highlight-pin {
+            z-index: 45 !important;
+        }
+        .pending-action-highlight-pin > div {
+            animation: pendingActionPulse 1.4s ease-in-out infinite;
+            border-color: #dc2626 !important;
+        }
+        .asset-pin-dimmed {
+            opacity: 0.24 !important;
+            filter: grayscale(65%);
         }
 </style>
 </head>
@@ -168,39 +209,41 @@
                                 <span class="text-[8px] font-extrabold leading-none">單位</span>
                             </button>
 
-                            <!-- 中央圓形 4 格：左上 T Block / 右上 M Block / 左下 Annex / 右下 Sys -->
-                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden">
-                                <!-- 十字分隔線 -->
-                                <div class="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/90 z-10"></div>
-                                <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/90 z-10"></div>
+                            <!-- 中央圓形 4 格：平滑 1fr 1fr 圓形等分 -->
+                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-slate-200 border-2 border-slate-300 shadow-inner box-border">
+                                <div class="kiosk-quad-circle relative w-full h-full">
+                                    <!-- 十字分隔線 -->
+                                    <div class="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/95 z-10"></div>
+                                    <div class="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/95 z-10"></div>
 
-                                <!-- 左上：T Block -->
-                                <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pl-1 cursor-pointer">
-                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
-                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
-                                </button>
+                                    <!-- 左上：T Block -->
+                                    <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
+                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1.5 pl-1.5 cursor-pointer">
+                                        <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
+                                        <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
+                                    </button>
 
-                                <!-- 右上：M Block -->
-                                <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pr-1 cursor-pointer">
-                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
-                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
-                                </button>
+                                    <!-- 右上：M Block -->
+                                    <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
+                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1.5 pr-1.5 cursor-pointer">
+                                        <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
+                                        <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
+                                    </button>
 
-                                <!-- 左下：Annex -->
-                                <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pl-1 cursor-pointer">
-                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
-                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
-                                </button>
+                                    <!-- 左下：Annex -->
+                                    <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
+                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1.5 pl-1.5 cursor-pointer">
+                                        <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
+                                        <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
+                                    </button>
 
-                                <!-- 右下：Sys -->
-                                <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pr-1 cursor-pointer">
-                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
-                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
-                                </button>
+                                    <!-- 右下：Sys -->
+                                    <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
+                                        class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1.5 pr-1.5 cursor-pointer">
+                                        <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
+                                        <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
+                                    </button>
+                                </div>
 
                                 <!-- 圓心徽章 -->
                                 <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-slate-200 shadow-md flex items-center justify-center z-20">
@@ -228,10 +271,10 @@
             </div>
         </div>
 
-        <!-- 右側：Stocktake 操作列 + 獨立欄位Asset清單與搜尋面板 -->
+        <!-- 右側：Stocktake 操作列 + 待處理清單 (Condemn / Transfer) + 獨立欄位Asset清單與搜尋面板 -->
         <aside class="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col h-full shadow-sm overflow-hidden min-h-0">
-            <!-- 收合為單一「Stocktake 記錄」按鈕，節省空間 -->
-            <div id="stocktakeToolbar" class="mb-3 pb-3 border-b border-slate-100 shrink-0">
+            <!-- 收合為單一「Stocktake 記錄」按鈕 + 待處理清單 (Condemn / Transfer) -->
+            <div id="stocktakeToolbar" class="mb-3 pb-3 border-b border-slate-100 shrink-0 space-y-2">
                 <button type="button" onclick="openStocktakeHistoryModal()"
                     class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xs flex items-center justify-between cursor-pointer transition-all">
                     <span class="flex items-center gap-2">
@@ -243,6 +286,42 @@
                         <span id="stocktakeHistoryBadge" class="bg-white text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full">0</span>
                     </span>
                 </button>
+
+                <!-- 待處理清單 (Condemn / Transfer) 群組功能 -->
+                <div class="bg-rose-50/75 border border-rose-200/90 rounded-xl p-2 space-y-2">
+                    <div class="flex items-center justify-between gap-1.5">
+                        <button type="button" onclick="togglePendingActionPanel()"
+                            class="flex-1 text-left flex items-center gap-1.5 text-xs font-extrabold text-rose-800 hover:text-rose-950 cursor-pointer py-0.5 min-w-0">
+                            <i id="pendingActionChevron" class="fa-solid fa-chevron-right text-[10px] transition-transform shrink-0"></i>
+                            <i class="fa-solid fa-folder-minus text-rose-600 shrink-0"></i>
+                            <span class="truncate">待處理清單 (Condemn / Transfer)</span>
+                            <span id="pendingActionCountBadge" class="bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shrink-0">0</span>
+                        </button>
+                        <button type="button" id="btnPendingActionMapHighlight" onclick="togglePendingActionMapHighlight()"
+                            class="bg-white hover:bg-rose-100 text-rose-700 border border-rose-300 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer transition-all">
+                            <i class="fa-solid fa-bullseye"></i>
+                            <span>地圖高亮</span>
+                        </button>
+                    </div>
+
+                    <!-- 可展開的待處理清單明細面板 -->
+                    <div id="pendingActionPanelBody" class="hidden pt-1.5 border-t border-rose-200/70 space-y-2">
+                        <div id="pendingActionItemsContainer" class="max-h-44 overflow-y-auto space-y-1.5 pr-0.5 text-xs">
+                            <p class="text-[11px] text-slate-400 text-center py-3">尚未標記任何設備，可在下方清單點擊「標記」加入</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 pt-1">
+                            <button type="button" onclick="exportPendingActionCsv()"
+                                class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-all">
+                                <i class="fa-solid fa-file-csv"></i>
+                                <span>匯出 CSV</span>
+                            </button>
+                            <button type="button" onclick="clearAllPendingActionItems()"
+                                class="bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg cursor-pointer transition-all">
+                                清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="pb-3 border-b border-slate-100 mb-3 space-y-2 shrink-0">
@@ -364,6 +443,14 @@
         const floorPlanCache = {};
         let isFloorPlanLoaded = false;
 
+        // 全域目前選取單位狀態（供右側清單點擊與 Joystick 標題雙向同步）
+        window.currentSelectedUnit = {
+            block: '',
+            floor: '',
+            wardKey: '',
+            wardName: ''
+        };
+
         // 簡化時間格式：只顯示 DD/MM/YYYY HH:mm，不顯示 GMT 與時區長串
         function formatShortDateTime(input) {
             if (!input) return '--/--/---- --:--';
@@ -429,7 +516,7 @@
             const currentModal = document.getElementById('customActionModal');
             if (currentModal) currentModal.remove();
 
-            locateAndHighlightAsset(targetAsset);
+            onSelectAssetFromList(targetAsset);
             setTimeout(() => {
                 openActionModal(targetAsset);
             }, 120);
@@ -579,13 +666,14 @@
 
             window.allAssets = allAssets;
             populateSearchDatalists();
+            renderPendingActionUI();
 
             const targetFocus = focusEam
                 ? allAssets.find(a => String(a.eam || '').trim().toLowerCase() === String(focusEam).trim().toLowerCase())
                 : list[0];
 
             if (jumpToTargetPage && targetFocus) {
-                locateAndHighlightAsset(targetFocus);
+                onSelectAssetFromList(targetFocus);
                 return;
             }
 
@@ -593,7 +681,7 @@
             const selectedWard = wardSelect ? String(wardSelect.value || '').trim().toLowerCase() : '';
 
             if (targetFocus && targetFocus.ward && String(targetFocus.ward).trim().toLowerCase() !== selectedWard) {
-                locateAndHighlightAsset(targetFocus);
+                onSelectAssetFromList(targetFocus);
                 return;
             }
 
@@ -1387,11 +1475,12 @@
             allAssets = data || [];
             window.allAssets = allAssets;
             populateSearchDatalists();
+            renderPendingActionUI();
 
             if (focusEam) {
                 const updatedAsset = allAssets.find(a => String(a.eam || '').trim() === String(focusEam).trim());
                 if (updatedAsset) {
-                    locateAndHighlightAsset(updatedAsset);
+                    onSelectAssetFromList(updatedAsset);
                     return;
                 }
             }
@@ -1422,6 +1511,13 @@
                     rawHierarchyData = data || [];
                     initDropdowns(floorHierarchyData);
                     populateSearchDatalists();
+                    if (window.currentSelectedUnit && window.currentSelectedUnit.wardKey) {
+                        syncCurrentSelectedUnitAndJoystick(
+                            window.currentSelectedUnit.block,
+                            window.currentSelectedUnit.floor,
+                            window.currentSelectedUnit.wardKey
+                        );
+                    }
                 },
                 () => notifyNeedF5("抓取選單階層"),
                 [5000, 30000, 60000]
@@ -1709,10 +1805,13 @@
             const wardSelect = document.getElementById('wardSelect');
             floorSelect.innerHTML = '<option value="">請選擇樓層</option>';
             wardSelect.innerHTML = '<option value="">請先選擇樓層</option>';
-            if (!block) return;
+            if (!block) {
+                syncCurrentSelectedUnitAndJoystick('', '', '');
+                return;
+            }
             const floors = [...new Set(floorHierarchyData.filter(h => h.block === block).map(h => h.floor))];
             floorSelect.innerHTML += floors.map(f => `<option value="${f}">${f}</option>`).join('');
-            updateJoystickUI();
+            syncCurrentSelectedUnitAndJoystick(block, '', '');
         }
 
         function onFloorChange() {
@@ -1720,10 +1819,13 @@
             const floor = document.getElementById('floorSelect').value;
             const wardSelect = document.getElementById('wardSelect');
             wardSelect.innerHTML = '<option value="">請選擇單位</option>';
-            if (!floor) return;
+            if (!floor) {
+                syncCurrentSelectedUnitAndJoystick(block, '', '');
+                return;
+            }
             const wards = floorHierarchyData.filter(h => h.block === block && h.floor === floor);
             wardSelect.innerHTML += wards.map(w => `<option value="${w.wardKey}">${w.wardName} (${w.wardKey})</option>`).join('');
-            updateJoystickUI();
+            syncCurrentSelectedUnitAndJoystick(block, floor, '');
         }
 
         function onWardChange() {
@@ -1751,7 +1853,11 @@
             window.currentLoadedAssets = currentFilteredAssets;
             renderAssetMarkers(currentFilteredAssets);
             renderSidebarWithPriority(currentFilteredAssets);
-            updateJoystickUI();
+            syncCurrentSelectedUnitAndJoystick(
+                document.getElementById('blockSelect')?.value || '',
+                document.getElementById('floorSelect')?.value || '',
+                wardKey
+            );
         }
 
         function getAssetTypeConfig(description) {
@@ -1946,9 +2052,24 @@
 
                 // 只有 Unscanned Asset 才 highlight；Successful 不 highlight；Unidentified 不在地圖顯示
                 const isUnscannedHighlight = isStocktakeUnscannedAsset(asset);
+                const pendingActionEntry = getPendingActionItem(asset.eam);
+                const isPendingGroupMarked = Boolean(pendingActionEntry);
+                const isPendingMapHighlightActive = Boolean(pendingActionMapHighlightEnabled && pendingActionList.length > 0);
+
+                if (isPendingMapHighlightActive) {
+                    if (isPendingGroupMarked) {
+                        marker.classList.add('pending-action-highlight-pin');
+                    } else if (!isHighlighted) {
+                        marker.classList.add('asset-pin-dimmed');
+                    }
+                }
+
                 const stRingClass = isUnscannedHighlight ? 'stocktake-unscanned-pin' : '';
                 const stBadgeHtml = isUnscannedHighlight
                     ? `<span title="Unscanned Asset（待尋找 Highlight）" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center border border-white shadow-xs text-[8px] font-black">!</span>`
+                    : '';
+                const pendingBadgeHtml = isPendingGroupMarked
+                    ? `<span title="已加入待處理清單 (${pendingActionEntry.actionType})" class="absolute -top-1.5 -left-1.5 px-1 h-4 rounded-full ${pendingActionEntry.actionType === 'Transfer' ? 'bg-amber-600' : 'bg-rose-600'} text-white flex items-center justify-center border border-white shadow-xs text-[7px] font-black">${pendingActionEntry.actionType === 'Transfer' ? 'TR' : 'CD'}</span>`
                     : '';
 
                 if (isNonAssetItem(asset)) {
@@ -1957,6 +2078,7 @@
                             isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                         }">
                             <i class="fa-solid fa-tag text-xs text-white"></i>
+                            ${pendingBadgeHtml}
                             ${stBadgeHtml}
                         </div>
                     `;
@@ -1970,6 +2092,7 @@
                             isHighlighted ? 'ring-4 ring-amber-400 animate-bounce scale-125 z-30' : ''
                         }">
                             <i class="fa-solid ${typeConfig.icon} text-xs ${typeConfig.color}"></i>
+                            ${pendingBadgeHtml}
                             ${linkBadgeHtml}
                             ${stBadgeHtml}
                         </div>
@@ -2010,7 +2133,7 @@
                 const nonAsset = isNonAssetItem(asset);
                 const typeConfig = getAssetTypeConfig(asset.description);
                 const card = document.createElement('div');
-                card.className = 'bg-gradient-to-br from-white to-slate-50/80 border border-slate-200/80 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 rounded-2xl p-3.5 cursor-pointer transition-all shadow-xs hover:shadow-md flex items-center justify-between gap-3';
+                card.className = 'bg-gradient-to-br from-white to-slate-50/80 border border-slate-200/80 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 rounded-2xl p-3.5 cursor-pointer transition-all shadow-xs hover:shadow-md flex items-center justify-between gap-2.5';
                 card.setAttribute('data-eam', asset.eam);
 
                 if (!nonAsset) {
@@ -2071,20 +2194,115 @@
                         </div>
                     `;
                 }
-                infoDiv.onclick = () => locateAndHighlightAsset(asset);
+                infoDiv.onclick = () => onSelectAssetFromList(asset);
+
+                const rightBtnsWrap = document.createElement('div');
+                rightBtnsWrap.className = 'flex items-center gap-1 shrink-0';
+
+                if (!nonAsset && asset.eam) {
+                    const markedEntry = getPendingActionItem(asset.eam);
+                    const isMarked = Boolean(markedEntry);
+                    const markBtn = document.createElement('button');
+                    markBtn.type = 'button';
+                    markBtn.title = isMarked
+                        ? `已標記 (${markedEntry.actionType}) — 點擊移出待處理清單`
+                        : '標記加入待處理清單 (Condemn / Transfer)';
+                    markBtn.className = isMarked
+                        ? 'px-2 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1'
+                        : 'px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-300 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1';
+                    markBtn.innerHTML = isMarked
+                        ? `<i class="fa-solid fa-bookmark text-[10px]"></i><span>已標記</span>`
+                        : `<i class="fa-regular fa-bookmark text-[10px]"></i><span>標記</span>`;
+                    markBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        togglePendingActionAsset(asset);
+                    };
+                    rightBtnsWrap.appendChild(markBtn);
+                }
 
                 const actionBtn = document.createElement('button');
-                actionBtn.className = 'p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shrink-0 border border-transparent hover:border-blue-100';
+                actionBtn.type = 'button';
+                actionBtn.className = 'p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shrink-0 border border-transparent hover:border-blue-100 cursor-pointer';
                 actionBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical text-sm"></i>`;
                 actionBtn.onclick = (e) => {
                     e.stopPropagation();
                     openActionModal(asset);
                 };
+                rightBtnsWrap.appendChild(actionBtn);
 
                 card.appendChild(infoDiv);
-                card.appendChild(actionBtn);
+                card.appendChild(rightBtnsWrap);
                 listContainer.appendChild(card);
             });
+        }
+
+        function resolveWardDisplayName(wardKey) {
+            const cleanKey = String(wardKey || '').trim();
+            if (!cleanKey) return '';
+            const matchedH = (floorHierarchyData || []).find(
+                h => String(h.wardKey || '').trim().toLowerCase() === cleanKey.toLowerCase()
+            );
+            if (matchedH && matchedH.wardName) {
+                return String(matchedH.wardName).trim();
+            }
+            const wardSelect = document.getElementById('wardSelect');
+            if (wardSelect) {
+                const matchedOpt = Array.from(wardSelect.options).find(
+                    o => String(o.value || '').trim().toLowerCase() === cleanKey.toLowerCase()
+                );
+                if (matchedOpt) {
+                    const cleaned = String(matchedOpt.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+                    if (cleaned) return cleaned;
+                }
+            }
+            return cleanKey;
+        }
+
+        function syncCurrentSelectedUnitAndJoystick(blockVal = '', floorVal = '', wardKeyVal = '') {
+            const cleanBlock = String(blockVal || document.getElementById('blockSelect')?.value || '').trim();
+            const cleanFloor = String(floorVal || document.getElementById('floorSelect')?.value || '').trim();
+            const cleanWardKey = String(wardKeyVal || document.getElementById('wardSelect')?.value || '').trim();
+            const resolvedName = resolveWardDisplayName(cleanWardKey);
+
+            window.currentSelectedUnit = {
+                block: cleanBlock,
+                floor: cleanFloor,
+                wardKey: cleanWardKey,
+                wardName: resolvedName
+            };
+
+            updateJoystickUI();
+
+            const statusEl = document.getElementById('joystickStatusLabel');
+            if (statusEl && cleanWardKey) {
+                const titleLabel = resolvedName || cleanWardKey;
+                statusEl.innerHTML = `<i class="fa-solid fa-grip-dots-vertical text-indigo-500 mr-1 text-[10px]"></i>${titleLabel}`;
+                statusEl.title = `${titleLabel} (${cleanWardKey})`;
+            }
+        }
+
+        function onSelectAssetFromList(asset) {
+            if (!asset) return;
+            let targetBlock = String(asset.block || '').trim();
+            let targetFloor = String(asset.floor || '').trim();
+            let targetWard = String(asset.ward || '').trim();
+
+            const matchedH = (floorHierarchyData || []).find(
+                h => String(h.wardKey || '').trim().toLowerCase() === targetWard.toLowerCase()
+            );
+            if (matchedH) {
+                targetBlock = String(matchedH.block || targetBlock).trim();
+                targetFloor = String(matchedH.floor || targetFloor).trim();
+                targetWard = String(matchedH.wardKey || targetWard).trim();
+            } else if (['pending', 'condemn', 'surplus', 'suplus', 'transfer'].includes(targetWard.toLowerCase())) {
+                targetBlock = 'System';
+                targetFloor = 'System';
+                const lowerW = targetWard.toLowerCase();
+                targetWard = lowerW === 'suplus' ? 'Surplus' : (lowerW.charAt(0).toUpperCase() + lowerW.slice(1));
+            }
+
+            locateAndHighlightAsset(asset);
+            syncCurrentSelectedUnitAndJoystick(targetBlock, targetFloor, targetWard);
         }
 
         function locateAndHighlightAsset(asset) {
@@ -2142,6 +2360,8 @@
             if (targetWard) {
                 loadFloorPlan(targetWard);
             }
+
+            syncCurrentSelectedUnitAndJoystick(targetBlock, targetFloor, targetWard);
 
             let highlightedDone = false;
             let waitTicks = 0;
@@ -2951,6 +3171,9 @@
                 pairOwnerEams,
                 'text-purple-700 hover:bg-purple-100 bg-purple-50/90 border-purple-200'
             );
+
+            const markedEntry = getPendingActionItem(asset.eam);
+            const isMarked = Boolean(markedEntry);
         
             const modal = document.createElement('div');
             modal.id = 'customActionModal';
@@ -2983,6 +3206,10 @@
                     </div>
                     
                     <div class="space-y-2">
+                        <button id="btnToggleMarkPending" class="w-full ${isMarked ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300'} text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="${isMarked ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i> ${isMarked ? `移出待處理清單 (${markedEntry.actionType})` : '加入待處理清單 (Condemn / Transfer)'}
+                        </button>
+
                         <button id="btnEdit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-pen-to-square"></i> 更改資料
                         </button>
@@ -3016,6 +3243,11 @@
                     jumpToAndOpenAssetModal(jumpCode);
                 };
             });
+
+            document.getElementById('btnToggleMarkPending').onclick = () => {
+                modal.remove();
+                togglePendingActionAsset(asset);
+            };
         
             document.getElementById('btnEdit').onclick = () => {
                 modal.remove();
@@ -3131,7 +3363,7 @@
             const targetAsset = allAssets.find(asset => String(asset.eam || '').trim().replace(/^0+/, '').toLowerCase() === cleanedEam.toLowerCase());
 
             if (targetAsset) {
-                locateAndHighlightAsset(targetAsset);
+                onSelectAssetFromList(targetAsset);
                 openActionModal(targetAsset);
             } else {
                 const currentWard = document.getElementById('wardSelect').value;
@@ -3396,7 +3628,11 @@
                 onWardChange();
             }
 
-            updateJoystickUI();
+            syncCurrentSelectedUnitAndJoystick(
+                blockSelect.value || '',
+                floorSelect.value || '',
+                wardSelect.value || ''
+            );
         }
 
         function resolveMatchingBlockValue(quadKey) {
@@ -3430,27 +3666,27 @@
 
         function getCurrentWardNameOnly() {
             const wardSelect = document.getElementById('wardSelect');
-            const wardVal = wardSelect?.value || '';
+            const wardVal = (wardSelect && wardSelect.value)
+                || (window.currentSelectedUnit && window.currentSelectedUnit.wardKey)
+                || '';
             if (!wardVal) return '';
 
-            const matchedH = (floorHierarchyData || []).find(
-                h => String(h.wardKey || '').trim().toLowerCase() === String(wardVal).trim().toLowerCase()
-            );
-            if (matchedH && matchedH.wardName) {
-                return String(matchedH.wardName).trim();
-            }
+            const resolved = resolveWardDisplayName(wardVal);
+            if (resolved) return resolved;
 
-            if (wardSelect && wardSelect.selectedIndex >= 0) {
-                const rawOptText = String(wardSelect.options[wardSelect.selectedIndex]?.text || '').trim();
-                const cleaned = rawOptText.replace(/\s*\([^)]*\)\s*$/, '').trim();
-                if (cleaned) return cleaned;
+            if (window.currentSelectedUnit && window.currentSelectedUnit.wardName) {
+                return window.currentSelectedUnit.wardName;
             }
             return wardVal;
         }
 
         function updateJoystickUI() {
-            const blockVal = document.getElementById('blockSelect')?.value || '';
-            const floorVal = document.getElementById('floorSelect')?.value || '';
+            const blockVal = document.getElementById('blockSelect')?.value
+                || (window.currentSelectedUnit && window.currentSelectedUnit.block)
+                || '';
+            const floorVal = document.getElementById('floorSelect')?.value
+                || (window.currentSelectedUnit && window.currentSelectedUnit.floor)
+                || '';
             const wardNameOnly = getCurrentWardNameOnly();
 
             const statusEl = document.getElementById('joystickStatusLabel');
@@ -3658,7 +3894,263 @@
             applyNavigationSlot(slots[nextSlotIdx]);
         }
 
+        // ========== 待處理清單 (Condemn / Transfer) 群組功能 ==========
+        const PENDING_ACTION_STORAGE_KEY = 'nsd_asset_pending_action_group_v1';
+        let pendingActionList = [];
+        let pendingActionMapHighlightEnabled = false;
+        let isPendingActionPanelExpanded = false;
+
+        function loadPendingActionListFromStorage() {
+            try {
+                const raw = localStorage.getItem(PENDING_ACTION_STORAGE_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                pendingActionList = Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                console.warn('讀取待處理清單 localStorage 失敗:', err);
+                pendingActionList = [];
+            }
+        }
+
+        function savePendingActionListToStorage() {
+            try {
+                localStorage.setItem(PENDING_ACTION_STORAGE_KEY, JSON.stringify(pendingActionList));
+            } catch (err) {
+                console.warn('儲存待處理清單 localStorage 失敗:', err);
+            }
+        }
+
+        function getPendingActionItem(eam) {
+            const clean = String(eam || '').trim().toLowerCase();
+            if (!clean) return null;
+            return pendingActionList.find(item => String(item.eam || '').trim().toLowerCase() === clean) || null;
+        }
+
+        function togglePendingActionAsset(asset) {
+            if (!asset || !asset.eam) return;
+            const cleanEam = String(asset.eam).trim();
+            const existingIdx = pendingActionList.findIndex(
+                item => String(item.eam || '').trim().toLowerCase() === cleanEam.toLowerCase()
+            );
+
+            if (existingIdx > -1) {
+                pendingActionList.splice(existingIdx, 1);
+            } else {
+                pendingActionList.unshift({
+                    eam: cleanEam,
+                    serial: normalizeSerialValue(asset.serial),
+                    description: String(asset.description || '').trim(),
+                    ward: String(asset.ward || '').trim(),
+                    block: String(asset.block || '').trim(),
+                    floor: String(asset.floor || '').trim(),
+                    actionType: 'Condemn',
+                    addedAt: formatShortDateTime(new Date())
+                });
+            }
+
+            if (pendingActionList.length === 0 && pendingActionMapHighlightEnabled) {
+                pendingActionMapHighlightEnabled = false;
+            }
+
+            savePendingActionListToStorage();
+            renderPendingActionUI();
+            renderSidebarWithPriority();
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+        }
+
+        function updatePendingActionItemType(eam, newType) {
+            const item = getPendingActionItem(eam);
+            if (!item) return;
+            item.actionType = newType === 'Transfer' ? 'Transfer' : 'Condemn';
+            savePendingActionListToStorage();
+            renderPendingActionUI();
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+        }
+
+        function removePendingActionItem(eam) {
+            const clean = String(eam || '').trim().toLowerCase();
+            pendingActionList = pendingActionList.filter(
+                item => String(item.eam || '').trim().toLowerCase() !== clean
+            );
+            if (pendingActionList.length === 0 && pendingActionMapHighlightEnabled) {
+                pendingActionMapHighlightEnabled = false;
+            }
+            savePendingActionListToStorage();
+            renderPendingActionUI();
+            renderSidebarWithPriority();
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+        }
+
+        function clearAllPendingActionItems() {
+            if (pendingActionList.length === 0) return;
+            if (!confirm(`確定要清空全部 ${pendingActionList.length} 項待處理清單嗎？`)) return;
+            pendingActionList = [];
+            pendingActionMapHighlightEnabled = false;
+            savePendingActionListToStorage();
+            renderPendingActionUI();
+            renderSidebarWithPriority();
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+        }
+
+        function togglePendingActionPanel() {
+            isPendingActionPanelExpanded = !isPendingActionPanelExpanded;
+            const body = document.getElementById('pendingActionPanelBody');
+            const chevron = document.getElementById('pendingActionChevron');
+            if (body) {
+                body.classList.toggle('hidden', !isPendingActionPanelExpanded);
+            }
+            if (chevron) {
+                chevron.classList.toggle('rotate-90', isPendingActionPanelExpanded);
+            }
+        }
+
+        function togglePendingActionMapHighlight() {
+            if (!pendingActionMapHighlightEnabled && pendingActionList.length === 0) {
+                alert('待處理清單目前為空，請先在右側 Asset 卡片點擊「標記」加入設備。');
+                return;
+            }
+            pendingActionMapHighlightEnabled = !pendingActionMapHighlightEnabled;
+            renderPendingActionUI();
+
+            const banner = document.getElementById('selectionBanner');
+            const bannerText = document.getElementById('bannerText');
+            if (pendingActionMapHighlightEnabled) {
+                if (banner && bannerText) {
+                    banner.classList.remove('hidden');
+                    bannerText.innerText = `🚨 待處理清單地圖高亮模式（共 ${pendingActionList.length} 項）：已淡化其他設備並以紅色呼吸燈標示`;
+                }
+            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && !stocktakeMapOverlayEnabled && banner) {
+                banner.classList.add('hidden');
+            }
+
+            const wardVal = document.getElementById('wardSelect')?.value || '';
+            if (wardVal) {
+                renderAssetMarkers(currentFilteredAssets);
+            }
+        }
+
+        function renderPendingActionUI() {
+            const countBadge = document.getElementById('pendingActionCountBadge');
+            const highlightBtn = document.getElementById('btnPendingActionMapHighlight');
+            const itemsContainer = document.getElementById('pendingActionItemsContainer');
+
+            if (countBadge) {
+                countBadge.innerText = String(pendingActionList.length);
+            }
+
+            if (highlightBtn) {
+                if (pendingActionMapHighlightEnabled) {
+                    highlightBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white border border-rose-700 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-xs flex items-center gap-1 shrink-0 cursor-pointer transition-all ring-2 ring-rose-300';
+                    highlightBtn.innerHTML = `<i class="fa-solid fa-bullseye animate-pulse"></i><span>高亮中</span>`;
+                } else {
+                    highlightBtn.className = 'bg-white hover:bg-rose-100 text-rose-700 border border-rose-300 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer transition-all';
+                    highlightBtn.innerHTML = `<i class="fa-solid fa-bullseye"></i><span>地圖高亮</span>`;
+                }
+            }
+
+            if (!itemsContainer) return;
+
+            if (pendingActionList.length === 0) {
+                itemsContainer.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-3">尚未標記任何設備，可在下方清單點擊「標記」加入</p>`;
+                return;
+            }
+
+            itemsContainer.innerHTML = pendingActionList.map(item => {
+                const live = findAssetByEam(item.eam);
+                const desc = (live && live.description) || item.description || '無類型';
+                const ward = (live && live.ward) || item.ward || 'N/A';
+                const safeEam = String(item.eam || '').replace(/"/g, '&quot;');
+                const safeEamJs = String(item.eam || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                return `
+                    <div class="bg-white border border-rose-200/80 rounded-lg p-2 flex items-center justify-between gap-2 shadow-2xs">
+                        <div class="min-w-0 flex-1 cursor-pointer" onclick="const a = findAssetByEam('${safeEamJs}'); if (a) onSelectAssetFromList(a);">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-rose-700 text-[11px]">${safeEam}</span>
+                                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-semibold">${ward}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-700 truncate">${desc}</p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <select onchange="updatePendingActionItemType('${safeEamJs}', this.value)"
+                                class="bg-slate-50 border border-slate-300 rounded-md px-1.5 py-1 text-[11px] font-bold ${item.actionType === 'Transfer' ? 'text-amber-700' : 'text-rose-700'} cursor-pointer focus:outline-none">
+                                <option value="Condemn" ${item.actionType === 'Condemn' ? 'selected' : ''}>Condemn</option>
+                                <option value="Transfer" ${item.actionType === 'Transfer' ? 'selected' : ''}>Transfer</option>
+                            </select>
+                            <button type="button" onclick="removePendingActionItem('${safeEamJs}')" title="移出清單"
+                                class="w-6 h-6 rounded-md bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700 flex items-center justify-center text-[10px] cursor-pointer">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function exportPendingActionCsv() {
+            if (pendingActionList.length === 0) {
+                alert('目前待處理清單沒有資料可匯出！');
+                return;
+            }
+
+            const escapeCsvCell = (val) => {
+                const str = String(val ?? '');
+                if (/[",\r\n]/.test(str)) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+
+            const headers = ['Action Type', 'EAM Number', 'Serial Number', 'Description', 'Location'];
+            const rows = pendingActionList.map(item => {
+                const live = findAssetByEam(item.eam);
+                const actionType = item.actionType === 'Transfer' ? 'Transfer' : 'Condemn';
+                const eamNum = String((live && live.eam) || item.eam || '').trim();
+                const serialNum = normalizeSerialValue((live && live.serial) || item.serial);
+                const desc = String((live && live.description) || item.description || '').trim();
+                const loc = String((live && live.ward) || item.ward || '').trim();
+                return [actionType, eamNum, serialNum, desc, loc].map(escapeCsvCell).join(',');
+            });
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const dateTag = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+            const fileName = `NSD_Pending_Condemn_Transfer_${dateTag}.csv`;
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function initPendingActionFeature() {
+            loadPendingActionListFromStorage();
+            renderPendingActionUI();
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
+            initPendingActionFeature();
             fetchHierarchy();
             fetchAllAssets();
             initJoystickInteractions();
@@ -3824,7 +4316,7 @@
                     banner.classList.remove('hidden');
                     bannerText.innerText = `📋 地圖套用已開啟（${active.fileName}）：地圖標記 ${unscannedCount} 項未掃描Asset`;
                 }
-            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && banner) {
+            } else if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && !pendingActionMapHighlightEnabled && banner) {
                 banner.classList.add('hidden');
             }
 
@@ -4368,189 +4860,482 @@
             modal.id = 'stocktakeResultModal';
             modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
             modal.innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-3xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
-                    <div class="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-4xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
+                    <div class="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 shrink-0">
                         <div>
-                            <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
-                                <i class="fa-solid fa-clipboard-check"></i> Stocktake 記錄 — ${session.fileName}
+                            <h3 class="text-sm font-black text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-clipboard-check text-indigo-600"></i>
+                                <span>盤點比對結果：${session.fileName}</span>
                             </h3>
                             <p class="text-[11px] text-slate-500 mt-0.5">
-                                匯入時間：<strong>${formatShortDateTime(session.importedAt)}</strong>｜總數：${session.totalInput}｜未掃描Asset：<strong>${unscannedList.length}</strong>｜已掃描Asset：<strong>${successfulList.length}</strong>｜非所屬Asset：<strong>${unidentifiedList.length}</strong>｜未登記Asset：<strong>${unmatchedList.length}</strong>
+                                時間：${formatShortDateTime(session.importedAt)} ｜ 總讀入 <strong>${session.totalInput}</strong> 筆
                             </p>
                         </div>
-                        <button type="button" id="btnCloseStocktakeResult" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                        <button type="button" id="btnCloseStocktakeResult" class="text-slate-400 hover:text-slate-700 font-bold text-base px-2 cursor-pointer">✕</button>
                     </div>
 
-                    <div class="flex flex-wrap gap-2 my-3">
-                        <button type="button" id="btnOverlayFromResult" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-map-pin"></i> 套用到地圖並關閉
+                    <!-- 四大分類狀態頁籤 -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 my-3 shrink-0">
+                        <button type="button" id="tabStocktakeUnscanned"
+                            class="py-2 px-2.5 rounded-xl text-xs font-extrabold border-2 border-rose-500 bg-rose-50 text-rose-800 cursor-pointer transition-all text-left">
+                            <div class="flex items-center justify-between">
+                                <span>未掃描Asset</span>
+                                <span class="bg-rose-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">${unscannedList.length}</span>
+                            </div>
+                            <p class="text-[10px] font-medium text-rose-600 mt-0.5">地圖 Highlight 標記</p>
                         </button>
-                        <button type="button" id="btnOpenPendingFromResult" class="bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-clock-rotate-left"></i> 未登記Asset (${unmatchedList.length})
+
+                        <button type="button" id="tabStocktakeSuccessful"
+                            class="py-2 px-2.5 rounded-xl text-xs font-extrabold border border-slate-200 bg-slate-50 text-slate-600 hover:bg-emerald-50/60 cursor-pointer transition-all text-left">
+                            <div class="flex items-center justify-between">
+                                <span>已掃描Asset</span>
+                                <span class="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">${successfulList.length}</span>
+                            </div>
+                            <p class="text-[10px] font-medium text-slate-500 mt-0.5">地圖不 Highlight</p>
                         </button>
-                        <button type="button" id="btnOpenUnidentifiedFromResult" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${unidentifiedList.length})
+
+                        <button type="button" id="tabStocktakeUnidentified"
+                            class="py-2 px-2.5 rounded-xl text-xs font-extrabold border border-slate-200 bg-slate-50 text-slate-600 hover:bg-purple-50/60 cursor-pointer transition-all text-left">
+                            <div class="flex items-center justify-between">
+                                <span>非所屬Asset</span>
+                                <span class="bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">${unidentifiedList.length}</span>
+                            </div>
+                            <p class="text-[10px] font-medium text-slate-500 mt-0.5">不顯示地圖 / 僅 EAM & Owner</p>
+                        </button>
+
+                        <button type="button" id="tabStocktakeUnmatched"
+                            class="py-2 px-2.5 rounded-xl text-xs font-extrabold border border-slate-200 bg-slate-50 text-slate-600 hover:bg-amber-50/60 cursor-pointer transition-all text-left">
+                            <div class="flex items-center justify-between">
+                                <span>未登記Asset</span>
+                                <span class="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${unmatchedList.length}</span>
+                            </div>
+                            <p class="text-[10px] font-medium text-slate-500 mt-0.5">System / System / Pending</p>
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 overflow-y-auto flex-1 pr-1 text-xs">
-                        <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/40">
-                            <h4 class="font-bold text-rose-800 mb-2">未掃描Asset (${unscannedList.length})</h4>
-                            <div class="space-y-1.5 max-h-64 overflow-y-auto">
-                                ${unscannedList.length === 0
-                                    ? '<p class="text-[11px] text-slate-400 italic">無未掃描Asset</p>'
-                                    : unscannedList.map(m => `
-                                        <button type="button" data-locate-eam="${String(m.matchedEam || '').replace(/"/g, '&quot;')}"
-                                            class="st-locate-btn w-full text-left bg-white hover:bg-rose-100/60 border border-rose-200/80 rounded-lg p-2 cursor-pointer transition-all">
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="font-bold text-rose-700">${m.matchedEam || m.inputEam}</span>
-                                                <span class="text-[10px] bg-rose-100 text-rose-800 px-1.5 py-0.2 rounded font-semibold">未掃描Asset</span>
-                                            </div>
-                                            <p class="text-[11px] text-slate-700 truncate">${m.matchedDescription || m.inputDescription || '系統資產'}</p>
-                                            <p class="text-[10px] text-slate-500">Ward: ${m.matchedWard || 'N/A'} | SN: ${normalizeSerialValue(m.matchedSerial || m.inputSerial)}</p>
-                                        </button>
-                                    `).join('')
-                                }
-                            </div>
-                        </div>
+                    <div id="stocktakeResultBody" class="flex-1 overflow-y-auto border border-slate-200 rounded-xl bg-slate-50/60 p-3 min-h-0"></div>
 
-                        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/60">
-                            <h4 class="font-bold text-slate-700 mb-2">已掃描Asset (${successfulList.length})</h4>
-                            <div class="space-y-1.5 max-h-64 overflow-y-auto">
-                                ${successfulList.length === 0
-                                    ? '<p class="text-[11px] text-slate-400 italic">無已掃描Asset</p>'
-                                    : successfulList.map(m => `
-                                        <button type="button" data-locate-eam="${String(m.matchedEam || '').replace(/"/g, '&quot;')}"
-                                            class="st-locate-btn w-full text-left bg-white hover:bg-slate-100 border border-slate-200 rounded-lg p-2 cursor-pointer transition-all">
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="font-bold text-slate-800">${m.matchedEam || m.inputEam}</span>
-                                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">已掃描Asset</span>
-                                            </div>
-                                            <p class="text-[11px] text-slate-700 truncate">${m.matchedDescription || m.inputDescription || '系統資產'}</p>
-                                            <p class="text-[10px] text-slate-500">Ward: ${m.matchedWard || 'N/A'} | SN: ${normalizeSerialValue(m.matchedSerial || m.inputSerial)}</p>
-                                        </button>
-                                    `).join('')
-                                }
-                            </div>
-                        </div>
-
-                        <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/40">
-                            <h4 class="font-bold text-amber-800 mb-2">未登記Asset (${unmatchedList.length})</h4>
-                            <div class="space-y-1.5 max-h-64 overflow-y-auto">
-                                ${unmatchedList.length === 0
-                                    ? '<p class="text-[11px] text-slate-400 italic">無未登記Asset</p>'
-                                    : unmatchedList.map(u => `
-                                        <div class="bg-white border border-amber-200/80 rounded-lg p-2">
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="font-bold text-amber-800">${u.eam || '(無 EAM)'}</span>
-                                                <span class="text-[10px] text-slate-600 font-semibold">S/N: ${normalizeSerialValue(u.serial)}</span>
-                                            </div>
-                                            <p class="text-[11px] text-slate-700 truncate">${u.description || '未命名項目'}</p>
-                                            <p class="text-[10px] text-slate-500">位置: System / System / Pending</p>
-                                        </div>
-                                    `).join('')
-                                }
-                            </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-3 mt-3 border-t border-slate-100 shrink-0">
+                        <button type="button" id="btnToggleOverlayInModal"
+                            class="${stocktakeMapOverlayEnabled ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} text-xs font-bold px-3.5 py-2 rounded-xl cursor-pointer transition-all">
+                            <i class="fa-solid fa-eye mr-1"></i> ${stocktakeMapOverlayEnabled ? '地圖套用中（點此關閉）' : '套用到地圖（Highlight 未掃描Asset）'}
+                        </button>
+                        <div class="flex gap-2">
+                            <button type="button" id="btnBackToHistoryFromResult" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl cursor-pointer">
+                                返回記錄列表
+                            </button>
+                            <button type="button" id="btnCloseStocktakeResultFooter" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">
+                                完成
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
 
-            document.getElementById('btnCloseStocktakeResult').onclick = () => modal.remove();
-            document.getElementById('btnOverlayFromResult').onclick = () => {
+            const bodyEl = document.getElementById('stocktakeResultBody');
+            const tabUnscanned = document.getElementById('tabStocktakeUnscanned');
+            const tabSuccessful = document.getElementById('tabStocktakeSuccessful');
+            const tabUnidentified = document.getElementById('tabStocktakeUnidentified');
+            const tabUnmatched = document.getElementById('tabStocktakeUnmatched');
+
+            function setTabStyles(activeKey) {
+                const baseInactive = 'py-2 px-2.5 rounded-xl text-xs font-extrabold border border-slate-200 bg-slate-50 text-slate-600 cursor-pointer transition-all text-left';
+                tabUnscanned.className = activeKey === 'unscanned'
+                    ? 'py-2 px-2.5 rounded-xl text-xs font-extrabold border-2 border-rose-500 bg-rose-50 text-rose-800 cursor-pointer transition-all text-left'
+                    : baseInactive;
+                tabSuccessful.className = activeKey === 'successful'
+                    ? 'py-2 px-2.5 rounded-xl text-xs font-extrabold border-2 border-emerald-500 bg-emerald-50 text-emerald-800 cursor-pointer transition-all text-left'
+                    : baseInactive;
+                tabUnidentified.className = activeKey === 'unidentified'
+                    ? 'py-2 px-2.5 rounded-xl text-xs font-extrabold border-2 border-purple-500 bg-purple-50 text-purple-800 cursor-pointer transition-all text-left'
+                    : baseInactive;
+                tabUnmatched.className = activeKey === 'unmatched'
+                    ? 'py-2 px-2.5 rounded-xl text-xs font-extrabold border-2 border-amber-500 bg-amber-50 text-amber-800 cursor-pointer transition-all text-left'
+                    : baseInactive;
+            }
+
+            function renderSystemMatchedTable(items, badgeColorClass, statusText, emptyText) {
+                setTabStyles(statusText === '未掃描Asset' ? 'unscanned' : 'successful');
+                if (items.length === 0) {
+                    bodyEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">${emptyText}</p>`;
+                    return;
+                }
+                bodyEl.innerHTML = `
+                    <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                                    <th class="py-2 px-3">EAM</th>
+                                    <th class="py-2 px-3">Serial</th>
+                                    <th class="py-2 px-3">類型 (Description)</th>
+                                    <th class="py-2 px-3">系統位置</th>
+                                    <th class="py-2 px-3">分類</th>
+                                    <th class="py-2 px-3 text-right">定位</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${items.map(m => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="py-2 px-3 font-bold text-blue-700">${m.matchedEam || m.inputEam || 'N/A'}</td>
+                                        <td class="py-2 px-3 text-slate-700 font-medium">${normalizeSerialValue(m.matchedSerial || m.inputSerial)}</td>
+                                        <td class="py-2 px-3 text-slate-700">${m.matchedDescription || m.inputDescription || ''}</td>
+                                        <td class="py-2 px-3 font-semibold text-slate-800">${m.matchedBlock || ''} / ${m.matchedFloor || ''} / ${m.matchedWard || '未設定'}</td>
+                                        <td class="py-2 px-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColorClass}">${statusText}</span></td>
+                                        <td class="py-2 px-3 text-right">
+                                            <button type="button" data-locate-eam="${String(m.matchedEam || '').replace(/"/g, '&quot;')}"
+                                                class="btn-locate-matched bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer">
+                                                地圖定位
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                bodyEl.querySelectorAll('.btn-locate-matched').forEach(btn => {
+                    btn.onclick = () => {
+                        const targetEam = btn.getAttribute('data-locate-eam');
+                        const found = findAssetByEam(targetEam);
+                        if (found) {
+                            modal.remove();
+                            onSelectAssetFromList(found);
+                        }
+                    };
+                });
+            }
+
+            function renderUnidentifiedTab() {
+                setTabStyles('unidentified');
+                if (unidentifiedList.length === 0) {
+                    bodyEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">本次沒有 非所屬Asset 項目。</p>';
+                    return;
+                }
+                bodyEl.innerHTML = `
+                    <div class="mb-2.5 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-[11px] text-purple-800 font-semibold">
+                        <i class="fa-solid fa-eye-slash mr-1"></i> 此分類項目不會顯示在地圖上，亦不會與現有系統 Asset 清單比對，僅保留 EAM 與 Owner 供查閱。
+                    </div>
+                    <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-purple-50/80 text-purple-900 border-b border-purple-200">
+                                    <th class="py-2 px-3">#</th>
+                                    <th class="py-2 px-3">EAM</th>
+                                    <th class="py-2 px-3">Owner (Owning Department)</th>
+                                    <th class="py-2 px-3">分類</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${unidentifiedList.map((u, idx) => `
+                                    <tr class="hover:bg-purple-50/40">
+                                        <td class="py-2 px-3 text-slate-400 font-semibold">${idx + 1}</td>
+                                        <td class="py-2 px-3 font-bold text-purple-800">${u.eam || '(無 EAM)'}</td>
+                                        <td class="py-2 px-3 font-semibold text-slate-800">${u.owner || '未標示'}</td>
+                                        <td class="py-2 px-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">非所屬Asset（不上地圖）</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            function renderUnmatchedTab() {
+                setTabStyles('unmatched');
+                if (unmatchedList.length === 0) {
+                    bodyEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">所有登記 Asset 均已在系統內，沒有待處理的 未登記Asset。</p>';
+                    return;
+                }
+                bodyEl.innerHTML = `
+                    <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-amber-50 text-amber-900 border-b border-amber-200">
+                                    <th class="py-2 px-3">EAM</th>
+                                    <th class="py-2 px-3">Serial</th>
+                                    <th class="py-2 px-3">類型 (Description)</th>
+                                    <th class="py-2 px-3">歸類位置</th>
+                                    <th class="py-2 px-3 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${unmatchedList.map(u => `
+                                    <tr class="hover:bg-amber-50/40">
+                                        <td class="py-2 px-3 font-bold text-amber-800">${u.eam || '(無 EAM)'}</td>
+                                        <td class="py-2 px-3 text-slate-700 font-medium">${normalizeSerialValue(u.serial)}</td>
+                                        <td class="py-2 px-3 text-slate-700">${u.description || ''}</td>
+                                        <td class="py-2 px-3">
+                                            <span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">System / System / Pending</span>
+                                        </td>
+                                        <td class="py-2 px-3 text-right">
+                                            <button type="button" data-restore-id="${u.id}"
+                                                class="btn-restore-pending bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer">
+                                                放回系統並設定位置
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                bodyEl.querySelectorAll('.btn-restore-pending').forEach(btn => {
+                    btn.onclick = () => {
+                        const itemId = btn.getAttribute('data-restore-id');
+                        const targetItem = (session.unmatched || []).find(x => x.id === itemId);
+                        if (targetItem) {
+                            modal.remove();
+                            openRestorePendingItemModal(session.id, targetItem);
+                        }
+                    };
+                });
+            }
+
+            tabUnscanned.onclick = () => renderSystemMatchedTable(
+                unscannedList,
+                'bg-rose-100 text-rose-700 border border-rose-200',
+                '未掃描Asset',
+                '本次沒有 未掃描Asset 項目。'
+            );
+            tabSuccessful.onclick = () => renderSystemMatchedTable(
+                successfulList,
+                'bg-emerald-100 text-emerald-700 border border-emerald-200',
+                '已掃描Asset',
+                '本次沒有 已掃描Asset 項目。'
+            );
+            tabUnidentified.onclick = renderUnidentifiedTab;
+            tabUnmatched.onclick = renderUnmatchedTab;
+
+            // 預設顯示 未掃描Asset
+            tabUnscanned.onclick();
+
+            document.getElementById('btnToggleOverlayInModal').onclick = () => {
                 activeStocktakeSessionId = session.id;
-                stocktakeMapOverlayEnabled = true;
-                updateStocktakeBadges();
-                renderSidebarWithPriority();
-                modal.remove();
-                const firstUnscanned = (session.unscanned || []).find(m => m.matchedEam || m.eam);
-                if (firstUnscanned) {
-                    const targetAsset = findAssetByEam(firstUnscanned.matchedEam || firstUnscanned.eam);
-                    if (targetAsset) locateAndHighlightAsset(targetAsset);
-                } else {
-                    const wardVal = document.getElementById('wardSelect')?.value || '';
-                    if (wardVal) renderAssetMarkers(currentFilteredAssets);
+                toggleStocktakeMapOverlay();
+                const btn = document.getElementById('btnToggleOverlayInModal');
+                if (btn) {
+                    btn.className = `${stocktakeMapOverlayEnabled ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} text-xs font-bold px-3.5 py-2 rounded-xl cursor-pointer transition-all`;
+                    btn.innerHTML = `<i class="fa-solid fa-eye mr-1"></i> ${stocktakeMapOverlayEnabled ? '地圖套用中（點此關閉）' : '套用到地圖（Highlight 未掃描Asset）'}`;
                 }
             };
-            document.getElementById('btnOpenPendingFromResult').onclick = () => {
-                activeStocktakeSessionId = session.id;
+
+            document.getElementById('btnBackToHistoryFromResult').onclick = () => {
                 modal.remove();
-                openStocktakePendingModal(session.id);
-            };
-            document.getElementById('btnOpenUnidentifiedFromResult').onclick = () => {
-                activeStocktakeSessionId = session.id;
-                modal.remove();
-                openStocktakeUnidentifiedModal(session.id);
+                openStocktakeHistoryModal();
             };
 
-            modal.querySelectorAll('.st-locate-btn').forEach(btn => {
-                btn.onclick = () => {
-                    const code = btn.getAttribute('data-locate-eam');
-                    const found = findAssetByEam(code);
-                    if (found) {
-                        activeStocktakeSessionId = session.id;
-                        stocktakeMapOverlayEnabled = true;
-                        updateStocktakeBadges();
-                        renderSidebarWithPriority();
-                        modal.remove();
-                        locateAndHighlightAsset(found);
-                    }
-                };
-            });
+            document.getElementById('btnCloseStocktakeResult').onclick = () => modal.remove();
+            document.getElementById('btnCloseStocktakeResultFooter').onclick = () => modal.remove();
         }
 
-        function openStocktakeUnidentifiedModal(sessionId = null) {
-            const rawSession = sessionId
-                ? stocktakeSessions.find(s => s.id === sessionId)
-                : getActiveStocktakeSession();
-            const session = ensureSessionBuckets(rawSession);
-
-            const existing = document.getElementById('stocktakeUnidentifiedModal');
+        function openRestorePendingItemModal(sessionId, pendingItem) {
+            const existing = document.getElementById('restorePendingModal');
             if (existing) existing.remove();
 
-            const items = session ? (session.unidentified || []) : [];
+            const blocks = [...new Set((floorHierarchyData || []).map(h => h.block).filter(Boolean))];
+            const defaultBlock = blocks[0] || '';
+            const currentDesc = (pendingItem.description || '').trim();
+            const isInList = ASSET_TYPES.some(t => t.label === currentDesc);
+            const preservedSerial = normalizeSerialValue(pendingItem.serial);
+
+            const typeOptions = (currentDesc && !isInList ? `<option value="${currentDesc}" selected>${currentDesc}</option>` : '') +
+                ASSET_TYPES.map(t => `<option value="${t.label}" ${t.label === currentDesc ? 'selected' : ''}>${t.label}</option>`).join('');
 
             const modal = document.createElement('div');
-            modal.id = 'stocktakeUnidentifiedModal';
+            modal.id = 'restorePendingModal';
             modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
             modal.innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-lg shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-sm font-black text-sky-700 flex items-center gap-2">
-                                <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${items.length})
-                            </h3>
-                            <p class="text-[11px] text-slate-500 mt-0.5">
-                                ${session
-                                    ? `檔案：<strong>${session.fileName}</strong>（${formatShortDateTime(session.importedAt)}）`
-                                    : '目前尚無 Stocktake 記錄'}
-                            </p>
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl text-slate-800 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-black text-indigo-700 flex items-center gap-2">
+                            <i class="fa-solid fa-box-open"></i> 將未登記Asset放回系統並設定位置
+                        </h3>
+                        <button type="button" id="btnCloseRestoreModal" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 mb-3 text-[11px] text-amber-800">
+                        目前 Pending 歸類：<strong>System / System / Pending</strong>（Excel 原始 Serial：<strong>${preservedSerial}</strong>）
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">EAM 編號 <span class="text-rose-500">*</span>:</label>
+                                <input id="restoreEamInput" type="text" value="${pendingItem.eam || ''}" placeholder="請輸入 EAM"
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">Serial 編號:</label>
+                                <input id="restoreSerialInput" type="text" value="${preservedSerial}" placeholder="SN"
+                                    class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800">
+                            </div>
                         </div>
-                        <button type="button" id="btnCloseStocktakeUnidentified" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
+
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">Asset 類型 (Type):</label>
+                            <select id="restoreDescSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800">${typeOptions}</select>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">Block <span class="text-rose-500">*</span>:</label>
+                                <select id="restoreBlockSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs text-slate-800">
+                                    ${blocks.map(b => `<option value="${b}" ${b === defaultBlock ? 'selected' : ''}>${b}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">Floor <span class="text-rose-500">*</span>:</label>
+                                <select id="restoreFloorSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs text-slate-800"></select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">Ward <span class="text-rose-500">*</span>:</label>
+                                <select id="restoreWardSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs text-slate-800"></select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">備註 (Remark):</label>
+                            <input id="restoreRemarkInput" type="text" value="${pendingItem.remark || ''}"
+                                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800">
+                        </div>
                     </div>
 
-                    <div class="overflow-y-auto flex-1 my-3 space-y-2 pr-1 text-xs">
-                        ${items.length === 0
-                            ? '<p class="text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">目前沒有非所屬Asset 項目。</p>'
-                            : items.map(it => `
-                                <div class="border border-sky-200 bg-sky-50/40 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2">
-                                    <span class="font-bold text-sky-900">EAM: ${it.eam || '(無 EAM)'}</span>
-                                    <span class="text-[11px] bg-white border border-sky-200 text-slate-700 px-2.5 py-0.5 rounded-lg font-bold">Owner: ${it.owner || it.ward || '未標示'}</span>
-                                </div>
-                            `).join('')
-                        }
-                    </div>
-
-                    <div class="flex justify-end pt-2 border-t border-slate-100">
-                        <button type="button" id="btnDoneStocktakeUnidentified" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">關閉</button>
+                    <div class="flex flex-col gap-2 mt-5">
+                        <button type="button" id="btnRestoreAndPickOnMap" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl shadow cursor-pointer">
+                            <i class="fa-solid fa-location-crosshairs mr-1"></i> 寫入系統並直接在地圖點選座標
+                        </button>
+                        <button type="button" id="btnRestoreAutoCoord" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-xl shadow cursor-pointer">
+                            <i class="fa-solid fa-check mr-1"></i> 直接寫入系統（預設自動座標）
+                        </button>
+                        <button type="button" id="btnCancelRestoreModal" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs py-2 rounded-xl cursor-pointer">
+                            取消
+                        </button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
 
-            document.getElementById('btnCloseStocktakeUnidentified').onclick = () => modal.remove();
-            document.getElementById('btnDoneStocktakeUnidentified').onclick = () => modal.remove();
+            const blockEl = document.getElementById('restoreBlockSelect');
+            const floorEl = document.getElementById('restoreFloorSelect');
+            const wardEl = document.getElementById('restoreWardSelect');
+
+            function syncRestoreFloors() {
+                const blk = blockEl.value;
+                const floors = [...new Set((floorHierarchyData || []).filter(h => h.block === blk).map(h => h.floor))];
+                floorEl.innerHTML = floors.map(f => `<option value="${f}">${f}</option>`).join('');
+                syncRestoreWards();
+            }
+
+            function syncRestoreWards() {
+                const blk = blockEl.value;
+                const flr = floorEl.value;
+                const wards = (floorHierarchyData || []).filter(h => h.block === blk && h.floor === flr);
+                wardEl.innerHTML = wards.map(w => `<option value="${w.wardKey}">${w.wardName} (${w.wardKey})</option>`).join('');
+            }
+
+            blockEl.onchange = syncRestoreFloors;
+            floorEl.onchange = syncRestoreWards;
+            syncRestoreFloors();
+
+            async function executeRestore(pickOnMapAfter) {
+                const eamVal = document.getElementById('restoreEamInput').value.trim();
+                const serialVal = normalizeSerialValue(document.getElementById('restoreSerialInput').value);
+                const descVal = document.getElementById('restoreDescSelect').value;
+                const blkVal = blockEl.value;
+                const flrVal = floorEl.value;
+                const wrdVal = wardEl.value;
+                const remVal = document.getElementById('restoreRemarkInput').value.trim();
+
+                if (!eamVal) {
+                    alert('請輸入 EAM 編號！');
+                    return;
+                }
+                if (!wrdVal) {
+                    alert('請選擇目標單位 (Ward)！');
+                    return;
+                }
+
+                const autoPt = computeNextAutoCoordinates(wrdVal);
+                const createdAsset = {
+                    eam: eamVal,
+                    serial: serialVal,
+                    dept: 'NSD',
+                    description: descVal,
+                    remark: remVal,
+                    pair: '',
+                    block: blkVal,
+                    floor: flrVal,
+                    ward: wrdVal,
+                    x: autoPt.x,
+                    y: autoPt.y
+                };
+
+                try {
+                    const addRes = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'addAsset', asset: createdAsset })
+                    }).then(r => r.json());
+
+                    if (addRes && addRes.status === 'error') {
+                        throw new Error(addRes.message || '新增至系統失敗');
+                    }
+
+                    const resolveRes = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            action: 'resolveStocktakePending',
+                            sessionId,
+                            pendingId: pendingItem.id,
+                            eam: eamVal
+                        })
+                    }).then(r => r.json());
+
+                    if (resolveRes && resolveRes.status === 'error') {
+                        throw new Error(resolveRes.message || '更新 Pending 狀態失敗');
+                    }
+
+                    const targetSession = stocktakeSessions.find(s => s.id === sessionId);
+                    if (targetSession) {
+                        const targetUnmatched = (targetSession.unmatched || []).find(x => x.id === pendingItem.id);
+                        if (targetUnmatched) {
+                            targetUnmatched.restoredToSystem = true;
+                            targetUnmatched.eam = eamVal;
+                            targetUnmatched.serial = serialVal;
+                        }
+                    }
+
+                    updateStocktakeBadges();
+                    applyAssetListToLocalState([createdAsset], eamVal, true);
+                    modal.remove();
+
+                    if (pickOnMapAfter) {
+                        setTimeout(() => {
+                            isMovingAsset = createdAsset;
+                            isRelocatingMode = true;
+                            const banner = document.getElementById('selectionBanner');
+                            const bannerText = document.getElementById('bannerText');
+                            if (banner && bannerText) {
+                                banner.classList.remove('hidden');
+                                bannerText.innerText = `請在 [${wrdVal}] 地圖點擊 [${eamVal}] 的精確擺放位置...`;
+                            }
+                        }, 200);
+                    } else {
+                        alert(`✅ 已將 [${eamVal}] (Serial: ${serialVal}) 放回系統 [${wrdVal}]！`);
+                    }
+                } catch (err) {
+                    alert('❌ 放回系統失敗：' + err);
+                }
+            }
+
+            document.getElementById('btnRestoreAndPickOnMap').onclick = () => executeRestore(true);
+            document.getElementById('btnRestoreAutoCoord').onclick = () => executeRestore(false);
+            document.getElementById('btnCloseRestoreModal').onclick = () => modal.remove();
+            document.getElementById('btnCancelRestoreModal').onclick = () => modal.remove();
         }
 
         function openStocktakeHistoryModal() {
@@ -4561,51 +5346,72 @@
             modal.id = 'stocktakeHistoryModal';
             modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
             modal.innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-2xl shadow-2xl text-slate-800 max-h-[88vh] flex flex-col">
-                    <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 w-full max-w-3xl shadow-2xl text-slate-800 max-h-[88vh] flex flex-col">
+                    <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 shrink-0">
                         <h3 class="text-sm font-black text-indigo-700 flex items-center gap-2">
-                            <i class="fa-solid fa-clipboard-list"></i> Stocktake 記錄
+                            <i class="fa-solid fa-clipboard-list"></i> Stocktake 記錄與操作
                         </h3>
-                        <div class="flex items-center gap-2">
-                            <button type="button" id="btnUploadInsideHistory" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-file-arrow-up"></i> 上傳檔案
-                            </button>
-                            <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer px-1">✕</button>
-                        </div>
+                        <button type="button" id="btnCloseStocktakeHistory" class="text-slate-400 hover:text-slate-700 font-bold text-base px-2 cursor-pointer">✕</button>
                     </div>
 
-                    <div class="overflow-y-auto flex-1 my-3 space-y-2.5 pr-1 text-xs">
+                    <!-- 頂部功能操作列 -->
+                    <div class="flex flex-wrap items-center gap-2 py-3 border-b border-slate-100 shrink-0">
+                        <button type="button" id="btnOpenImportFromHistory"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all">
+                            <i class="fa-solid fa-file-import"></i>
+                            <span>匯入 Stocktake</span>
+                        </button>
+                        <button type="button" id="btnToggleOverlayInHistory"
+                            class="${stocktakeMapOverlayEnabled ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'} border text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <span>${stocktakeMapOverlayEnabled ? '地圖套用：已開啟（僅顯示未掃描）' : '套用到地圖（Highlight 未掃描）'}</span>
+                        </button>
+                        <button type="button" id="btnRefreshStocktakeHistory"
+                            class="ml-auto bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer transition-all">
+                            <i class="fa-solid fa-rotate mr-1"></i> 重新同步
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 mt-3 min-h-0">
                         ${stocktakeSessions.length === 0
-                            ? '<p class="text-center text-slate-400 py-10">尚無任何 Stocktake 記錄，請點擊右上方「上傳檔案」。</p>'
+                            ? '<p class="text-xs text-slate-400 text-center py-12">目前尚無任何 Stocktake 匯入記錄，請點擊上方「匯入 Stocktake」上傳 Excel 檔案。</p>'
                             : stocktakeSessions.map(rawS => {
                                 const s = ensureSessionBuckets(rawS);
-                                const isCurrent = s.id === (getActiveStocktakeSession()?.id);
-                                const pendLeft = (s.unmatched || []).filter(u => !u.restoredToSystem).length;
-                                const unidCnt = (s.unidentified || []).length;
+                                const isActive = s.id === activeStocktakeSessionId;
                                 const unscannedCnt = (s.unscanned || []).length;
                                 const successfulCnt = (s.successful || []).length;
-                                const shortTime = formatShortDateTime(s.importedAt);
-                                const isOverlayOnHere = isCurrent && stocktakeMapOverlayEnabled;
+                                const unidentifiedCnt = (s.unidentified || []).length;
+                                const pendingCnt = (s.unmatched || []).filter(u => !u.restoredToSystem).length;
                                 return `
-                                    <div class="border ${isCurrent ? 'border-indigo-400 bg-indigo-50/40' : 'border-slate-200 bg-white'} rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="border ${isActive ? 'border-indigo-400 bg-indigo-50/40' : 'border-slate-200 bg-white'} rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                         <div class="min-w-0">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <span class="font-bold text-slate-800">${s.fileName}</span>
-                                                ${isCurrent ? '<span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">目前啟用</span>' : ''}
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-xs text-slate-800 truncate">${s.fileName}</span>
+                                                ${isActive ? '<span class="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full">目前使用中</span>' : ''}
                                             </div>
-                                            <p class="text-[11px] text-slate-500 mt-0.5">
-                                                <i class="fa-regular fa-clock mr-1"></i>匯入時間：${shortTime}
+                                            <p class="text-[11px] text-slate-500 mt-1">
+                                                匯入時間：${formatShortDateTime(s.importedAt)} ｜ 讀入：<strong>${s.totalInput}</strong>
                                             </p>
-                                            <p class="text-[11px] text-slate-600 mt-0.5">
-                                                總數 ${s.totalInput}｜未掃描Asset <strong class="text-rose-700">${unscannedCnt}</strong>｜已掃描Asset <strong class="text-emerald-700">${successfulCnt}</strong>｜非所屬Asset <strong class="text-sky-700">${unidCnt}</strong>｜未登記Asset <strong class="text-amber-700">${pendLeft}</strong>
-                                            </p>
+                                            <div class="flex flex-wrap gap-1.5 mt-1.5 text-[10px] font-bold">
+                                                <span class="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md">未掃描Asset: ${unscannedCnt}</span>
+                                                <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md">已掃描Asset: ${successfulCnt}</span>
+                                                <span class="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-md">非所屬Asset: ${unidentifiedCnt}</span>
+                                                <span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">未登記Asset (Pending): ${pendingCnt}</span>
+                                            </div>
                                         </div>
-                                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
-                                            <button type="button" data-apply-id="${s.id}" class="st-hist-apply ${isOverlayOnHere ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600 hover:bg-emerald-500'} text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
-                                                ${isOverlayOnHere ? '套用到地圖：開' : '套用到地圖'}
+                                        <div class="flex items-center gap-1.5 shrink-0">
+                                            <button type="button" data-select-session="${s.id}"
+                                                class="btn-select-session bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
+                                                套用到地圖
                                             </button>
-                                            <button type="button" data-view-id="${s.id}" class="st-hist-view bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">查看記錄</button>
-                                            <button type="button" data-del-id="${s.id}" class="st-hist-del bg-rose-100 hover:bg-rose-200 text-rose-700 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer" title="刪除"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" data-view-session="${s.id}"
+                                                class="btn-view-session bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
+                                                查看明細
+                                            </button>
+                                            <button type="button" data-del-session="${s.id}"
+                                                class="btn-del-session bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">
+                                                刪除
+                                            </button>
                                         </div>
                                     </div>
                                 `;
@@ -4616,222 +5422,57 @@
             `;
             document.body.appendChild(modal);
 
-            document.getElementById('btnCloseStocktakeHistory').onclick = () => modal.remove();
-            document.getElementById('btnUploadInsideHistory').onclick = () => {
+            document.getElementById('btnOpenImportFromHistory').onclick = () => {
                 modal.remove();
                 openStocktakeImportModal();
             };
 
-            modal.querySelectorAll('.st-hist-apply').forEach(btn => {
-                btn.onclick = () => {
-                    const targetId = btn.getAttribute('data-apply-id');
-                    if (activeStocktakeSessionId === targetId && stocktakeMapOverlayEnabled) {
-                        stocktakeMapOverlayEnabled = false;
-                        updateStocktakeBadges();
-                        renderSidebarWithPriority();
-                        const banner = document.getElementById('selectionBanner');
-                        if (!isRelocatingMode && !pendingNewAssetEam && !isSelectingPairOnMap && banner) {
-                            banner.classList.add('hidden');
-                        }
-                        const wardVal = document.getElementById('wardSelect')?.value || '';
-                        if (wardVal) renderAssetMarkers(currentFilteredAssets);
-                        modal.remove();
-                        return;
-                    }
+            document.getElementById('btnToggleOverlayInHistory').onclick = () => {
+                toggleStocktakeMapOverlay();
+                const btn = document.getElementById('btnToggleOverlayInHistory');
+                if (btn) {
+                    btn.className = `${stocktakeMapOverlayEnabled ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'} border text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all`;
+                    btn.innerHTML = `<i class="fa-solid fa-layer-group"></i><span>${stocktakeMapOverlayEnabled ? '地圖套用：已開啟（僅顯示未掃描）' : '套用到地圖（Highlight 未掃描）'}</span>`;
+                }
+            };
 
-                    activeStocktakeSessionId = targetId;
+            document.getElementById('btnRefreshStocktakeHistory').onclick = async () => {
+                const btn = document.getElementById('btnRefreshStocktakeHistory');
+                btn.innerText = '同步中...';
+                await fetchStocktakeSessionsFromSheet();
+                openStocktakeHistoryModal();
+            };
+
+            modal.querySelectorAll('.btn-select-session').forEach(btn => {
+                btn.onclick = () => {
+                    activeStocktakeSessionId = btn.getAttribute('data-select-session');
                     stocktakeMapOverlayEnabled = true;
                     updateStocktakeBadges();
                     renderSidebarWithPriority();
+                    const wardVal = document.getElementById('wardSelect')?.value || '';
+                    if (wardVal) renderAssetMarkers(currentFilteredAssets);
                     modal.remove();
-                    const s = getActiveStocktakeSession();
-                    const first = s && (s.unscanned || []).find(m => m.matchedEam || m.eam);
-                    if (first) {
-                        const found = findAssetByEam(first.matchedEam || first.eam);
-                        if (found) locateAndHighlightAsset(found);
-                    } else {
-                        const wardVal = document.getElementById('wardSelect')?.value || '';
-                        if (wardVal) renderAssetMarkers(currentFilteredAssets);
-                    }
                 };
             });
 
-            modal.querySelectorAll('.st-hist-view').forEach(btn => {
+            modal.querySelectorAll('.btn-view-session').forEach(btn => {
                 btn.onclick = () => {
-                    const id = btn.getAttribute('data-view-id');
+                    const sid = btn.getAttribute('data-view-session');
+                    activeStocktakeSessionId = sid;
+                    updateStocktakeBadges();
                     modal.remove();
-                    openStocktakeResultModal(id);
+                    openStocktakeResultModal(sid);
                 };
             });
 
-            modal.querySelectorAll('.st-hist-del').forEach(btn => {
+            modal.querySelectorAll('.btn-del-session').forEach(btn => {
                 btn.onclick = () => {
-                    const id = btn.getAttribute('data-del-id');
-                    modal.remove();
-                    deleteStocktakeSession(id);
+                    const sid = btn.getAttribute('data-del-session');
+                    deleteStocktakeSession(sid);
                 };
             });
-        }
 
-        function openStocktakePendingModal(sessionId = null) {
-            const rawSession = sessionId
-                ? stocktakeSessions.find(s => s.id === sessionId)
-                : getActiveStocktakeSession();
-            const session = ensureSessionBuckets(rawSession);
-
-            const existing = document.getElementById('stocktakePendingModal');
-            if (existing) existing.remove();
-
-            const pendingItems = session ? (session.unmatched || []).filter(u => !u.restoredToSystem) : [];
-
-            const modal = document.createElement('div');
-            modal.id = 'stocktakePendingModal';
-            modal.className = 'fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center z-50 p-4';
-            modal.innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-2xl shadow-2xl text-slate-800 max-h-[90vh] flex flex-col">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-sm font-black text-amber-700 flex items-center gap-2">
-                                <i class="fa-solid fa-clock-rotate-left"></i> 未登記Asset（固定歸入 System / System / Pending）
-                            </h3>
-                            <p class="text-[11px] text-slate-500 mt-0.5">
-                                ${session
-                                    ? `檔案：<strong>${session.fileName}</strong>（${formatShortDateTime(session.importedAt)}）｜待處理：<strong>${pendingItems.length}</strong> 項`
-                                    : '目前尚無 Stocktake 記錄'}
-                            </p>
-                        </div>
-                        <button type="button" id="btnCloseStocktakePending" class="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer">✕</button>
-                    </div>
-
-                    <div class="overflow-y-auto flex-1 my-3 space-y-2.5 pr-1 text-xs">
-                        ${pendingItems.length === 0
-                            ? '<p class="text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">目前沒有未登記Asset 項目。</p>'
-                            : pendingItems.map(u => `
-                                <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3.5 space-y-2">
-                                    <div class="flex items-center justify-between gap-2 flex-wrap">
-                                        <div>
-                                            <span class="font-bold text-sm text-amber-800">EAM: ${u.eam || '(未填寫 EAM)'}</span>
-                                            <span class="ml-2 text-[11px] bg-white border border-amber-200 px-2 py-0.5 rounded font-bold text-slate-700">S/N: ${normalizeSerialValue(u.serial)}</span>
-                                            <span class="ml-1 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold">未登記Asset</span>
-                                        </div>
-                                        <span class="text-[11px] font-bold text-slate-600">位置: System / System / Pending</span>
-                                    </div>
-                                    <p class="font-semibold text-slate-800">${u.description || '未命名項目'}</p>
-                                    ${u.remark ? `<p class="text-[11px] text-slate-500">備註：${u.remark}</p>` : ''}
-
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">EAM 編號 *</label>
-                                            <input type="text" data-field="eam" value="${String(u.eam || '').replace(/"/g, '&quot;')}" placeholder="輸入 EAM"
-                                                class="pend-eam w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">S/N (Serial)</label>
-                                            <input type="text" data-field="serial" value="${String(normalizeSerialValue(u.serial)).replace(/"/g, '&quot;')}" placeholder="輸入 S/N"
-                                                class="pend-serial w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">放回位置（固定 Pending）</label>
-                                            <input type="text" value="System / System / Pending" readonly
-                                                class="w-full bg-slate-100 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 cursor-not-allowed">
-                                        </div>
-                                    </div>
-
-                                    <div class="flex justify-end gap-2 pt-1">
-                                        <button type="button" data-pend-id="${u.id}" class="btn-restore-pending bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl cursor-pointer flex items-center gap-1.5">
-                                            <i class="fa-solid fa-share-from-square"></i> 確認並放回 Pending
-                                        </button>
-                                    </div>
-                                </div>
-                            `).join('')
-                        }
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            document.getElementById('btnCloseStocktakePending').onclick = () => modal.remove();
-
-            modal.querySelectorAll('.btn-restore-pending').forEach(btn => {
-                btn.onclick = async () => {
-                    const pendId = btn.getAttribute('data-pend-id');
-                    const card = btn.closest('.border');
-                    const eamVal = (card.querySelector('.pend-eam')?.value || '').trim();
-                    const serialVal = normalizeSerialValue(card.querySelector('.pend-serial')?.value || '');
-
-                    if (!eamVal) {
-                        alert('請先填寫 EAM 編號再放回系統！');
-                        return;
-                    }
-
-                    // 固定放入 System / System / Pending，無視 Excel Location
-                    const targetBlock = 'System';
-                    const targetFloor = 'System';
-                    const wardVal = 'Pending';
-
-                    const targetPend = (session.unmatched || []).find(item => item.id === pendId);
-                    const autoCoords = computeNextAutoCoordinates(wardVal);
-
-                    const restoredAsset = {
-                        recordType: 'Asset',
-                        eam: eamVal,
-                        serial: serialVal,
-                        dept: 'NSD',
-                        description: (targetPend && targetPend.description) || ASSET_TYPES[0].label,
-                        remark: (targetPend && targetPend.remark) || '',
-                        pair: '',
-                        block: targetBlock,
-                        floor: targetFloor,
-                        ward: wardVal,
-                        x: autoCoords.x,
-                        y: autoCoords.y
-                    };
-
-                    btn.disabled = true;
-                    btn.innerText = '放回中...';
-
-                    try {
-                        const existing = findAssetByEam(eamVal);
-                        const actionName = existing ? 'updateAsset' : 'addAsset';
-                        const payloadAsset = existing
-                            ? { ...existing, ...restoredAsset, block: 'System', floor: 'System', ward: 'Pending', x: existing.x ?? autoCoords.x, y: existing.y ?? autoCoords.y }
-                            : restoredAsset;
-
-                        const res = await fetch(GAS_API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({ action: actionName, asset: payloadAsset })
-                        }).then(r => r.json());
-
-                        if (res && res.status === 'error') {
-                            throw new Error(res.message || '寫入失敗');
-                        }
-
-                        if (targetPend) {
-                            targetPend.restoredToSystem = true;
-                            targetPend.restoredAt = formatShortDateTime(new Date());
-                            targetPend.eam = eamVal;
-                            targetPend.serial = serialVal;
-                            targetPend.block = 'System';
-                            targetPend.floor = 'System';
-                            targetPend.ward = 'Pending';
-                        }
-
-                        await saveStocktakeSessionToSheet(session);
-
-                        applyAssetListToLocalState([payloadAsset], payloadAsset.eam, false);
-                        updateStocktakeBadges();
-
-                        alert(`✅ 已將 [${eamVal}]（S/N: ${serialVal}）放回 System / System / Pending 並同步！`);
-                        modal.remove();
-                        openStocktakePendingModal(session.id);
-                    } catch (err) {
-                        alert('❌ 放回失敗：' + err);
-                        btn.disabled = false;
-                        btn.innerText = '確認並放回 Pending';
-                    }
-                };
-            });
+            document.getElementById('btnCloseStocktakeHistory').onclick = () => modal.remove();
         }
 
         function initStocktakeFeature() {
