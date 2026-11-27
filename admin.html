@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -57,6 +58,20 @@
             box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.8), 0 8px 18px rgba(244, 63, 94, 0.48);
             transform: scale(1.26);
             z-index: 40;
+        }
+
+        /* Highlight 1: Condemn / Surplus（紅琥珀色高亮） */
+        .condemn-surplus-highlight-pin > div {
+            box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.82), 0 8px 18px rgba(225, 29, 72, 0.45);
+            transform: scale(1.24);
+            z-index: 38;
+        }
+
+        /* Highlight 2: Transfer（紫藍靛色高亮） */
+        .transfer-highlight-pin > div {
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.82), 0 8px 18px rgba(124, 58, 237, 0.45);
+            transform: scale(1.24);
+            z-index: 38;
         }
 </style>
 </head>
@@ -1234,6 +1249,26 @@
             );
         }
 
+        function getAssetHighlightCategory(asset) {
+            if (!asset) return null;
+            const wardLower = String(asset.ward || '').trim().toLowerCase();
+            const deptVal = String(asset.dept || '').trim().toLowerCase();
+            const remarkLower = String(asset.remark || '').trim().toLowerCase();
+
+            if (wardLower === 'transfer' || (deptVal && deptVal !== 'nsd') || remarkLower.startsWith('[transfer')) {
+                return 'transfer';
+            }
+            if (['condemn', 'surplus', 'suplus'].includes(wardLower) || remarkLower.startsWith('[condemn') || remarkLower.startsWith('[surplus')) {
+                return 'condemn_surplus';
+            }
+            return null;
+        }
+
+        function isCombinedHighlightActive() {
+            syncSelectedStocktakeSessions();
+            return Boolean(stocktakeMapOverlayEnabled && activeStocktakeSessionIds.length > 0);
+        }
+
         function getUnscannedEamSetForMode() {
             const selectedSessions = getSelectedStocktakeSessions();
             if (!selectedSessions || selectedSessions.length === 0) return null;
@@ -1247,18 +1282,49 @@
             return set;
         }
 
+        function getCombinedHighlightAssetSet() {
+            if (!isCombinedHighlightActive()) return null;
+            const unscannedSet = getUnscannedEamSetForMode() || new Set();
+            const highlightKeys = new Set(unscannedSet);
+
+            (allAssets || []).forEach(asset => {
+                const cat = getAssetHighlightCategory(asset);
+                if (cat) {
+                    const k = normalizeLookupKey(asset && asset.eam);
+                    if (k) highlightKeys.add(k);
+                }
+            });
+            return highlightKeys;
+        }
+
+        function isAssetInCombinedHighlight(asset) {
+            const hlSet = getCombinedHighlightAssetSet();
+            if (!hlSet) return false;
+            const k = normalizeLookupKey(asset && asset.eam);
+            return Boolean(k && hlSet.has(k));
+        }
+
         function filterAssetsForRightPanel(list) {
-            const unscannedSet = getUnscannedEamSetForMode();
-            if (!unscannedSet) return list;
+            const hlSet = getCombinedHighlightAssetSet();
+            if (!hlSet) return list;
             return (list || []).filter(item => {
                 const k = normalizeLookupKey(item && item.eam);
-                return k && unscannedSet.has(k);
+                return k && hlSet.has(k);
             });
         }
 
         function renderSidebarWithPriority(fallbackAssets = null) {
             let baseList = [];
-            if (hasActiveMultiSearch()) {
+            if (isCombinedHighlightActive()) {
+                const hlSet = getCombinedHighlightAssetSet() || new Set();
+                const hlAssets = (allAssets || []).filter(a => {
+                    const k = normalizeLookupKey(a && a.eam);
+                    return k && hlSet.has(k);
+                });
+                baseList = hasActiveMultiSearch()
+                    ? filterAssetsByCriteria(hlAssets, getCurrentSearchCriteria(), null)
+                    : hlAssets;
+            } else if (hasActiveMultiSearch()) {
                 baseList = filterAssetsByCriteria(allAssets, getCurrentSearchCriteria(), null);
             } else if (Array.isArray(fallbackAssets)) {
                 baseList = fallbackAssets;
@@ -1945,11 +2011,30 @@
                 const isPaired = hasPairRelationSet.has(eamLower) || parsePairedEamList(asset.pair).length > 0 || getPairOwnerAssets(asset).length > 0;
                 const isHighlighted = highlightEam && String(asset.eam).trim() === String(highlightEam).trim();
 
-                // 只有 Unscanned Asset 才 highlight；Successful 不 highlight；Unidentified 不在地圖顯示
+                // 一起套用：未掃描 Asset + Condemn/Surplus (Highlight 1) + Transfer (Highlight 2)
                 const isUnscannedHighlight = isStocktakeUnscannedAsset(asset);
-                const stRingClass = isUnscannedHighlight ? 'stocktake-unscanned-pin' : '';
-                const stBadgeHtml = isUnscannedHighlight
-                    ? `<span title="Unscanned Asset（待尋找 Highlight）" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center border border-white shadow-xs text-[8px] font-black">!</span>`
+                const hlCategory = isCombinedHighlightActive() ? getAssetHighlightCategory(asset) : null;
+                const isCondemnSurplusHl = hlCategory === 'condemn_surplus';
+                const isTransferHl = hlCategory === 'transfer';
+
+                const stRingClass = [
+                    isUnscannedHighlight ? 'stocktake-unscanned-pin' : '',
+                    isCondemnSurplusHl ? 'condemn-surplus-highlight-pin' : '',
+                    isTransferHl ? 'transfer-highlight-pin' : ''
+                ].filter(Boolean).join(' ');
+
+                const badgeParts = [];
+                if (isUnscannedHighlight) {
+                    badgeParts.push(`<span title="Unscanned Asset（待尋找 Highlight）" class="w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center border border-white shadow-xs text-[8px] font-black">!</span>`);
+                }
+                if (isCondemnSurplusHl) {
+                    badgeParts.push(`<span title="Highlight 1: Condemn / Surplus" class="px-1 h-4 rounded-full bg-rose-700 text-white flex items-center justify-center border border-white shadow-xs text-[7px] font-black">C/S</span>`);
+                }
+                if (isTransferHl) {
+                    badgeParts.push(`<span title="Highlight 2: Transfer" class="px-1 h-4 rounded-full bg-violet-700 text-white flex items-center justify-center border border-white shadow-xs text-[7px] font-black">T</span>`);
+                }
+                const stBadgeHtml = badgeParts.length > 0
+                    ? `<div class="absolute -top-2 -right-2 flex items-center gap-0.5 z-20">${badgeParts.join('')}</div>`
                     : '';
 
                 if (isNonAssetItem(asset)) {
@@ -2048,6 +2133,12 @@
                         : 'bg-blue-50 text-blue-600 border-blue-100';
 
                     const owners = getPairOwnerAssets(asset);
+                    const hlCat = isCombinedHighlightActive() ? getAssetHighlightCategory(asset) : null;
+                    const hlTagHtml = hlCat === 'condemn_surplus'
+                        ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-300">Highlight 1: Condemn/Surplus</span>`
+                        : (hlCat === 'transfer'
+                            ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 border border-violet-300">Highlight 2: Transfer</span>`
+                            : '');
                     const remarkHtml = asset.remark ? `<p class="text-[11px] text-amber-600 mt-1 flex items-center gap-1"><i class="fa-solid fa-note-sticky"></i>備註: ${asset.remark}</p>` : '';
                     const pairHtml = asset.pair ? `<p class="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-link"></i>配件: ${asset.pair}</p>` : '';
                     const ownerHtml = owners.length > 0 ? `<p class="text-[11px] text-purple-600 mt-0.5 flex items-center gap-1"><i class="fa-solid fa-crown"></i>所屬主件: ${owners.map(o => o.eam).join(', ')}</p>` : '';
@@ -2057,8 +2148,11 @@
                             <i class="fa-solid ${typeConfig.icon} text-base"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-center mb-1 gap-1">
-                                <span class="text-sm font-bold text-blue-700 tracking-wide truncate">${asset.eam}</span>
+                            <div class="flex justify-between items-center mb-1 gap-1 flex-wrap">
+                                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                                    <span class="text-sm font-bold text-blue-700 tracking-wide truncate">${asset.eam}</span>
+                                    ${hlTagHtml}
+                                </div>
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded-md border shrink-0 ${badgeStyle}">${badgeText}</span>
                             </div>
                             <p class="text-sm font-semibold text-slate-800 truncate">${asset.description}</p>
@@ -3824,7 +3918,7 @@
             const panelHeading = document.getElementById('rightPanelListHeading');
             if (panelHeading) {
                 if (stocktakeMapOverlayEnabled && activeStocktakeSessionIds.length > 0) {
-                    panelHeading.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> 未掃描Asset 清單與篩選`;
+                    panelHeading.innerHTML = `<i class="fa-solid fa-layer-group text-rose-600"></i> Highlight 資產清單與篩選`;
                 } else {
                     panelHeading.innerHTML = `<i class="fa-solid fa-boxes-stacked text-blue-600"></i> 獨立欄位搜尋與清單`;
                 }
@@ -4500,7 +4594,10 @@
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 overflow-y-auto flex-1 pr-1 text-xs">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-600">
+                        已隱藏獨立清單顯示；請直接於右側列表與篩選檢視目前套用的 Highlight 資產（區分 <strong>Condemn / Surplus</strong> 與 <strong>Transfer</strong>）。
+                    </div>
+                    <div class="hidden grid-cols-1 md:grid-cols-3 gap-3 overflow-y-auto flex-1 pr-1 text-xs">
                         <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/40 flex flex-col">
                             <h4 class="font-bold text-rose-800 mb-2">未掃描Asset (${unscannedList.length})</h4>
                             <div class="space-y-1.5 max-h-80 overflow-y-auto flex-1">
