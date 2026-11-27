@@ -169,42 +169,44 @@
                                 <span class="text-[8px] font-extrabold leading-none">單位</span>
                             </button>
 
-                            <!-- 中央圓形 4 格：左上 T Block / 右上 M Block / 左下 Annex / 右下 Sys -->
-                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden">
-                                <!-- 十字分隔線 -->
-                                <div class="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/90 z-10"></div>
-                                <div class="pointer-events-none absolute inset-y-2 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/90 z-10"></div>
-
+                            <!-- 中央圓形 4 格：精準四等分 90° 扇形上色 -->
+                            <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full border-2 border-slate-300 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden"
+                                style="background: conic-gradient(from 0deg, rgba(224,242,254,0.95) 0deg 90deg, rgba(250,245,255,0.95) 90deg 180deg, rgba(254,243,199,0.95) 180deg 270deg, rgba(224,231,255,0.95) 270deg 360deg);">
+                            
                                 <!-- 左上：T Block -->
                                 <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pl-1 cursor-pointer">
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pr-2 pb-2 bg-transparent cursor-pointer z-10">
                                     <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
                                     <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
                                 </button>
-
+                            
                                 <!-- 右上：M Block -->
                                 <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pt-1 pr-1 cursor-pointer">
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pl-2 pb-2 bg-transparent cursor-pointer z-10">
                                     <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
                                     <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
                                 </button>
-
+                            
                                 <!-- 左下：Annex -->
                                 <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pl-1 cursor-pointer">
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pr-2 pt-2 bg-transparent cursor-pointer z-10">
                                     <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
                                     <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
                                 </button>
-
+                            
                                 <!-- 右下：Sys -->
                                 <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
-                                    class="kiosk-quad-btn joy-block-quad flex flex-col items-center justify-center pb-1 pr-1 cursor-pointer">
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pl-2 pt-2 bg-transparent cursor-pointer z-10">
                                     <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
                                     <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
                                 </button>
-
+                            
+                                <!-- 貫穿全圓的十字分隔線 -->
+                                <div class="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-white/90 z-20"></div>
+                                <div class="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1.5px] bg-white/90 z-20"></div>
+                            
                                 <!-- 圓心徽章 -->
-                                <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-slate-200 shadow-md flex items-center justify-center z-20">
+                                <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border-2 border-slate-200 shadow-md flex items-center justify-center z-30">
                                     <span id="joystickCenterBadge" class="text-[8px] sm:text-[9px] font-black text-indigo-600">棟</span>
                                 </div>
                             </div>
