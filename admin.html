@@ -4515,9 +4515,6 @@
                         </label>
                     
                         <div class="flex items-center gap-2 flex-wrap">
-                            <button type="button" id="btnAddCheckedUnmatchedToPending" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs">
-                                <i class="fa-solid fa-folder-plus"></i> 加入勾選未登記到 Pending
-                            </button>
                             <button type="button" id="btnOpenUnidentifiedFromResult" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
                                 <i class="fa-solid fa-circle-question"></i> 非所屬Asset (${unidentifiedList.length})
                             </button>
@@ -4592,6 +4589,11 @@
                                     `).join('')
                                 }
                             </div>
+                            ${unmatchedList.length > 0 ? `
+                                <button type="button" id="btnAddCheckedUnmatchedToPending" class="mt-3 w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
+                                    <i class="fa-solid fa-folder-plus"></i> 放入系統
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
