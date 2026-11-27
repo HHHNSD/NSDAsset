@@ -278,7 +278,7 @@
 
             <div class="pb-3 border-b border-slate-100 mb-3 space-y-2 shrink-0">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xs font-bold flex items-center gap-2 text-slate-700">
+                    <h2 id="rightPanelListHeading" class="text-xs font-bold flex items-center gap-2 text-slate-700">
                         <i class="fa-solid fa-boxes-stacked text-blue-600"></i> 獨立欄位搜尋與清單
                     </h2>
                     <div class="flex items-center gap-1.5">
@@ -1227,8 +1227,21 @@
         }
 
         function syncLinkedSearchDatalists(criteria) {
-            syncRecordTypeFilterDropdown(criteria);
-            const filteredForFields = filterAssetsByCriteria(allAssets, criteria, null);
+            const basePool = filterAssetsForRightPanel(allAssets);
+            const recType = criteria.recordType || 'ALL';
+            const poolForType = filterAssetsByCriteria(basePool, criteria, 'recordType');
+            const sel = document.getElementById('searchRecordTypeSelect');
+            if (sel) {
+                const totalCount = poolForType.length;
+                const assetCount = poolForType.filter(a => normalizeRecordType(a.recordType) === 'Asset').length;
+                const nonAssetCount = poolForType.filter(a => normalizeRecordType(a.recordType) === 'Non-Asset').length;
+                sel.innerHTML = `
+                    <option value="ALL" ${recType === 'ALL' ? 'selected' : ''}>全部 (${totalCount} 項可選)</option>
+                    <option value="Asset" ${recType === 'Asset' ? 'selected' : ''} ${assetCount === 0 && recType !== 'Asset' ? 'disabled' : ''}>僅 Asset (${assetCount} 項可選)</option>
+                    <option value="Non-Asset" ${recType === 'Non-Asset' ? 'selected' : ''} ${nonAssetCount === 0 && recType !== 'Non-Asset' ? 'disabled' : ''}>僅 Non-Asset (${nonAssetCount} 項可選)</option>
+                `;
+            }
+            const filteredForFields = filterAssetsByCriteria(basePool, criteria, null);
             setDatalistValues('eamDatalist', filteredForFields.filter(a => !isNonAssetItem(a)).map(a => a.eam));
             setDatalistValues('serialDatalist', filteredForFields.filter(a => !isNonAssetItem(a)).map(a => a.serial));
             setDatalistValues('typeDatalist', filteredForFields.map(a => a.description));
@@ -3813,6 +3826,17 @@
                     overlayBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
                 }
             }
+            const panelHeading = document.getElementById('rightPanelListHeading');
+            if (panelHeading) {
+                if (stocktakeMapOverlayEnabled) {
+                    panelHeading.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Unscanned Asset 清單與篩選`;
+                } else {
+                    panelHeading.innerHTML = `<i class="fa-solid fa-boxes-stacked text-blue-600"></i> 獨立欄位搜尋與清單`;
+                }
+            }
+            if (typeof populateSearchDatalists === 'function') {
+                populateSearchDatalists();
+            }
         }
 
         // 只有 Unscanned Asset 才回傳 true（Successful 不 highlight；Unidentified 不在地圖顯示）
@@ -4140,10 +4164,10 @@
                 if (nkSn && !snMap.has(nkSn)) snMap.set(nkSn, a);
             });
 
-            const unscanned = [];     // 系統找得到的 Unscanned Asset -> 地圖 Highlight
-            const successful = [];    // 系統找得到的 Successful -> 地圖不 Highlight
-            const unidentified = [];  // Unidentified Asset -> 只列清單（保留 serial），不在地圖顯示
-            const unmatched = [];     // 系統找不到的 Unscanned / Successful -> 放 Pending（保留 serial）
+            const unscanned = [];     // 系統找得到的其他 Asset -> 地圖 Highlight 為 Unscanned Asset + 右側清單
+            const successful = [];    // 系統找得到的 Successful -> 不在地圖 Highlight
+            const unidentified = [];  // Unidentified -> 不顯示地圖、不用 EAM 和 S/N 與 current list 對比，僅列於 Unidentified 清單
+            const unmatched = [];     // Successful 或其他 Asset 在 current list 找不到 -> 放 Pending（保留 EAM 與 S/N）
 
             (rows || []).forEach((row, idx) => {
                 const rawEam = pickRowField(row, ['eam', 'asset number', 'asset no', 'asset id', 'tag no', 'barcode', '編號']);
@@ -4157,6 +4181,30 @@
 
                 if (!rawEam && rawSn === 'N/A' && !rawDesc) return;
 
+                const normRes = normalizeStocktakeHeader(rawResult);
+                const normRem = normalizeStocktakeHeader(rawRemark);
+                const isUnidentified = normRes.includes('unidentified') || normRem.includes('unidentified');
+
+                // 1. Unidentified：不顯示地圖、不用 EAM 和 S/N 與 current list 對比，僅放入 Unidentified 清單查看
+                if (isUnidentified) {
+                    unidentified.push({
+                        id: `UNID-${Date.now()}-${idx + 1}`,
+                        rowIndex: idx + 1,
+                        eam: rawEam || '(無 EAM)',
+                        serial: rawSn,
+                        description: rawDesc || 'Unidentified 項目',
+                        ward: rawWard || '未標示',
+                        stockTakenResult: rawResult || 'Unidentified Asset',
+                        onMap: false,
+                        remark: rawRemark || 'Unidentified（僅於清單查看，不顯示於地圖、不與 Current List 比對）'
+                    });
+                    return;
+                }
+
+                const isSuccessful = normRes.includes('successful') || normRes.includes('success');
+                const classifiedResult = isSuccessful ? 'Successful' : (rawResult || 'Unscanned Asset');
+
+                // 2. Successful 與其他 Asset：皆需用 EAM 和 S/N 與 current list 對比
                 let foundAsset = null;
                 let matchMethod = '未找到';
 
@@ -4168,28 +4216,10 @@
                     matchMethod = 'EAM 命中';
                 } else if (keySn && snMap.has(keySn)) {
                     foundAsset = snMap.get(keySn);
-                    matchMethod = 'S/N 備援命中';
+                    matchMethod = 'S/N 命中';
                 }
 
-                const classifiedResult = classifyStocktakeResult(rawResult, rawRemark, Boolean(foundAsset));
-
-                // 1. Unidentified Asset：只顯示清單（含 serial），不在地圖顯示
-                if (classifiedResult === 'Unidentified Asset') {
-                    unidentified.push({
-                        id: `UNID-${Date.now()}-${idx + 1}`,
-                        rowIndex: idx + 1,
-                        eam: rawEam || '(無 EAM)',
-                        serial: foundAsset ? normalizeSerialValue(foundAsset.serial || rawSn) : rawSn,
-                        description: rawDesc || (foundAsset && foundAsset.description) || 'Unidentified 項目',
-                        ward: rawWard || (foundAsset && foundAsset.ward) || '其他 Ward / 未標示',
-                        stockTakenResult: 'Unidentified Asset',
-                        onMap: false,
-                        remark: rawRemark || 'Unidentified Asset（可能為其他 Ward 物品，僅於清單顯示，不放地圖）'
-                    });
-                    return;
-                }
-
-                // 2. 系統找不到該 Asset EAM（且為 Unscanned 或 Successful）：放入 Pending，並保留 serial
+                // 若不在 current list 中 -> 放入 Pending 清單（保留 EAM 與 S/N）
                 if (!foundAsset) {
                     unmatched.push({
                         id: `PEND-${Date.now()}-${idx + 1}`,
@@ -4201,7 +4231,7 @@
                         floor: rawFloor,
                         ward: rawWard,
                         stockTakenResult: classifiedResult,
-                        remark: rawRemark || `Stocktake (${classifiedResult}) 但系統找不到（待確認／補登）`,
+                        remark: rawRemark || `${classifiedResult} — Current List 找不到此 EAM / S/N（待確認／補登）`,
                         restoredToSystem: false,
                         restoredAt: ''
                     });
@@ -4227,8 +4257,8 @@
                     matchedY: foundAsset.y
                 };
 
-                // 3. Successful：地圖不 highlight；Unscanned Asset：地圖 highlight
-                if (classifiedResult === 'Successful') {
+                // 3. Successful：不在地圖 Highlight；其他 Asset：在地圖 Highlight 為 Unscanned Asset
+                if (isSuccessful) {
                     successful.push(matchedRecord);
                 } else {
                     unscanned.push(matchedRecord);
@@ -4255,73 +4285,7 @@
             };
         }
 
-        function exportStocktakeResultWorkbook(rawSession) {
-            const session = ensureSessionBuckets(rawSession);
-            if (!session || typeof XLSX === 'undefined') {
-                alert('無法匯出 Excel（缺少 SheetJS 或盤點資料）。');
-                return;
-            }
-
-            const allMatched = [...(session.unscanned || []), ...(session.successful || [])].map((rawM, i) => {
-                const m = hydrateMatchedItem(rawM);
-                return {
-                    '序號': i + 1,
-                    'Stock Taken Result': m.stockTakenResult,
-                    '地圖 Highlight': m.stockTakenResult === 'Unscanned Asset' ? '是' : '否',
-                    '比對方式': m.matchMethod,
-                    '輸入 EAM': m.inputEam || m.matchedEam,
-                    '輸入 S/N': normalizeSerialValue(m.inputSerial || m.matchedSerial),
-                    '系統 EAM': m.matchedEam,
-                    '系統 S/N': m.matchedSerial,
-                    'Asset 類型': m.matchedDescription || m.inputDescription,
-                    '系統 Block': m.matchedBlock,
-                    '系統 Floor': m.matchedFloor,
-                    '系統 Ward_Key': m.matchedWard,
-                    '座標 X': m.matchedX ?? '',
-                    '座標 Y': m.matchedY ?? '',
-                    '匯入時間': formatShortDateTime(session.importedAt)
-                };
-            });
-
-            const unmatchedRows = (session.unmatched || []).map((u, i) => ({
-                '序號': i + 1,
-                '狀態': u.restoredToSystem ? '已放回系統' : 'Pending',
-                'Stock Taken Result': u.stockTakenResult || 'Unscanned Asset',
-                'EAM': u.eam,
-                'S/N': normalizeSerialValue(u.serial),
-                'Description / Type': u.description,
-                'Block': u.block,
-                'Floor': u.floor,
-                'Ward_Key': u.ward,
-                'Remarks': u.remark,
-                '放回時間': u.restoredAt ? formatShortDateTime(u.restoredAt) : '',
-                '匯入時間': formatShortDateTime(session.importedAt)
-            }));
-
-            const unidentifiedRows = (session.unidentified || []).map((item, i) => ({
-                '序號': i + 1,
-                'Stock Taken Result': 'Unidentified Asset',
-                '地圖顯示': '否（僅列清單）',
-                'EAM': item.eam,
-                'S/N': normalizeSerialValue(item.serial),
-                'Description / Type': item.description,
-                'Ward / 來源': item.ward,
-                'Remarks': item.remark,
-                '匯入時間': formatShortDateTime(session.importedAt)
-            }));
-
-            const wb = XLSX.utils.book_new();
-            const wsMatched = XLSX.utils.json_to_sheet(allMatched.length > 0 ? allMatched : [{ '說明': '無已找到的 Asset' }]);
-            const wsUnmatched = XLSX.utils.json_to_sheet(unmatchedRows.length > 0 ? unmatchedRows : [{ '說明': '無找不到的 Pending Asset' }]);
-            const wsUnidentified = XLSX.utils.json_to_sheet(unidentifiedRows.length > 0 ? unidentifiedRows : [{ '說明': '無 Unidentified Asset' }]);
-
-            XLSX.utils.book_append_sheet(wb, wsMatched, 'Matched_Assets');
-            XLSX.utils.book_append_sheet(wb, wsUnmatched, 'Pending_Unmatched');
-            XLSX.utils.book_append_sheet(wb, wsUnidentified, 'Unidentified_List');
-
-            const safeName = String(session.fileName || 'Stocktake').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-            XLSX.writeFile(wb, `${safeName}_Stocktake_Result.xlsx`);
-        }
+        
 
         function openStocktakeImportModal() {
             const existing = document.getElementById('stocktakeImportModal');
@@ -4481,9 +4445,6 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2 my-3">
-                        <button type="button" id="btnExportSessionExcel" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-download"></i> 匯出比對結果 Excel
-                        </button>
                         <button type="button" id="btnOverlayFromResult" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
                             <i class="fa-solid fa-map-pin"></i> 套用到地圖並關閉
                         </button>
@@ -4560,7 +4521,6 @@
             document.body.appendChild(modal);
 
             document.getElementById('btnCloseStocktakeResult').onclick = () => modal.remove();
-            document.getElementById('btnExportSessionExcel').onclick = () => exportStocktakeResultWorkbook(session);
             document.getElementById('btnOverlayFromResult').onclick = () => {
                 activeStocktakeSessionId = session.id;
                 stocktakeMapOverlayEnabled = true;
@@ -4622,7 +4582,7 @@
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
                             <h3 class="text-sm font-black text-sky-700 flex items-center gap-2">
-                                <i class="fa-solid fa-circle-question"></i> Unidentified 清單（僅顯示清單、不上地圖、已保留 S/N）
+                                <i class="fa-solid fa-circle-question"></i> Unidentified 清單（不顯示地圖、不與 Current List 比對）
                             </h3>
                             <p class="text-[11px] text-slate-500 mt-0.5">
                                 ${session
@@ -4645,7 +4605,7 @@
                                             <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">Ward: ${it.ward || '其他 Ward'}</span>
                                         </div>
                                         <p class="font-semibold text-slate-800 mt-1">${it.description || '未命名項目'}</p>
-                                        <p class="text-[11px] text-slate-500 mt-0.5">備註：${it.remark || '可能是其他 Ward 物品，僅於清單顯示'}</p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">備註：${it.remark || '僅於清單查看，不顯示於地圖'}</p>
                                     </div>
                                     <span class="text-[10px] font-bold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-lg shrink-0">不上地圖</span>
                                 </div>
@@ -4708,7 +4668,6 @@
                                             <button type="button" data-apply-id="${s.id}" class="st-hist-apply bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">套用到地圖</button>
                                             <button type="button" data-view-id="${s.id}" class="st-hist-view bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">查看記錄</button>
                                             <button type="button" data-pend-id="${s.id}" class="st-hist-pend bg-amber-500 hover:bg-amber-400 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer">Pending (${pendLeft})</button>
-                                            <button type="button" data-exp-id="${s.id}" class="st-hist-exp bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer" title="匯出 Excel"><i class="fa-solid fa-download"></i></button>
                                             <button type="button" data-del-id="${s.id}" class="st-hist-del bg-rose-100 hover:bg-rose-200 text-rose-700 text-[11px] font-bold px-2.5 py-1.5 rounded-lg cursor-pointer" title="刪除"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
@@ -4754,14 +4713,6 @@
                     const id = btn.getAttribute('data-pend-id');
                     modal.remove();
                     openStocktakePendingModal(id);
-                };
-            });
-
-            modal.querySelectorAll('.st-hist-exp').forEach(btn => {
-                btn.onclick = () => {
-                    const id = btn.getAttribute('data-exp-id');
-                    const found = stocktakeSessions.find(x => x.id === id);
-                    if (found) exportStocktakeResultWorkbook(found);
                 };
             });
 
