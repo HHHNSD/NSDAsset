@@ -169,36 +169,36 @@
                                 <span class="text-[8px] font-extrabold leading-none">單位</span>
                             </button>
 
-                            <!-- 中央圓形 4 格：精準四等分 90° 扇形上色 -->
+                            <!-- 中央圓形 4 格：平均四等分 + 文字置中 -->
                             <div class="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full border-2 border-slate-300 shadow-inner grid grid-cols-2 grid-rows-2 overflow-hidden"
                                 style="background: conic-gradient(from 0deg, rgba(224,242,254,0.95) 0deg 90deg, rgba(250,245,255,0.95) 90deg 180deg, rgba(254,243,199,0.95) 180deg 270deg, rgba(224,231,255,0.95) 270deg 360deg);">
                             
                                 <!-- 左上：T Block -->
                                 <button type="button" data-joy-block="T" onclick="selectJoystickBlock('T')" title="T Block"
-                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pr-2 pb-2 bg-transparent cursor-pointer z-10">
-                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">T</span>
-                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center text-center p-2 bg-transparent cursor-pointer z-10 transition">
+                                    <span class="joy-main-label text-xs font-black leading-tight">T</span>
+                                    <span class="joy-sub-label text-[8px] font-bold leading-tight">Block</span>
                                 </button>
                             
                                 <!-- 右上：M Block -->
                                 <button type="button" data-joy-block="M" onclick="selectJoystickBlock('M')" title="M Block"
-                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pl-2 pb-2 bg-transparent cursor-pointer z-10">
-                                    <span class="joy-main-label text-[11px] sm:text-xs font-black leading-none">M</span>
-                                    <span class="joy-sub-label text-[7px] sm:text-[8px] font-bold mt-0.5">Block</span>
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center text-center p-2 bg-transparent cursor-pointer z-10 transition">
+                                    <span class="joy-main-label text-xs font-black leading-tight">M</span>
+                                    <span class="joy-sub-label text-[8px] font-bold leading-tight">Block</span>
                                 </button>
                             
                                 <!-- 左下：Annex -->
                                 <button type="button" data-joy-block="ANNEX" onclick="selectJoystickBlock('ANNEX')" title="Annex Building"
-                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pr-2 pt-2 bg-transparent cursor-pointer z-10">
-                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Annex</span>
-                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">Bldg</span>
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center text-center p-2 bg-transparent cursor-pointer z-10 transition">
+                                    <span class="joy-main-label text-[10px] font-black leading-tight">Annex</span>
+                                    <span class="joy-sub-label text-[7.5px] font-bold leading-tight">Bldg</span>
                                 </button>
                             
                                 <!-- 右下：Sys -->
                                 <button type="button" data-joy-block="SYSTEM" onclick="selectJoystickBlock('SYSTEM')" title="System"
-                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center pl-2 pt-2 bg-transparent cursor-pointer z-10">
-                                    <span class="joy-main-label text-[9px] sm:text-[10px] font-black leading-tight">Sys</span>
-                                    <span class="joy-sub-label text-[6.5px] sm:text-[7px] font-bold">tem</span>
+                                    class="kiosk-quad-btn joy-block-quad w-full h-full flex flex-col items-center justify-center text-center p-2 bg-transparent cursor-pointer z-10 transition">
+                                    <span class="joy-main-label text-[10px] font-black leading-tight">Sys</span>
+                                    <span class="joy-sub-label text-[7.5px] font-bold leading-tight">tem</span>
                                 </button>
                             
                                 <!-- 貫穿全圓的十字分隔線 -->
@@ -3544,48 +3544,51 @@
             if (downEl) downEl.innerText = floorVal ? `Floor ▼ (${floorVal})` : 'Floor ▼';
 
             // 精簡後：只針對選中的象限切換深色底與反白字，未選中保持透明以顯示平均四等分底色
-            const activeMap = {
-                T: 'bg-sky-600 text-white',
-                M: 'bg-indigo-600 text-white',
-                ANNEX: 'bg-amber-600 text-white',
-                SYSTEM: 'bg-purple-600 text-white'
+           const activeStyleMap = {
+                T:      ['ring-2', 'ring-inset', 'ring-sky-700', 'bg-sky-200/70'],
+                M:      ['ring-2', 'ring-inset', 'ring-indigo-700', 'bg-indigo-200/70'],
+                ANNEX:  ['ring-2', 'ring-inset', 'ring-amber-700', 'bg-amber-200/70'],
+                SYSTEM: ['ring-2', 'ring-inset', 'ring-purple-700', 'bg-purple-200/70']
             };
-            const idleTextMap = {
-                T: 'text-sky-900',
-                M: 'text-indigo-900',
-                ANNEX: 'text-amber-900',
-                SYSTEM: 'text-purple-900'
+            
+            const normalTextMap = {
+                T:      ['text-sky-950'],
+                M:      ['text-indigo-950'],
+                ANNEX:  ['text-amber-950'],
+                SYSTEM: ['text-purple-950']
             };
+            
             const allPossibleClasses = [
                 'bg-sky-600', 'bg-indigo-600', 'bg-amber-600', 'bg-purple-600',
+                'bg-sky-200/70', 'bg-indigo-200/70', 'bg-amber-200/70', 'bg-purple-200/70',
                 'bg-sky-50/95', 'bg-indigo-50/95', 'bg-amber-50/95', 'bg-purple-50/95',
                 'hover:bg-sky-100', 'hover:bg-indigo-100', 'hover:bg-amber-100', 'hover:bg-purple-100',
-                'hover:bg-sky-600', 'hover:bg-indigo-600', 'hover:bg-amber-600', 'hover:bg-purple-600',
-                'ring-1', 'ring-inset', 'ring-sky-300', 'ring-indigo-300', 'ring-amber-300', 'ring-purple-300',
-                'text-white', 'text-sky-900', 'text-indigo-900', 'text-amber-900', 'text-purple-900',
-                'text-sky-700/85', 'text-indigo-700/85', 'text-amber-700/85', 'text-purple-700/85',
-                'text-sky-100', 'text-indigo-100', 'text-amber-100', 'text-purple-100'
+                'ring-1', 'ring-2', 'ring-inset',
+                'ring-sky-300', 'ring-indigo-300', 'ring-amber-300', 'ring-purple-300',
+                'ring-sky-700', 'ring-indigo-700', 'ring-amber-700', 'ring-purple-700',
+                'text-white', 'text-slate-950',
+                'text-sky-900', 'text-sky-950', 'text-indigo-900', 'text-indigo-950',
+                'text-amber-900', 'text-amber-950', 'text-purple-900', 'text-purple-950',
+                'text-sky-700/85', 'text-indigo-700/85', 'text-amber-700/85', 'text-purple-700/85'
             ];
-
+            
             document.querySelectorAll('.joy-block-quad').forEach(btn => {
                 const quadKey = String(btn.getAttribute('data-joy-block') || '').toUpperCase();
                 const resolved = resolveMatchingBlockValue(quadKey);
                 const isActive = Boolean(resolved && blockVal && resolved.toLowerCase() === blockVal.toLowerCase());
-
+            
                 btn.classList.remove(...allPossibleClasses);
-                btn.querySelectorAll('.joy-main-label, .joy-sub-label').forEach(el => {
-                    el.classList.remove(...allPossibleClasses);
-                });
-
+                const labels = btn.querySelectorAll('.joy-main-label, .joy-sub-label');
+                labels.forEach(el => el.classList.remove(...allPossibleClasses));
+            
                 if (isActive) {
-                    btn.classList.add(...(activeMap[quadKey] || 'bg-slate-700 text-white').split(' '));
-                    btn.querySelectorAll('.joy-main-label, .joy-sub-label').forEach(el => el.classList.add('text-white'));
+                    btn.classList.add(...(activeStyleMap[quadKey] || ['ring-2', 'ring-inset', 'ring-slate-800']));
+                    labels.forEach(el => el.classList.add('text-slate-950', 'font-extrabold'));
                 } else {
                     btn.classList.add('bg-transparent');
-                    btn.querySelectorAll('.joy-main-label, .joy-sub-label').forEach(el => el.classList.add(idleTextMap[quadKey] || 'text-slate-800'));
+                    labels.forEach(el => el.classList.add(...(normalTextMap[quadKey] || ['text-slate-900'])));
                 }
             });
-
             applyJoystickTransform();
         }
 
